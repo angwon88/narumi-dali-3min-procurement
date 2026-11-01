@@ -14,6 +14,7 @@ G.score = (() => {
     let pts = C.DELIVER_BASE + Math.round(frac * C.TIME_BONUS) + (saving > 0 ? Math.round(saving * C.SAVING_MULT) : 0);
     pts = Math.round(pts * (S.scoreMult || 1));
     S.score += pts; S.delivered++; S.onTime++;
+    G.levelup.gain(S);
     if (saving > 0) S.saved = r1(S.saved + saving); else if (saving < 0) S.wasted = r1(S.wasted - saving);
     trust(S, frac >= 0.5 ? C.TRUST_FAST : C.TRUST_ON_TIME);
     G.villages.onSuccess(S, r.vid);

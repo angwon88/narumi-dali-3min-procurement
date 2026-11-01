@@ -16,7 +16,12 @@ G.ui = (() => {
   const clicked = r => G.input.taps.some(p => G.U.inRect(p.x, p.y, r));
   function hud(ctx, S) {
     ctx.fillStyle = '#1e2a3a'; ctx.fillRect(0, 0, C.VIEW.w, C.HUD_H);
-    ctx.fillStyle = '#2f4f8a'; ctx.fillRect(0, C.HUD_H - 3, C.VIEW.w, 3);
+    // 경험치 막대 (HUD 아래 테두리) + 레벨
+    const need = G.levelup.xpNeed(S), prev = S.level > 1 ? C.LEVEL_REQ[S.level - 2] : 0;
+    const xf = need == null ? 1 : (S.delivered - prev) / (need - prev);
+    ctx.fillStyle = '#2f4f8a'; ctx.fillRect(0, C.HUD_H - 4, C.VIEW.w, 4);
+    ctx.fillStyle = '#ffd84a'; ctx.fillRect(0, C.HUD_H - 4, Math.round(C.VIEW.w * Math.max(0, Math.min(1, xf))), 4);
+    T(ctx, 'Lv.' + S.level, 762, 22, 16, '#ffd84a', 'left');
     const low = S.timeLeft <= 30;
     T(ctx, '⏱', 20, 22, 16, '#fff');
     T(ctx, G.U.fmtTime(S.timeLeft), 64, 22, 24, low ? (Math.floor(S.timeLeft * 2) % 2 ? '#ff6b5b' : '#ffb3a8') : '#fff');

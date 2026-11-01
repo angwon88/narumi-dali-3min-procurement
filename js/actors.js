@@ -32,7 +32,7 @@ G.dali = {
     }
     const B = S.buy;
     if (B && B.shop && B.dwell > 0) {
-      const f = Math.min(1, B.dwell / G.C.BUY_DWELL);
+      const f = Math.min(1, B.dwell / (S.buyDwell || G.C.BUY_DWELL));
       ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(20,24,30,.6)'; ctx.beginPath(); ctx.arc(this.x, y0 - 12, 8, 0, Math.PI * 2); ctx.stroke();
       ctx.strokeStyle = '#ffd84a'; ctx.beginPath(); ctx.arc(this.x, y0 - 12, 8, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f); ctx.stroke(); ctx.lineWidth = 1;
     }

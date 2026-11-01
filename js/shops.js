@@ -149,7 +149,7 @@ G.shops = (() => {
     if (press) { buy(S, sh, item); B.dwell = 0; return; }
     if (G.settings.buyMode === 'auto') {
       B.dwell += dt;
-      if (B.dwell >= C.BUY_DWELL) { buy(S, sh, item); B.dwell = 0; }
+      if (B.dwell >= (S.buyDwell || C.BUY_DWELL)) { buy(S, sh, item); B.dwell = 0; }
     }
   }
 
@@ -333,6 +333,12 @@ G.shops = (() => {
       }
       if (sh.openFx != null) shutter(ctx, b, 1 - sh.openFx / 0.8, '');
       if (sh.flagT > 0) flag(ctx, sh);
+      if (sh.fake && S.fakeHint) {                 // '나르미의 눈썰미' 카드: 수상한 공방 간판에 ?
+        const qx = sh.w.wndX + 11, qy = b.y + 8 + Math.sin(sh.t * 4) * 2;
+        ctx.fillStyle = '#3a3a3a'; ctx.beginPath(); ctx.arc(qx, qy, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.arc(qx, qy, 8, 0, Math.PI * 2); ctx.fill();
+        T(ctx, '?', qx, qy + 1, 12, '#2a2416');
+      }
       if (sh.verified) stamp(ctx, sh, '✔ 검증', '#2e9b3a', sh.w.tagX + TAG_W / 2, b.y + 60);
     }
   }
