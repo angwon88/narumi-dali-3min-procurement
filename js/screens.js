@@ -22,7 +22,7 @@ G.screens = (() => {
   // ---------- 타이틀 ----------
   const BTN_START = { x: W / 2 - 100, y: 360, w: 200, h: 48 };
   function titleUpdate() {
-    if (ui.clicked(BTN_START) || G.input.hit('enter') || G.input.hit(' ')) newGame();
+    if (ui.clicked(BTN_START) || G.input.hit('enter') || G.input.hit(' ')) { if (G.intro.seen()) newGame(); else G.intro.start(newGame); }
   }
   function ciPlate(ctx, key, cx, y, h) {
     const im = G.img[key]; if (!im || !im.naturalWidth) return;
@@ -142,6 +142,7 @@ G.screens = (() => {
 
   const table = {
     title: [titleUpdate, titleDraw], play: [playUpdate, playDraw], pause: [pauseUpdate, pauseDraw],
+    intro: [dt => G.intro.update(dt), ctx => G.intro.draw(ctx)],
     levelup: [dt => G.levelup.update(dt), (ctx, t) => { playDraw(ctx); G.levelup.draw(ctx, t); }],
     end: [endUpdate, endDraw], result: [resultUpdate, resultDraw],
   };
