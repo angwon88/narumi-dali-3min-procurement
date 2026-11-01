@@ -10,7 +10,7 @@ G.shops = (() => {
 
   function init(S) {
     S.shops = G.world.shops.map(w => ({
-      w, idx: w.idx, cat: w.cat.id, mult: 1, status: 'open', fake: false, verified: false,
+      w, idx: w.idx, cat: w.cat.id, mults: {}, status: 'open', fake: false, verified: false,
       fx: null, openFx: null, stampT: 0, flagT: 0, t: Math.random() * 3, closeT: 0, revealT: 0, reopenT: 0,
       lonely: false, monopoly: false, innov: false,
     }));
@@ -24,30 +24,31 @@ G.shops = (() => {
   }
 
   // ---------- 가격 ----------
-  // 정상 공방끼리는 0.05 이상 차이. 수상한 공방은 자기 가격 유지
+  // 물건마다 따로 가격 배율 (2026-11-01: 공방 하나에 배율 하나 → 물건별로 변경. 실제 조달도 품목별 입찰)
+  // 같은 물건의 정상 공방 두 곳은 0.05 이상 차이. 수상한 공방은 자기 가격 유지
+  const rollNormal = () => U.rand(C.PRICE_NORMAL[0], C.PRICE_NORMAL[1]);
   function rollRow(S, r) {
     const a = S.shops[r * 2], b = S.shops[r * 2 + 1];
-    const normal = sh => !sh.fake;
-    if (normal(a)) a.mult = U.rand(C.PRICE_NORMAL[0], C.PRICE_NORMAL[1]);
-    if (normal(b)) {
-      let n = 0;
-      do b.mult = U.rand(C.PRICE_NORMAL[0], C.PRICE_NORMAL[1]); while (normal(a) && Math.abs(a.mult - b.mult) < 0.05 && ++n < 50);
+    for (const it of itemsOf(a)) {
+      if (!a.fake) a.mults[it.id] = rollNormal();
+      if (!b.fake) { let n = 0; do b.mults[it.id] = rollNormal(); while (!a.fake && Math.abs(a.mults[it.id] - b.mults[it.id]) < 0.05 && ++n < 50); }
     }
   }
   const isOpen = (S, sh) => sh.status === 'open' && S.openCats.has(sh.cat);
   const itemsOf = sh => G.ITEMS.filter(i => i.cat === sh.cat);
-  const price = (sh, itemId) => round1(G.ITEM[itemId].price * sh.mult * (sh.monopoly ? C.MONOPOLY_MULT : 1));
+  const price = (sh, itemId) => round1(G.ITEM[itemId].price * (sh.mults[itemId] || 1) * (sh.monopoly ? C.MONOPOLY_MULT : 1));
   const partner = (S, sh) => S.shops[sh.idx ^ 1];
 
   function opened(S, cat) { for (const sh of S.shops) if (sh.cat === cat) sh.openFx = 0; }
 
   // 20초마다 가격 다시 뽑기. 바뀐 공방 간판은 1.5초 반짝이며 ▲(비싸짐)·▼(싸짐) 표시
   function reroll(S) {
-    const before = S.shops.map(sh => sh.mult);
+    const before = S.shops.map(sh => ({ ...sh.mults }));
     for (let r = 0; r < 4; r++) rollRow(S, r);
     for (const sh of S.shops) {
-      const d = sh.mult - before[sh.idx];
-      sh.fx = isOpen(S, sh) && Math.abs(d) > 0.005 ? { t: 0, dir: d > 0 ? 1 : -1 } : null;
+      const dirs = {}; let any = false;
+      for (const it of itemsOf(sh)) { const d = sh.mults[it.id] - before[sh.idx][it.id]; if (Math.abs(d) > 0.005) { dirs[it.id] = d > 0 ? 1 : -1; any = true; } }
+      sh.fx = isOpen(S, sh) && any ? { t: 0, dirs } : null;
     }
   }
 
@@ -57,10 +58,11 @@ G.shops = (() => {
     const p0 = partner(S, sh);
     if (p0.monopoly) { p0.monopoly = false; const b = p0.w.body; G.fx.add(S, b.x + b.w / 2, b.y + 8, '경쟁 공방이 생겨 독점이 풀렸어요', '#9be37a'); }
     S.streak[sh.idx >> 1] = { shop: -1, n: 0 };
-    if (fake) sh.mult = U.rand(C.PRICE_FAKE[0], C.PRICE_FAKE[1]);
-    else {
-      const p = partner(S, sh); let n = 0;
-      do sh.mult = U.rand(C.PRICE_NORMAL[0], C.PRICE_NORMAL[1]); while (!p.fake && p.status === 'open' && Math.abs(p.mult - sh.mult) < 0.05 && ++n < 50);
+    const p = partner(S, sh);
+    for (const it of itemsOf(sh)) {
+      if (fake) { sh.mults[it.id] = U.rand(C.PRICE_FAKE[0], C.PRICE_FAKE[1]); continue; }
+      let n = 0;
+      do sh.mults[it.id] = rollNormal(); while (!p.fake && p.status === 'open' && Math.abs(p.mults[it.id] - sh.mults[it.id]) < 0.05 && ++n < 50);
     }
     if (fake) S.stats.fakeSpawned = (S.stats.fakeSpawned || 0) + 1;
   }
@@ -268,7 +270,8 @@ G.shops = (() => {
       const y = b.y + 33 + i * 17;
       G.icons.draw(ctx, it.id, tx + 9, y, 14);
       T(ctx, price(sh, it.id) + '만', tx + 32, y + 1, 12, sh.monopoly ? '#d9342b' : '#2a2416');
-      if (sh.fx) T(ctx, sh.fx.dir > 0 ? '▲' : '▼', tx + 57, y + 1, 12, sh.fx.dir > 0 ? '#d9342b' : '#2e9b3a');
+      const dir = sh.fx && sh.fx.dirs[it.id];
+      if (dir) T(ctx, dir > 0 ? '▲' : '▼', tx + 57, y + 1, 12, dir > 0 ? '#d9342b' : '#2e9b3a');
     });
   }
   function flag(ctx, sh) {                       // '개업!' 깃발 (정상·수상한 공방 모두 같음)
