@@ -11,3 +11,5 @@ G.store = {
   get(k, d) { try { const v = localStorage.getItem('sjcj.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('sjcj.' + k, JSON.stringify(v)); } catch (e) { /* 무시 */ } },
 };
+// 설정 (타이틀 [설정]에서 바꿈, 11번 작업). buyMode: 'auto' = 0.4초 머무르면 구매, 'button' = E·Enter·[구매] 버튼
+G.settings = { buyMode: G.store.get('buyMode', 'auto') };

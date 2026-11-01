@@ -18,9 +18,18 @@ G.ui = (() => {
     ctx.fillStyle = '#1e2a3a'; ctx.fillRect(0, 0, C.VIEW.w, C.HUD_H);
     ctx.fillStyle = '#2f4f8a'; ctx.fillRect(0, C.HUD_H - 3, C.VIEW.w, 3);
     const low = S.timeLeft <= 30;
-    T(ctx, '⏱', 22, 22, 16, '#fff');
-    T(ctx, G.U.fmtTime(S.timeLeft), 70, 22, 24, low ? (Math.floor(S.timeLeft * 2) % 2 ? '#ff6b5b' : '#ffb3a8') : '#fff');
-    T(ctx, '점수 ' + S.score, 200, 22, 16, '#ffe48a');
+    T(ctx, '⏱', 20, 22, 16, '#fff');
+    T(ctx, G.U.fmtTime(S.timeLeft), 64, 22, 24, low ? (Math.floor(S.timeLeft * 2) % 2 ? '#ff6b5b' : '#ffb3a8') : '#fff');
+    T(ctx, '점수', 128, 22, 12, '#8fa3b8', 'left'); T(ctx, String(S.score), 160, 22, 18, '#ffe48a', 'left');
+    T(ctx, '아낀 세금', 262, 22, 12, '#8fa3b8', 'left'); T(ctx, S.saved + '만원', 322, 22, 16, '#9be37a', 'left');
+    // 마을 신뢰도 게이지
+    const gx = 452, gw = 170, f = S.trust / 100, danger = S.trust <= C.TRUST_DANGER;
+    T(ctx, '마을 신뢰', gx - 6, 22, 12, '#8fa3b8', 'right');
+    ctx.fillStyle = '#0f1620'; ctx.fillRect(gx, 14, gw, 16);
+    const blink = danger && Math.floor(S.elapsed * 3) % 2 === 0;
+    ctx.fillStyle = blink ? '#ff8a7a' : f > 0.5 ? '#46b04a' : f > 0.25 ? '#f2b632' : '#e5533d';
+    ctx.fillRect(gx + 2, 16, Math.round((gw - 4) * f), 12);
+    T(ctx, String(Math.round(S.trust)), gx + gw / 2, 22, 12, '#fff');
     T(ctx, '‖', C.VIEW.w - 22, 22, 18, '#fff');
   }
   const PAUSE_BTN = { x: C.VIEW.w - 40, y: 4, w: 36, h: 36 };

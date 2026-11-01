@@ -66,8 +66,27 @@ G.requests = (() => {
     }
     S.requests = S.requests.filter(r => r.state === 'open' || r.endT < 0.6);   // 끝난 요청은 0.6초 연출 뒤 제거
   }
-  // 3번(마을 피해·신뢰도) 작업에서 채운다
-  function onExpire(S, r) {}
+  // 시간 초과: 신뢰도 감소 (마을 피해 연출은 3번 작업에서 추가)
+  function onExpire(S, r) {
+    G.score.trust(S, C.TRUST_FAIL);
+    const b = G.ui.bubbleRect(r);
+    G.fx.add(S, b.x + b.w / 2, b.y - 4, '늦었어요… 신뢰 ' + C.TRUST_FAIL, '#ff8a7a');
+  }
 
-  return { init, update, spawn, active, ofVillage };
+  // 납품: 달이가 마을 앞마당에 들어가면 그 마을 요청과 맞는 물건을 모두 납품
+  function deliver(S) {
+    const d = G.dali; if (!d.bag.length) return;
+    const v = G.world.villages.find(v => S.openVillages.has(v.id) && G.U.inRect(d.x, d.y, v.yard));
+    if (!v) return;
+    for (let i = 0; i < d.bag.length; i++) {
+      const b = d.bag[i];
+      const r = ofVillage(S, v.id).filter(q => q.item === b.item).sort((a, c) => a.left - c.left)[0];
+      if (!r) continue;
+      r.state = 'done';
+      d.bag.splice(i--, 1);
+      G.score.delivered(S, r, b);
+    }
+  }
+
+  return { init, update, spawn, active, ofVillage, deliver };
 })();

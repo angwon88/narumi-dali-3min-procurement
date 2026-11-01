@@ -7,8 +7,8 @@ G.screens = (() => {
   let endT = 0;
 
   function newGame() {
-    G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, score: 0 };
-    G.requests.init(G.S);
+    G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, floats: [], bagCap: C.BAG_START, scoreMult: 1 };
+    G.score.init(G.S); G.requests.init(G.S); G.shops.init(G.S);
     G.dali.reset(); G.narmi.reset(); G.input.reset();
     G.screen = 'play';
   }
@@ -56,13 +56,19 @@ G.screens = (() => {
     S.timeLeft -= dt; S.elapsed += dt;
     G.requests.update(S, dt);
     G.dali.update(dt); G.narmi.update(dt);
+    G.shops.update(S, dt);
+    G.requests.deliver(S);
+    G.fx.update(S, dt);
     if (S.timeLeft <= 0) { S.timeLeft = 0; G.screen = 'end'; endT = C.END_HOLD; }
   }
   function playDraw(ctx) {
     G.world.draw(ctx);
+    G.shops.draw(ctx, G.S);
     G.narmi.draw(ctx);
     G.dali.draw(ctx);
     ui.bubbles(ctx, G.S);
+    G.dali.drawOver(ctx, G.S);
+    G.fx.draw(ctx, G.S);
     ui.hud(ctx, G.S);
     ui.joystick(ctx);
     const tl = G.S.timeLeft;                                   // 마지막 10초 카운트다운
@@ -105,7 +111,8 @@ G.screens = (() => {
     ctx.fillStyle = '#1e2a3a'; ctx.fillRect(0, 0, W, H);
     T(ctx, '작전 종료!', W / 2, 70, 36, '#ffd84a');
     T(ctx, '점수 ' + G.S.score + (G.S.newBest ? '  (최고 기록!)' : ''), W / 2, 130, 20, '#fff');
-    T(ctx, '(기록 카드와 조달 메시지는 이후 단계에서 채운다)', W / 2, 200, 12, '#8fa3b8');
+    T(ctx, '배달 ' + G.S.delivered + '건 · 아낀 세금 ' + G.S.saved + '만원 · 마을 신뢰 ' + Math.round(G.S.trust), W / 2, 180, 16, '#cfe3f5');
+    T(ctx, '(기록 카드와 조달 메시지는 11번 작업에서 채운다)', W / 2, 220, 12, '#8fa3b8');
     T(ctx, '필요한 것을, 공정하게, 효율적으로, 필요한 곳에 제때 — 그게 조달입니다.', W / 2, 340, 16, '#fff');
     ui.button(ctx, BTN_AGAIN, '다시 하기'); ui.button(ctx, BTN_HOME, '타이틀로');
     ciPlate(ctx, 'ci_h', W / 2, 482, 26);

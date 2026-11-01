@@ -1,0 +1,88 @@
+/* 공방: 가격 · 영업 상태 · 구매 (기획서 3.3, 3.4)
+   경쟁 유지·수상한 공방·혁신은 이후 작업에서 이 파일에 얹는다. */
+'use strict';
+G.shops = (() => {
+  const C = G.C, U = G.U;
+  const round1 = v => Math.round(v * 10) / 10;
+
+  function init(S) {
+    S.shops = G.world.shops.map(w => ({ w, idx: w.idx, cat: w.cat.id, mult: 1, status: 'open' }));
+    for (let r = 0; r < 4; r++) rollRow(S, r);
+    S.buy = { shop: null, dwell: 0, warned: false };
+  }
+  // 같은 행 두 공방의 배율은 0.05 이상 차이 나게
+  function rollRow(S, r) {
+    const a = S.shops[r * 2], b = S.shops[r * 2 + 1];
+    a.mult = U.rand(C.PRICE_NORMAL[0], C.PRICE_NORMAL[1]);
+    do b.mult = U.rand(C.PRICE_NORMAL[0], C.PRICE_NORMAL[1]); while (Math.abs(a.mult - b.mult) < 0.05);
+  }
+  const isOpen = (S, sh) => sh.status === 'open' && S.openCats.has(sh.cat);
+  const itemsOf = sh => G.ITEMS.filter(i => i.cat === sh.cat);
+  const price = (sh, itemId) => round1(G.ITEM[itemId].price * sh.mult);
+
+  // 이 공방에서 지금 사야 하는 물건: 요청 중이고 아직 가방에 그만큼 없는 것 중 가장 급한 것
+  function wanted(S, sh) {
+    let best = null;
+    for (const it of itemsOf(sh)) {
+      const reqs = G.requests.active(S).filter(r => r.item === it.id).sort((a, b) => a.left - b.left);
+      const carried = G.dali.bag.filter(b => b.item === it.id).length;
+      if (reqs.length > carried) { const r = reqs[carried]; if (!best || r.left < best.left) best = { item: it.id, left: r.left }; }
+    }
+    return best && best.item;
+  }
+
+  function buy(S, sh, item) {
+    const p = price(sh, item);
+    G.dali.bag.push({ item, paid: p, shop: sh.idx });
+    S.stats.bought = (S.stats.bought || 0) + 1;
+    const d = sh.w.door;
+    G.fx.add(S, d.x + d.w / 2, d.y - 6, G.ITEM[item].name + ' 구매 ' + p + '만원', '#fff');
+  }
+
+  // 매 프레임: 달이가 구매칸에 있으면 자동(0.4초 머무르기) 또는 E·Enter로 구매
+  function update(S, dt) {
+    const dali = G.dali, B = S.buy;
+    const sh = S.shops.find(s => isOpen(S, s) && U.inRect(dali.x, dali.y, s.w.door)) || null;
+    if (sh !== B.shop) { B.shop = sh; B.dwell = 0; B.warned = false; }
+    if (!sh) return;
+    const item = wanted(S, sh);
+    const full = dali.bag.length >= S.bagCap;
+    const press = G.input.hit('e') || G.input.hit('enter');
+    if (!item || full) {
+      B.dwell = 0;
+      if (!B.warned && (press || dali.moving === false)) {
+        const d = sh.w.door;
+        G.fx.add(S, d.x + d.w / 2, d.y - 6, full ? '가방이 가득 찼어요' : '필요한 물건이 아니에요', '#ffd6a0');
+        B.warned = true;
+      }
+      return;
+    }
+    B.warned = false;
+    if (press) { buy(S, sh, item); B.dwell = 0; return; }
+    if (G.settings.buyMode === 'auto') {
+      B.dwell += dt;
+      if (B.dwell >= C.BUY_DWELL) { buy(S, sh, item); B.dwell = 0; }
+    }
+  }
+
+  // 간판 가격표(건물 벽) + 준비 중 셔터
+  function draw(ctx, S) {
+    for (const sh of S.shops) {
+      const b = sh.w.body;
+      if (!S.openCats.has(sh.cat)) {
+        ctx.fillStyle = '#7d8590'; ctx.fillRect(b.x + 4, b.y + 22, b.w - 8, b.h - 22);
+        ctx.fillStyle = '#6a7179'; for (let y = b.y + 26; y < b.y + b.h; y += 6) ctx.fillRect(b.x + 4, y, b.w - 8, 2);
+        G.world.text(ctx, '준비 중', b.x + b.w / 2, b.y + 43, 12, '#fff');
+        continue;
+      }
+      ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + 6, b.y + 25, 92, 34);
+      ctx.fillStyle = '#3a3a3a'; ctx.fillRect(b.x + 6, b.y + 41, 92, 1);
+      itemsOf(sh).forEach((it, i) => {
+        const y = b.y + 33 + i * 17;
+        G.icons.draw(ctx, it.id, b.x + 17, y, 14);
+        G.world.text(ctx, price(sh, it.id) + '만', b.x + 60, y + 1, 12, '#2a2416');
+      });
+    }
+  }
+  return { init, update, draw, price, isOpen, rollRow };
+})();
