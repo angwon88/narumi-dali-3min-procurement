@@ -5,11 +5,11 @@
 'use strict';
 window.PlayBot = {
   run(opt = {}) {
-    const { avoidFake = true, speed = 1, inspect = false } = opt;
+    const { avoidFake = true, speed = 1, inspect = false, until = 999 } = opt;   // until: 이 시간(초)까지만 진행
     G.screens.newGame(); const S = G.S, d = G.dali, DT = 1 / 60; G.screen = 'pause';
     let mode = 'buy', target = null;
     const suspicious = sh => Object.keys(sh.mults).some(id => sh.mults[id] < 0.6);
-    for (let i = 0; i < 180 * 60 && S.timeLeft > 0; i++) {
+    for (let i = 0; i < 180 * 60 && S.timeLeft > 0 && S.elapsed < until; i++) {
       const act = G.requests.active(S);
       const uncovered = act.filter(r => {
         const need = act.filter(q => q.item === r.item).length, have = d.bag.filter(b => b.item === r.item).length;
