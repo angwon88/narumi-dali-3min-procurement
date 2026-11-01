@@ -8,6 +8,7 @@ G.screens = (() => {
 
   function newGame() {
     G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, score: 0 };
+    G.requests.init(G.S);
     G.dali.reset(); G.narmi.reset(); G.input.reset();
     G.screen = 'play';
   }
@@ -53,6 +54,7 @@ G.screens = (() => {
     if (G.input.hit('escape') || G.input.hit('p') || ui.clicked(ui.PAUSE_BTN)) { G.screen = 'pause'; return; }
     const S = G.S;
     S.timeLeft -= dt; S.elapsed += dt;
+    G.requests.update(S, dt);
     G.dali.update(dt); G.narmi.update(dt);
     if (S.timeLeft <= 0) { S.timeLeft = 0; G.screen = 'end'; endT = C.END_HOLD; }
   }
@@ -60,6 +62,7 @@ G.screens = (() => {
     G.world.draw(ctx);
     G.narmi.draw(ctx);
     G.dali.draw(ctx);
+    ui.bubbles(ctx, G.S);
     ui.hud(ctx, G.S);
     ui.joystick(ctx);
     const tl = G.S.timeLeft;                                   // 마지막 10초 카운트다운

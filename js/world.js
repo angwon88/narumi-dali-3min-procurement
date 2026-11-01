@@ -12,10 +12,10 @@ G.world = (() => {
     { id: 'safety', name: '안전', col: '#d9a441' },
   ];
   const VILLAGES = [
-    { id: 'school', name: '학교', col: '#e8d27a' },
-    { id: 'clinic', name: '보건소', col: '#bfe3d0' },
-    { id: 'fire', name: '소방서', col: '#d9574a' },
-    { id: 'library', name: '도서관', col: '#a98bc9' },
+    { id: 'school', name: '학교', col: '#e8d27a', wants: ['desk', 'tablet', 'chair'] },
+    { id: 'clinic', name: '보건소', col: '#bfe3d0', wants: ['mask', 'kit'] },
+    { id: 'fire', name: '소방서', col: '#d9574a', wants: ['ext', 'helmet', 'kit'] },
+    { id: 'library', name: '도서관', col: '#a98bc9', wants: ['chair', 'lamp', 'desk'] },
   ];
   const shops = [], villages = [];
   for (let r = 0; r < 4; r++) for (let c = 0; c < 2; c++) {
