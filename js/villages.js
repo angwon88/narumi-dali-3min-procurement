@@ -36,15 +36,15 @@ G.villages = (() => {
     else if (mood < 0) { ctx.fillRect(x - 4, y + 4, 2, 1); ctx.fillRect(x - 2, y + 3, 4, 1); ctx.fillRect(x + 2, y + 4, 2, 1); ctx.fillStyle = '#5ec8f2'; ctx.fillRect(x + 5, y - 1, 2, 3); }
     else ctx.fillRect(x - 3, y + 3, 6, 1);
   }
-  function darkWindows(ctx, b) { ctx.fillStyle = '#3b4250'; for (let i = 0; i < 4; i++) ctx.fillRect(b.x + 16 + i * 36, b.y + 40, 22, 18); }
+  function darkWindows(ctx, b) { ctx.fillStyle = '#3b4250'; for (let i = 0; i < 4; i++) ctx.fillRect(b.x + 40 + i * 44, b.y + 30, 24, 16); }
 
   function draw(ctx, S) {
     for (const v of G.world.villages) {
       const s = S.vstate[v.id], b = v.body, y = v.yard, hurt = s.hurtT > 0;
       if (!S.openVillages.has(v.id)) {               // 아직 안 열린 마을: 어둡게 + 팻말
-        ctx.fillStyle = 'rgba(30,36,46,.55)'; ctx.fillRect(b.x - 4, b.y, b.w + 8, b.h); ctx.fillRect(y.x, y.y, y.w, y.h);
-        ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + 40, b.y + 40, 80, 22);
-        G.world.text(ctx, '곧 열려요', b.x + 80, b.y + 51, 12, '#4a3f2a');
+        ctx.fillStyle = 'rgba(30,36,46,.55)'; ctx.fillRect(b.x - 3, b.y, b.w + 6, b.h); ctx.fillRect(y.x, y.y, y.w, y.h);
+        ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + b.w / 2 - 40, b.y + 30, 80, 22);
+        G.world.text(ctx, '곧 열려요', b.x + b.w / 2, b.y + 41, 12, '#4a3f2a');
         continue;
       }
       const blink = Math.floor(s.t * 3) % 2 === 0;
@@ -57,21 +57,21 @@ G.villages = (() => {
         ctx.globalAlpha = fade;
         if (v.id === 'school') {
           darkWindows(ctx, b);
-          person(ctx, y.x + 22, y.y + 84, '#e86a5c', true); person(ctx, y.x + 40, y.y + 90, '#5b8fb9', true);
-          G.world.text(ctx, '…', y.x + 31, y.y + 64, 12, '#fff');
+          person(ctx, y.x + 150, y.y + 34, '#e86a5c', true); person(ctx, y.x + 170, y.y + 36, '#5b8fb9', true);
+          G.world.text(ctx, '…', y.x + 160, y.y + 14, 12, '#fff');
         } else if (v.id === 'clinic') {
-          [0, 1, 2].forEach(i => person(ctx, y.x + 48 - i * 15, y.y + 90, ['#7aa36b', '#c98a5a', '#8b7ab8'][i]));
-          ctx.fillStyle = '#5ec8f2'; if (blink) ctx.fillRect(y.x + 52, y.y + 70, 2, 3);
-          G.world.text(ctx, '대기 중', y.x + 30, y.y + 60, 12, '#fff');
+          [0, 1, 2].forEach(i => person(ctx, y.x + 22 + i * 15, y.y + 36, ['#7aa36b', '#c98a5a', '#8b7ab8'][i]));
+          ctx.fillStyle = '#5ec8f2'; if (blink) ctx.fillRect(y.x + 56, y.y + 16, 2, 3);
+          G.world.text(ctx, '대기 중', y.x + 100, y.y + 22, 12, '#fff');
         } else if (v.id === 'fire') {
-          ctx.fillStyle = '#7d8590'; ctx.fillRect(b.x + 2, b.y + 56, 30, 44);
-          ctx.fillStyle = '#6a7179'; for (let k = 0; k < 6; k++) ctx.fillRect(b.x + 2, b.y + 60 + k * 7, 30, 2);
+          ctx.fillStyle = '#7d8590'; ctx.fillRect(b.x + 2, b.y + 26, 30, 44);
+          ctx.fillStyle = '#6a7179'; for (let k = 0; k < 6; k++) ctx.fillRect(b.x + 2, b.y + 30 + k * 7, 30, 2);
           darkWindows(ctx, b);
         } else if (v.id === 'library') {
           darkWindows(ctx, b);
-          ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x - 2, b.y + 70, 34, 16);
-          ctx.fillStyle = '#3a3a3a'; ctx.fillRect(b.x + 14, b.y + 64, 2, 6);
-          G.world.text(ctx, '휴관', b.x + 15, b.y + 79, 12, '#d9342b');
+          ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + 1, b.y + 44, 32, 16);
+          ctx.fillStyle = '#3a3a3a'; ctx.fillRect(b.x + 16, b.y + 38, 2, 6);
+          G.world.text(ctx, '휴관', b.x + 17, b.y + 53, 12, '#d9342b');
         }
         ctx.globalAlpha = 1;
       }

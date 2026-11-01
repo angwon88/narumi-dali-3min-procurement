@@ -6,7 +6,7 @@
 G.shops = (() => {
   const C = G.C, U = G.U;
   const round1 = v => Math.round(v * 10) / 10;
-  const TAG_W = 72, FLAG_SEC = 15, CLOSE_SHOW = 1.5, REVEAL_SEC = 1.5;
+  const TAG_W = 62, FLAG_SEC = 15, CLOSE_SHOW = 1.5, REVEAL_SEC = 1.5;
 
   function init(S) {
     S.shops = G.world.shops.map(w => ({
@@ -231,33 +231,33 @@ G.shops = (() => {
   }
   // 단서 ①: 굴뚝 연기 (정상만)
   function chimney(ctx, sh) {
-    const b = sh.w.body, x = sh.w.wndX + 6, y = b.y - 10;
+    const b = sh.w.body, x = sh.w.wndX + 4, y = b.y - 10;
     ctx.fillStyle = '#7a3b2e'; ctx.fillRect(x, y, 10, 14); ctx.fillStyle = '#5c2a20'; ctx.fillRect(x - 1, y, 12, 3);
     if (sh.fake) return;
     for (let i = 0; i < 3; i++) {
       const k = ((sh.t / 1.5) + i / 3) % 1, r = 3 + k * 4;
-      ctx.globalAlpha = 0.75 * (1 - k); ctx.fillStyle = '#e9ecef';
-      ctx.beginPath(); ctx.arc(x + 5 + Math.sin(k * 5 + i) * 3, y - 4 - k * 22, r, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 0.8 * (1 - k); ctx.fillStyle = '#f4f6f8';
+      ctx.beginPath(); ctx.arc(x + 5 + Math.sin(k * 5 + i) * 4, y - 3 - k * 16, r, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
   }
   // 단서 ②: 창문 안 일꾼 (수상한 공방은 커튼만)
   function windowView(ctx, sh) {
     const x = sh.w.wndX, y = sh.w.body.y + 30;
-    ctx.fillStyle = '#3a3a3a'; ctx.fillRect(x - 1, y - 1, 24, 20);
+    ctx.fillStyle = '#3a3a3a'; ctx.fillRect(x - 1, y - 1, 20, 20);
     if (sh.fake) {
-      ctx.fillStyle = '#c9a3b8'; ctx.fillRect(x, y, 22, 18);
-      ctx.fillStyle = '#b08aa0'; for (let i = 0; i < 22; i += 4) ctx.fillRect(x + i, y, 2, 18);
-      ctx.fillStyle = '#8d6a7f'; ctx.fillRect(x + 10, y, 2, 18);
+      ctx.fillStyle = '#c9a3b8'; ctx.fillRect(x, y, 18, 18);
+      ctx.fillStyle = '#b08aa0'; for (let i = 0; i < 18; i += 4) ctx.fillRect(x + i, y, 2, 18);
+      ctx.fillStyle = '#8d6a7f'; ctx.fillRect(x + 8, y, 2, 18);
       return;
     }
-    ctx.fillStyle = '#ffe9b0'; ctx.fillRect(x, y, 22, 18);
+    ctx.fillStyle = '#ffe9b0'; ctx.fillRect(x, y, 18, 18);
     const up = Math.floor(sh.t * 4) % 2 === 0;
-    ctx.fillStyle = '#4a3020'; ctx.fillRect(x + 6, y + 4, 6, 2);           // 머리카락
-    ctx.fillStyle = '#f2c79b'; ctx.fillRect(x + 6, y + 6, 6, 5);           // 얼굴
-    ctx.fillStyle = '#4f7cac'; ctx.fillRect(x + 4, y + 11, 10, 7);         // 몸
-    ctx.fillStyle = '#6b4423'; ctx.fillRect(x + 14, up ? y + 6 : y + 10, 2, 6);   // 망치 자루
-    ctx.fillStyle = '#7d7d7d'; ctx.fillRect(x + 13, up ? y + 4 : y + 9, 5, 3);    // 망치 머리
+    ctx.fillStyle = '#4a3020'; ctx.fillRect(x + 4, y + 4, 6, 2);           // 머리카락
+    ctx.fillStyle = '#f2c79b'; ctx.fillRect(x + 4, y + 6, 6, 5);           // 얼굴
+    ctx.fillStyle = '#4f7cac'; ctx.fillRect(x + 2, y + 11, 10, 7);         // 몸
+    ctx.fillStyle = '#6b4423'; ctx.fillRect(x + 12, up ? y + 6 : y + 10, 2, 6);   // 망치 자루
+    ctx.fillStyle = '#7d7d7d'; ctx.fillRect(x + 11, up ? y + 4 : y + 9, 5, 3);    // 망치 머리
   }
   function priceTag(ctx, S, sh) {
     const b = sh.w.body, tx = sh.w.tagX, flash = sh.fx && Math.floor(sh.fx.t * 6) % 2 === 0;
@@ -266,14 +266,14 @@ G.shops = (() => {
     ctx.fillStyle = '#3a3a3a'; ctx.fillRect(tx, b.y + 41, TAG_W, 1);
     itemsOf(sh).forEach((it, i) => {
       const y = b.y + 33 + i * 17;
-      G.icons.draw(ctx, it.id, tx + 10, y, 14);
-      T(ctx, price(sh, it.id) + '만', tx + 40, y + 1, 12, sh.monopoly ? '#d9342b' : '#2a2416');
-      if (sh.fx) T(ctx, sh.fx.dir > 0 ? '▲' : '▼', tx + 65, y + 1, 12, sh.fx.dir > 0 ? '#d9342b' : '#2e9b3a');
+      G.icons.draw(ctx, it.id, tx + 9, y, 14);
+      T(ctx, price(sh, it.id) + '만', tx + 32, y + 1, 12, sh.monopoly ? '#d9342b' : '#2a2416');
+      if (sh.fx) T(ctx, sh.fx.dir > 0 ? '▲' : '▼', tx + 57, y + 1, 12, sh.fx.dir > 0 ? '#d9342b' : '#2e9b3a');
     });
   }
   function flag(ctx, sh) {                       // '개업!' 깃발 (정상·수상한 공방 모두 같음)
-    const b = sh.w.body, x = sh.w.doorGfx + 11, y = b.y - 22, wave = Math.sin(sh.t * 6) * 2;
-    ctx.fillStyle = '#5a5a5a'; ctx.fillRect(x, y, 2, 24);
+    const b = sh.w.body, x = sh.w.doorGfx + 10, y = b.y - 8, wave = Math.sin(sh.t * 6) * 2;
+    ctx.fillStyle = '#5a5a5a'; ctx.fillRect(x, y, 2, 30);
     ctx.fillStyle = '#e2433b'; ctx.beginPath(); ctx.moveTo(x + 2, y); ctx.lineTo(x + 30, y + 3 + wave); ctx.lineTo(x + 30, y + 15 + wave); ctx.lineTo(x + 2, y + 14); ctx.fill();
     T(ctx, '개업!', x + 16, y + 8 + wave / 2, 12, '#fff');
   }
@@ -287,7 +287,7 @@ G.shops = (() => {
   }
   function emptyLot(ctx, sh, S) {
     const b = sh.w.body;
-    ctx.fillStyle = '#d9c38f'; ctx.fillRect(b.x - 4, b.y - 2, b.w + 8, b.h + 4);
+    ctx.fillStyle = '#6fae4a'; ctx.fillRect(b.x - 3, b.y - 2, b.w + 6, b.h + 2);
     ctx.fillStyle = '#b89d66'; for (let x = b.x; x < b.x + b.w; x += 10) ctx.fillRect(x, b.y + b.h - 14, 3, 12);
     ctx.fillRect(b.x, b.y + b.h - 11, b.w, 2); ctx.fillRect(b.x, b.y + b.h - 6, b.w, 2);
     ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + b.w / 2 - 34, b.y + 14, 68, 22);
@@ -298,11 +298,11 @@ G.shops = (() => {
     const b = sh.w.body, k = Math.min(1, sh.revealT / 0.4);
     ctx.fillStyle = '#4a4f57'; ctx.fillRect(b.x + 4, b.y + 22, b.w - 8, b.h - 22);
     ctx.fillStyle = '#f4f4f4';
-    for (let i = 0; i < 3; i++) { ctx.fillRect(b.x + 22 + i * 4, b.y + 50 - i * 5, 22, 4); }
-    ctx.fillStyle = '#c9c9c9'; ctx.fillRect(b.x + 22, b.y + 54, 30, 2);
-    T(ctx, '텅…', b.x + b.w - 34, b.y + 44, 12, '#cfd8e3');
+    for (let i = 0; i < 3; i++) { ctx.fillRect(b.x + 14 + i * 4, b.y + 50 - i * 5, 22, 4); }
+    ctx.fillStyle = '#c9c9c9'; ctx.fillRect(b.x + 14, b.y + 54, 30, 2);
+    T(ctx, '텅…', b.x + b.w - 24, b.y + 44, 12, '#cfd8e3');
     ctx.save(); ctx.translate(b.x + b.w / 2, b.y + 11 + k * 40); ctx.rotate(k * 0.5);          // 떨어지는 간판
-    ctx.fillStyle = '#7a5a3a'; ctx.fillRect(-50, -10, 100, 20); T(ctx, sh.w.cat.name + '공방', 0, 0, 12, '#fff'); ctx.restore();
+    ctx.fillStyle = '#7a5a3a'; ctx.fillRect(-44, -10, 88, 20); T(ctx, sh.w.cat.name + '공방', 0, 0, 12, '#fff'); ctx.restore();
     stamp(ctx, sh, '적발!', '#d9342b', b.x + b.w / 2, b.y + 30, true);
   }
   function draw(ctx, S) {
@@ -322,14 +322,14 @@ G.shops = (() => {
       }
       if (sh.lonely) {                             // 경고: 간판이 어두워지고 '손님이 없어요…'
         ctx.fillStyle = 'rgba(20,24,30,.38)'; ctx.fillRect(b.x, b.y + 18, b.w, b.h - 18);
-        const bx = b.x + b.w / 2, by = b.y - 14 + Math.sin(sh.t * 3) * 1.5;
-        ctx.fillStyle = '#fffdf6'; ctx.fillRect(bx - 50, by - 9, 100, 18); ctx.fillRect(bx - 3, by + 9, 6, 4);
-        ctx.fillStyle = '#3a3a3a'; ctx.fillRect(bx - 50, by - 9, 100, 1); ctx.fillRect(bx - 50, by + 8, 100, 1);
+        const bx = b.x + b.w / 2, by = b.y + 42 + Math.sin(sh.t * 3) * 1.5;
+        ctx.fillStyle = '#fffdf6'; ctx.fillRect(bx - 48, by - 9, 96, 18);
+        ctx.fillStyle = '#3a3a3a'; ctx.fillRect(bx - 48, by - 9, 96, 1); ctx.fillRect(bx - 48, by + 8, 96, 1);
         T(ctx, '손님이 없어요…', bx, by, 12, '#4a3f2a');
       }
       if (sh.monopoly) {                           // 독점: 빨간 띠
-        ctx.fillStyle = '#d9342b'; ctx.fillRect(sh.w.tagX, b.y + 18, 36, 12);
-        T(ctx, '독점', sh.w.tagX + 18, b.y + 24, 12, '#fff');
+        ctx.fillStyle = '#d9342b'; ctx.fillRect(sh.w.tagX + 15, b.y + 12, 32, 13);
+        T(ctx, '독점', sh.w.tagX + 31, b.y + 18, 12, '#fff');
       }
       if (sh.openFx != null) shutter(ctx, b, 1 - sh.openFx / 0.8, '');
       if (sh.flagT > 0) flag(ctx, sh);

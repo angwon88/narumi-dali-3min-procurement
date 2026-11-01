@@ -19,8 +19,8 @@ G.score = (() => {
     trust(S, frac >= 0.5 ? C.TRUST_FAST : C.TRUST_ON_TIME);
     G.villages.onSuccess(S, r.vid);
     const v = r.vill.yard;
-    G.fx.add(S, v.x + v.w / 2, r.vill.slot.y + 30, '+' + pts, '#ffe48a', 16);
-    if (saving > 0) G.fx.add(S, v.x + v.w / 2, r.vill.slot.y + 30, '세금 +' + saving + '만원', '#9be37a');
+    G.fx.add(S, v.x + v.w / 2, v.y + 16, '+' + pts, '#ffe48a', 16);
+    if (saving > 0) G.fx.add(S, v.x + v.w / 2, v.y + 16, '세금 +' + saving + '만원', '#9be37a');
   }
   return { init, trust, delivered };
 })();

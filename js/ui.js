@@ -55,9 +55,9 @@ G.ui = (() => {
     ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.beginPath(); ctx.arc(j.ox + dx, j.oy + dy, 20, 0, 7); ctx.fill();
   }
 
-  // 마을 요청 말풍선: 마을 앞마당 왼쪽, 마을당 최대 2개(위·아래 칸)
+  // 마을 요청 말풍선: 마을 앞마당 위, 마을당 최대 2개(왼쪽·오른쪽 칸)
   const BW = 56, BH = 46;
-  function bubbleRect(r) { const v = r.vill; return { x: v.yard.x - BW - 6, y: v.slot.y + 2 + r.slot * 50, w: BW, h: BH }; }
+  function bubbleRect(r) { const v = r.vill; return { x: v.yard.x + v.yard.w / 2 - BW - 4 + r.slot * (BW + 8), y: v.yard.y - BH - 10, w: BW, h: BH }; }
   function ringColor(f) { return f > 0.5 ? '#46b04a' : f > 0.25 ? '#f2b632' : '#e5533d'; }
   function bubble(ctx, r) {
     const b = bubbleRect(r), f = r.left / r.limit;
@@ -71,7 +71,7 @@ G.ui = (() => {
     ctx.fillStyle = r.state === 'expired' ? '#ffd6d0' : '#fffdf6'; ctx.fillRect(0, 0, b.w, b.h);
     ctx.fillStyle = danger ? '#e5533d' : r.urgent ? '#e5533d' : '#3a3a3a';           // 테두리
     ctx.fillRect(0, 0, b.w, 2); ctx.fillRect(0, b.h - 2, b.w, 2); ctx.fillRect(0, 0, 2, b.h); ctx.fillRect(b.w - 2, 0, 2, b.h);
-    ctx.fillStyle = '#fffdf6'; ctx.beginPath(); ctx.moveTo(b.w - 2, 14); ctx.lineTo(b.w + 6, 19); ctx.lineTo(b.w - 2, 24); ctx.fill();   // 꼬리(마을 쪽)
+    ctx.fillStyle = r.state === 'expired' ? '#ffd6d0' : '#fffdf6'; ctx.beginPath(); ctx.moveTo(b.w / 2 - 6, b.h - 2); ctx.lineTo(b.w / 2, b.h + 7); ctx.lineTo(b.w / 2 + 6, b.h - 2); ctx.fill();   // 꼬리(아래 마을 쪽)
     const cx = b.w / 2, cy = 17;
     ctx.lineWidth = 3; ctx.strokeStyle = '#ddd6c4'; ctx.beginPath(); ctx.arc(cx, cy, 13, 0, Math.PI * 2); ctx.stroke();
     if (r.state === 'open') { ctx.strokeStyle = ringColor(f); ctx.beginPath(); ctx.arc(cx, cy, 13, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f); ctx.stroke(); }
