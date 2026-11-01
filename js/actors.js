@@ -27,14 +27,66 @@ G.dali = {
       }
       ctx.globalAlpha = 1;
     }
-    if (S && S.scooter) {                                              // 전동 킥보드 (혁신제품)
-      const left = this.face.includes('w'), dir = left ? -1 : 1;
-      ctx.fillStyle = '#3a3a3a'; ctx.fillRect(this.x - 14, this.y - 4, 28, 4);
-      ctx.fillStyle = '#5ec8f2'; ctx.fillRect(this.x - 12, this.y - 5, 24, 2);
-      ctx.fillStyle = '#2a2a2a'; ctx.beginPath(); ctx.arc(this.x - 11, this.y + 1, 3, 0, 7); ctx.arc(this.x + 11, this.y + 1, 3, 0, 7); ctx.fill();
-      ctx.fillStyle = '#3a3a3a'; ctx.fillRect(this.x + dir * 12 - 1, this.y - 30, 2, 27); ctx.fillRect(this.x + dir * 12 - 5, this.y - 31, 10, 2);
+    if (S && S.scooter) { this.drawScooter(ctx); return; }
+    G.spr.drawChar(ctx, 'dali', this.moving ? 'walk' : 'rot', this.face, this.t, this.x, this.y);
+  },
+  // 전동 킥보드 타기 (혁신제품 '전동 킥보드'). 방향별로 옆·정면·뒷모습을 따로 그린다
+  drawScooter(ctx) {
+    const f = this.face, x = Math.round(this.x), y = Math.round(this.y), mv = this.moving;
+    const view = f === 's' ? 'front' : f === 'n' ? 'back' : 'side', dir = f.includes('w') ? -1 : 1;
+    const bob = mv ? (Math.floor(this.t * 16) % 2) : 0;            // 길 위 덜컹거림
+    const RISE = 5;                                                 // 발판 높이만큼 몸을 올림
+    const DECK = '#2f6fb5', DECK2 = '#5ec8f2', DARK = '#2a2a2a', POLE = '#4a4f57';
+    const wheel = (wx, wy, r) => {
+      ctx.fillStyle = DARK; ctx.beginPath(); ctx.arc(wx, wy, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#9aa5b1'; const a = this.t * 20 * (mv ? 1 : 0);
+      ctx.fillRect(Math.round(wx + Math.cos(a) * (r - 1.5)) - 1, Math.round(wy + Math.sin(a) * (r - 1.5)) - 1, 2, 2);
+    };
+    const battery = (bx, by) => { ctx.fillStyle = Math.floor(this.t * 3) % 2 ? '#9be37a' : '#4caf50'; ctx.fillRect(bx, by, 3, 2); };
+    // 속도선 (뒤쪽으로)
+    if (mv) {
+      ctx.fillStyle = 'rgba(255,255,255,.55)';
+      for (let i = 0; i < 3; i++) {
+        const k = ((this.t * 3) + i / 3) % 1, len = 8 + i * 3;
+        if (view === 'side') ctx.fillRect(x - dir * (20 + k * 16) - (dir > 0 ? len : 0), y - 6 - i * 7, len, 1);
+        else ctx.fillRect(x - 12 + i * 12, y + (view === 'front' ? -40 - k * 10 : 6 + k * 10), 1, 6);
+      }
     }
-    G.spr.drawChar(ctx, 'dali', this.moving && !(S && S.scooter) ? 'walk' : 'rot', this.face, this.t, this.x, this.y - (S && S.scooter ? 4 : 0));
+    G.spr.shadow(ctx, x, y + 2, 16);
+    if (view === 'side') {
+      // 발판 + 앞뒤 바퀴
+      wheel(x - dir * 13, y + 1, 3.5); wheel(x + dir * 15, y + 1, 3.5);
+      ctx.fillStyle = DECK; ctx.fillRect(x - 15, y - 4 - bob, 30, 4);
+      ctx.fillStyle = DECK2; ctx.fillRect(x - 15, y - 4 - bob, 30, 1);
+      battery(x - dir * 6 - 1, y - 2 - bob);
+      // 몸: 발판 위에 서서 진행 방향으로 살짝 기울임
+      const lean = mv ? dir * 0.12 : 0;
+      ctx.save(); ctx.translate(x, y - RISE - bob); ctx.rotate(lean);
+      G.spr.drawChar(ctx, 'dali', 'rot', f, this.t, 0, 0);
+      ctx.restore();
+      // 손잡이 기둥(몸 앞) + 손잡이 — 손 높이(발에서 약 11px)에 닿게
+      const px = x + dir * 15;
+      ctx.fillStyle = POLE; ctx.beginPath();
+      ctx.moveTo(px - 1, y - 2 - bob); ctx.lineTo(px + 1, y - 2 - bob); ctx.lineTo(px - dir * 3 + 1, y - 19 - bob); ctx.lineTo(px - dir * 3 - 1, y - 19 - bob); ctx.fill();
+      ctx.fillStyle = DARK; ctx.fillRect(px - dir * 3 - 4, y - 21 - bob, 8, 3);       // 손잡이
+      ctx.fillStyle = '#ffe066'; ctx.fillRect(px + dir * 1 - 1, y - 12 - bob, 2, 2);  // 앞 라이트
+    } else if (view === 'front') {
+      // 정면: 앞바퀴는 발 앞, 기둥은 배 앞, T자 손잡이는 손 높이
+      ctx.fillStyle = DECK; ctx.fillRect(x - 4, y - 5 - bob, 8, 6);
+      G.spr.drawChar(ctx, 'dali', 'rot', f, this.t, x, y - RISE - bob);
+      wheel(x, y + 2, 3.5);
+      ctx.fillStyle = POLE; ctx.fillRect(x - 1, y - 15 - bob, 3, 13);
+      ctx.fillStyle = DARK; ctx.fillRect(x - 14, y - 17 - bob, 29, 3);              // 손 높이 (얼굴 아래)
+      ctx.fillStyle = DECK2; ctx.fillRect(x - 14, y - 17 - bob, 3, 3); ctx.fillRect(x + 12, y - 17 - bob, 3, 3);
+      ctx.fillStyle = '#ffe066'; ctx.fillRect(x - 1, y - 8 - bob, 3, 2);
+    } else {
+      // 뒷모습: 손잡이 끝이 몸 양옆으로 보이고, 뒷바퀴·발판 끝이 발밑에
+      ctx.fillStyle = DARK; ctx.fillRect(x - 17, y - 19 - bob, 34, 3);
+      G.spr.drawChar(ctx, 'dali', 'rot', f, this.t, x, y - RISE - bob);
+      ctx.fillStyle = DECK; ctx.fillRect(x - 4, y - 5 - bob, 8, 5);
+      ctx.fillStyle = '#e2433b'; ctx.fillRect(x - 2, y - 3 - bob, 4, 2);              // 미등
+      wheel(x, y + 2, 3.5);
+    }
   },
   // 머리 위: 가방 칸 + 구매 게이지 (캐릭터 위에 그려야 해서 따로)
   drawOver(ctx, S) {
