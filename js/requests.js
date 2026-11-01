@@ -69,6 +69,7 @@ G.requests = (() => {
   // 시간 초과: 신뢰도 감소 + 마을 피해 8초
   function onExpire(S, r) {
     G.score.trust(S, C.TRUST_FAIL);
+    G.score.breakCombo(S);
     G.villages.onFail(S, r.vid);
     const b = G.ui.bubbleRect(r);
     G.fx.add(S, b.x + b.w / 2, b.y - 4, '늦었어요… 신뢰 ' + C.TRUST_FAIL, '#ff8a7a');
@@ -78,6 +79,7 @@ G.requests = (() => {
   function fraud(S, r, b) {
     r.state = 'expired'; r.fraud = Math.random() < 0.5 ? 'empty' : 'broken';
     G.score.trust(S, C.TRUST_FRAUD);
+    G.score.breakCombo(S);
     G.villages.onFail(S, r.vid);
     S.wasted = Math.round((S.wasted + b.paid) * 10) / 10;
     G.gifts.add(S, -b.paid);                                  // 수상한 공방에 낸 돈만큼 저금통에서 빠짐

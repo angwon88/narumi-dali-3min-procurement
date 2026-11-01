@@ -68,6 +68,7 @@ G.screens = (() => {
     G.requests.deliver(S);
     G.villages.update(S, dt);
     G.gifts.update(S, dt);
+    S.comboT += dt;
     G.fx.update(S, dt);
     if (S.timeLeft <= 0) { S.timeLeft = 0; G.screen = 'end'; endT = C.END_HOLD; }
   }
@@ -85,6 +86,7 @@ G.screens = (() => {
     G.villages.dangerEdge(ctx, G.S);
     G.director.draw(ctx, G.S);
     ui.hud(ctx, G.S);
+    ui.comboBadge(ctx, G.S);
     if (G.debug) G.debug.draw(ctx);
     ui.joystick(ctx);
     const tl = G.S.timeLeft;                                   // 마지막 10초 카운트다운

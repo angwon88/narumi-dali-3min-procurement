@@ -48,6 +48,15 @@ G.ui = (() => {
     T(ctx, ready ? '검증 OK' : Math.ceil(cd) + '초', nx + 22, 22, 12, ready ? '#9be37a' : '#8fa3b8', 'left');
     T(ctx, '‖', C.VIEW.w - 22, 22, 18, '#fff');
   }
+  // 콤보 배지 (HUD 바로 아래 왼쪽)
+  function comboBadge(ctx, S) {
+    if ((S.combo || 0) < 2) return;
+    const k = Math.min(1, (S.comboT || 0) * 6), sc = 1 + (1 - k) * 0.3, x = 12, y = C.HUD_H + 4;
+    ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+    ctx.fillStyle = '#e2433b'; ctx.fillRect(0, 0, 112, 20); ctx.fillStyle = '#ffd84a'; ctx.fillRect(0, 0, 112, 2);
+    G.world.text(ctx, '콤보 ' + S.combo + '  ×' + G.score.comboMult(S).toFixed(1), 56, 11, 12, '#fff');
+    ctx.restore();
+  }
   const PAUSE_BTN = { x: C.VIEW.w - 40, y: 4, w: 36, h: 36 };
   function joystick(ctx) {
     const j = G.input.joy; if (!j.active) return;
@@ -89,5 +98,5 @@ G.ui = (() => {
     ctx.restore();
   }
   function bubbles(ctx, S) { for (const r of S.requests) bubble(ctx, r); }
-  return { panel, button, clicked, hud, joystick, bubbles, bubbleRect, PAUSE_BTN };
+  return { comboBadge, panel, button, clicked, hud, joystick, bubbles, bubbleRect, PAUSE_BTN };
 })();
