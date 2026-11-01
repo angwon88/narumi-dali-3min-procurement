@@ -17,7 +17,8 @@ G.score = (() => {
     let pts = C.DELIVER_BASE + Math.round(frac * C.TIME_BONUS * (S.timeBonusMult || 1)) + (saving > 0 ? Math.round(saving * C.SAVING_MULT) : 0);
     S.combo++; S.maxCombo = Math.max(S.maxCombo, S.combo); S.comboT = 0;
     const cm = comboMult(S);
-    pts = Math.round(pts * (S.scoreMult || 1) * cm * (bagItem.innov ? C.INNOV_SCORE_MULT : 1));
+    const sh = bagItem.innov ? S.shops[bagItem.shop] : null;
+    pts = Math.round(pts * (S.scoreMult || 1) * cm * (sh ? (sh.mature ? C.INNOV_MATURE_MULT : C.INNOV_SCORE_MULT) : 1));
     if (bagItem.innov) { trust(S, C.INNOV_TRUST_BONUS); S.stats.innovDelivered = (S.stats.innovDelivered || 0) + 1; }
     S.score += pts; S.delivered++; S.onTime++;
     G.levelup.gain(S);

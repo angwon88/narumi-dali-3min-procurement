@@ -53,7 +53,8 @@ G.director = (() => {
   function draw(ctx, S) {
     const b = S.banner; if (!b) return;
     const k = b.t < 0.2 ? b.t / 0.2 : b.t > 1.9 ? Math.max(0, (2.2 - b.t) / 0.3) : 1;
-    const W = C.VIEW.w, w = 308, h = b.sub ? 50 : 36, x = (W - w) / 2, y = 184 - (1 - k) * 20;
+    ctx.font = '12px ' + G.FONT; const sw = ctx.measureText(b.sub || '').width; ctx.font = '16px ' + G.FONT;
+    const W = C.VIEW.w, w = Math.max(308, ctx.measureText(b.text).width + 32, sw + 32), h = b.sub ? 50 : 36, x = (W - w) / 2, y = 184 - (1 - k) * 20;
     ctx.globalAlpha = k;
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x + 3, y + 4, w, h);
     ctx.fillStyle = '#2f4f8a'; ctx.fillRect(x, y, w, h);

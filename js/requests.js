@@ -93,6 +93,30 @@ G.requests = (() => {
     if (!S.firstScam) { S.firstScam = true; G.narmi.say('연기도 안 나던 공방이었는데…', 2.5); }
   }
 
+  // 혁신제품 시범 사용 (기획서 3.9): 혁신 공방이 된 뒤 첫 INNOV_TRIAL건은 시범 사용.
+  // INNOV_TRIAL_FAIL 확률로 '보완 필요' → 그 물건은 못 쓰지만 구매면책으로 신뢰도·콤보 손해 없음(요청은 그대로).
+  // 시범 사용을 마치면 '성공 판정' → 이후 점수 ×INNOV_MATURE_MULT. true를 돌려주면 이번 납품은 보완 필요.
+  function trial(S, r, b) {
+    const sh = S.shops[b.shop]; if (!sh || !sh.innov || sh.mature) return false;
+    sh.trial = Math.max(0, sh.trial - 1);
+    const fail = Math.random() < C.INNOV_TRIAL_FAIL;
+    const y = r.vill.yard;
+    if (fail) {
+      S.stats.trialFail = (S.stats.trialFail || 0) + 1;
+      G.fx.add(S, y.x + y.w / 2, y.y + 16, '시범 사용: 보완 필요', '#ffd6a0', 16);
+      G.fx.add(S, y.x + y.w / 2, y.y + 16, '구매면책 · 손해 없음', '#9be37a');
+      if (!S.immunityShown) { S.immunityShown = true; G.director.banner(S, '혁신제품 구매면책!', '시범 사용 중 문제는 조달청이 책임져요 · 손해 없음'); }
+      G.audio.play('ok');
+    }
+    if (sh.trial === 0) {
+      sh.mature = true; sh.stampT = 0;
+      const who = sh.w.cat.name + '공방 ' + sh.w.side;
+      G.director.banner(S, who + ' 혁신제품 성공 판정!', '시범 사용 통과 · 이제 납품 점수 ×' + C.INNOV_MATURE_MULT);
+      G.audio.play('gift');
+    }
+    return fail;
+  }
+
   // 납품: 달이가 마을 앞마당에 들어가면 그 마을 요청과 맞는 물건을 모두 납품
   function deliver(S) {
     const d = G.dali; if (!d.bag.length) return;
@@ -104,6 +128,7 @@ G.requests = (() => {
       if (!r) continue;
       d.bag.splice(i--, 1);
       if (b.fake) { fraud(S, r, b); continue; }
+      if (b.innov && trial(S, r, b)) continue;                    // 혁신제품 시범 사용: '보완 필요'면 요청은 그대로 남음
       r.state = 'done';
       G.score.delivered(S, r, b);
     }

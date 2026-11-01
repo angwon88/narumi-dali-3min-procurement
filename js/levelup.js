@@ -38,7 +38,7 @@ G.levelup = (() => {
     const sh = cand[Math.floor(Math.random() * cand.length)], I = INNOV[sh.cat], who = sh.w.cat.name + '공방 ' + sh.w.side;
     return {
       id: 'innov', innov: true, shop: sh, name: I.product, icon: I.icon, col: '#f6c431', max: 99,
-      lines: ['① ' + I.effect, '② ' + who + ' → 혁신 공방', '(가격 -10% · 점수 ×1.5)'],
+      lines: ['① ' + I.effect, '② ' + who + ' → 혁신 공방', '(시범 사용 3건 · 구매면책)'],
       desc: () => '',
       apply: S2 => { I.apply(S2); S2.innovCats.add(sh.cat); G.shops.makeInnov(S2, sh); },
     };

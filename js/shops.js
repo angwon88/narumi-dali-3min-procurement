@@ -181,7 +181,7 @@ G.shops = (() => {
   }
   // 혁신 공방으로 성장 (레벨업 혁신제품 카드)
   function makeInnov(S, sh) {
-    sh.innov = true; sh.growT = 0; sh.lonely = false;
+    sh.innov = true; sh.growT = 0; sh.lonely = false; sh.trial = C.INNOV_TRIAL; sh.mature = false;
     S.stats.innov = (S.stats.innov || 0) + 1;
     const who = sh.w.cat.name + '공방 ' + sh.w.side;
     G.director.banner(S, who + G.U.josa(who, '이', '가') + ' 혁신 공방으로 성장했어요!', '혁신제품 시범구매 · 조달청이 첫 구매자가 되어 줬어요');
@@ -317,6 +317,10 @@ G.shops = (() => {
     ctx.fillStyle = '#f6c431'; ctx.fillRect(b.x - 3 - pulse, b.y - pulse, b.w + 6 + pulse * 2, 22);        // 금빛 지붕
     ctx.fillStyle = '#fff3b0'; ctx.fillRect(b.x - 3, b.y, b.w + 6, 3);
     T(ctx, '★혁신 ' + sh.w.cat.name + sh.w.side, b.x + b.w / 2, b.y + 11, 12, '#5a3a00');
+    // 시범 사용 진행 / 성공 판정 표시 (공방 아래 길)
+    const tag = sh.mature ? '★ 성공 판정' : '시범 사용 ' + (C.INNOV_TRIAL - sh.trial) + '/' + C.INNOV_TRIAL;
+    ctx.fillStyle = sh.mature ? '#e0a800' : '#5a3a00'; ctx.fillRect(b.x + b.w / 2 - 34, b.y + 66, 68, 14);
+    T(ctx, tag, b.x + b.w / 2, b.y + 73, 12, '#fff');
     for (let i = 0; i < 3; i++) {                                                                       // 반짝임
       const k = ((sh.t * 0.8) + i / 3) % 1, x = b.x + 10 + ((i * 47 + Math.floor(sh.t)) % (b.w - 20)), y = b.y + 26 + i * 10;
       ctx.globalAlpha = 1 - k; ctx.fillStyle = '#fff6b0'; ctx.fillRect(x, y - 3, 1, 7); ctx.fillRect(x - 3, y, 7, 1); ctx.globalAlpha = 1;

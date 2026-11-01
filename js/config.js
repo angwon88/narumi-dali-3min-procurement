@@ -13,6 +13,7 @@ G.C = {
   PRICE_NORMAL: [0.80, 0.95], PRICE_FAKE: [0.45, 0.55], PRICE_REROLL_SEC: 20,   // 20초마다 행별 가격을 새로 뽑음(싼 쪽이 50% 확률로 바뀜)
   MONOPOLY_MULT: 1.3, STREAK_WARN: 3, STREAK_CLOSE: 5, REOPEN_SEC: 20, REOPEN_FAKE_CHANCE: 0.4,
   FAKE_VANISH_SEC: 3, INNOV_PRICE_MULT: 0.9, INNOV_SCORE_MULT: 1.5, INNOV_TRUST_BONUS: 2,
+  INNOV_TRIAL: 3, INNOV_TRIAL_FAIL: 0.25, INNOV_MATURE_MULT: 1.8,   // 혁신제품 시범 사용 3건, '보완 필요' 25%, 성공 판정 뒤 ×1.8
   LEVEL_REQ: [3, 7, 12, 18, 25, 33, 42, 52],
   FINAL_RUSH_AT: 150, FINAL_RUSH_MULT: 1.5,
   STORM: { warnAt: 88, start: 90, end: 110, limit: 18, mult: 2, slow: 0.9 },
