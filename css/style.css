@@ -1,0 +1,5 @@
+html,body{margin:0;height:100%;background:#1b1f24;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center}
+#game{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;background:#233}
+#rotate{display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:#1b1f24;color:#fff;font:20px sans-serif;z-index:9}
+@media (orientation:portrait) and (pointer:coarse){#rotate{display:flex}}
