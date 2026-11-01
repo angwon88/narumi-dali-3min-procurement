@@ -67,7 +67,7 @@ G.shops = (() => {
     if (fake) S.stats.fakeSpawned = (S.stats.fakeSpawned || 0) + 1;
   }
   const fakeCount = S => S.shops.filter(sh => sh.fake && (sh.status === 'open' || sh.status === 'closing')).length;
-  const fakeMax = S => (S.elapsed >= 110 ? 2 : 1);
+  const fakeMax = S => (S.elapsed >= 90 ? 2 : 1);
   // 수상한 공방 등장: 수상한 공방이 없는 열린 행에서, 빈 칸이 있으면 거기, 없으면 공방 하나를 교체
   function spawnFake(S) {
     if (fakeCount(S) >= fakeMax(S)) return false;
@@ -85,14 +85,14 @@ G.shops = (() => {
     newShop(S, sh, true);
     return true;
   }
-  G.director.on('firstFake', S => { S.firstFakeDone = true; spawnFake(S); S.fakeClock = 25; });
+  G.director.on('firstFake', S => { S.firstFakeDone = true; spawnFake(S); S.fakeClock = 18; });
   function fakeTimer(S, dt) {
     if (!S.firstFakeDone) return;
     S.fakeClock -= dt;
     if (S.fakeClock > 0) return;
-    const late = S.elapsed >= 110;
-    if (Math.random() < (late ? 0.6 : 0.5)) spawnFake(S);
-    S.fakeClock += late ? 20 : 25;
+    const late = S.elapsed >= 90;                                     // 1:30부터 더 자주
+    if (Math.random() < (late ? 0.7 : 0.6)) spawnFake(S);
+    S.fakeClock += late ? 15 : 18;
   }
 
   // ---------- 구매 ----------
@@ -213,9 +213,19 @@ G.shops = (() => {
     if (sh.status !== 'open') return;                                   // 그사이 사라짐
     if (sh.fake) {
       sh.status = 'caught'; sh.revealT = 0; sh.closeT = 0;
-      S.score += C.CATCH_SCORE; G.score.trust(S, C.TRUST_CATCH);
+      S.catchStreak = (S.catchStreak || 0) + 1;
+      const bonus = C.CATCH_SCORE + C.CATCH_STREAK_BONUS * (S.catchStreak - 1);
+      S.score += bonus; G.score.trust(S, C.TRUST_CATCH);
       S.stats.caught = (S.stats.caught || 0) + 1;
-      G.fx.add(S, b.x + b.w / 2, b.y + 8, '적발! 실체 없는 공방 +' + C.CATCH_SCORE, '#ffe48a', 16);
+      const fy = b.y + 110;                                             // 문구는 공방 아래 길에서 (HUD에 가리지 않게)
+      G.fx.add(S, b.x + b.w / 2, fy, '적발! 실체 없는 공방 +' + bonus, '#ffe48a', 16);
+      if (S.catchStreak >= 2) G.fx.add(S, b.x + b.w / 2, fy, '연속 적발 ×' + S.catchStreak + '!', '#ff8a7a', 16);
+      G.fx.add(S, b.x + b.w / 2, fy, '부정 낙찰 막음 · 세금 ' + C.CATCH_BANK + '만원 지킴', '#9be37a');
+      // 연출: 한순간 멈춤 + 화면 흔들림 + 파편 + 동전이 세금 저금통(HUD)으로
+      S.hitStop = 0.15; S.shakeT = 0.35;
+      G.fx.burst(S, b.x + b.w / 2, b.y + 32);
+      G.fx.coins(S, b.x + b.w / 2, b.y + 32, 326, 32, 8, () => { S.saved = round1(S.saved + C.CATCH_BANK); G.gifts.add(S, C.CATCH_BANK); });
+      G.narmi.say('실체 없는 공방 적발!', 1.8);
       G.audio.play('catch');
       G.fx.add(S, b.x + b.w / 2, b.y + 8, '마을 신뢰 +' + C.TRUST_CATCH, '#9be37a');
     } else {

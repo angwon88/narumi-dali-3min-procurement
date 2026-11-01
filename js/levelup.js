@@ -8,8 +8,8 @@ G.levelup = (() => {
 
   // 일반 카드: max = 최대 횟수, ok = 지금 고를 수 있는지, apply = 효과
   const CARDS = [
-    { id: 'shoes', name: '달이의 운동화', icon: 'shoes', col: '#e2433b', max: 3, desc: () => '이동 속도 +12%',
-      apply: S => { S.speedMult *= 1.12; } },
+    { id: 'shoes', name: '달이의 운동화', icon: 'shoes', col: '#e2433b', max: 3, desc: () => '이동 속도 +15%',
+      apply: S => { S.speedMult *= 1.15; } },
     // 가방은 강해서 1회만, Lv.4부터 등장 (4칸째는 가구 혁신 카드로만)
     { id: 'bag', name: '큰 도토리 가방', icon: 'bag', col: '#b9824f', max: 1, desc: () => '가방 +1칸',
       ok: S => S.level - S.pendingLevels + 1 >= 4 && S.bagCap < C.BAG_MAX, apply: S => { S.bagCap = Math.min(C.BAG_MAX, S.bagCap + 1); } },
@@ -30,7 +30,7 @@ G.levelup = (() => {
     furn:   { product: '접이식 수납 카트', icon: 'cart',    effect: '가방 +1칸',             apply: S => { S.bagCap = Math.min(C.BAG_MAX, S.bagCap + 1); } },
     elec:   { product: '스마트 주문판',    icon: 'board',   effect: '새 요청 제한 시간 +15%', apply: S => { S.limitMult *= 1.15; } },
     health: { product: '보온 배송 상자',   icon: 'box',     effect: '시간 보너스 2배',        apply: S => { S.timeBonusMult = 2; } },
-    safety: { product: '전동 킥보드',      icon: 'scooter', effect: '이동 속도 +20%',         apply: S => { S.speedMult *= 1.2; } },
+    safety: { product: '전동 킥보드',      icon: 'scooter', effect: '킥보드 타고 이동 속도 +35%', apply: S => { S.speedMult *= 1.35; S.scooter = true; } },
   };
   function innovCard(S) {
     const cand = S.shops.filter(sh => G.shops.isOpen(S, sh) && !sh.fake && !sh.innov && !S.innovCats.has(sh.cat));

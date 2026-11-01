@@ -14,11 +14,27 @@ G.dali = {
       if (!G.world.blocked(this.box(this.x, ny))) this.y = ny;
       this.face = G.spr.dir8(v.x, v.y);
     }
-    this.t += dt;
+    this.t += dt * (this.speed / G.C.DALI_SPEED);                     // 빨라지면 걷는 동작도 빨라짐
   },
   draw(ctx) {
+    const S = G.S, fast = this.speed > G.C.DALI_SPEED * 1.12;
     G.spr.shadow(ctx, this.x, this.y - 1, 12);
-    G.spr.drawChar(ctx, 'dali', this.moving ? 'walk' : 'rot', this.face, this.t, this.x, this.y);
+    if (fast && this.moving) {                                         // 발밑 먼지 (빨라진 걸 눈으로)
+      for (let i = 0; i < 3; i++) {
+        const k = ((this.t * 2) + i / 3) % 1, back = this.face.includes('e') ? -1 : this.face.includes('w') ? 1 : 0;
+        ctx.globalAlpha = 0.5 * (1 - k); ctx.fillStyle = '#efe3c2';
+        ctx.beginPath(); ctx.arc(this.x + back * (8 + k * 14), this.y - 2 - k * 4, 2 + k * 3, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    if (S && S.scooter) {                                              // 전동 킥보드 (혁신제품)
+      const left = this.face.includes('w'), dir = left ? -1 : 1;
+      ctx.fillStyle = '#3a3a3a'; ctx.fillRect(this.x - 14, this.y - 4, 28, 4);
+      ctx.fillStyle = '#5ec8f2'; ctx.fillRect(this.x - 12, this.y - 5, 24, 2);
+      ctx.fillStyle = '#2a2a2a'; ctx.beginPath(); ctx.arc(this.x - 11, this.y + 1, 3, 0, 7); ctx.arc(this.x + 11, this.y + 1, 3, 0, 7); ctx.fill();
+      ctx.fillStyle = '#3a3a3a'; ctx.fillRect(this.x + dir * 12 - 1, this.y - 30, 2, 27); ctx.fillRect(this.x + dir * 12 - 5, this.y - 31, 10, 2);
+    }
+    G.spr.drawChar(ctx, 'dali', this.moving && !(S && S.scooter) ? 'walk' : 'rot', this.face, this.t, this.x, this.y - (S && S.scooter ? 4 : 0));
   },
   // 머리 위: 가방 칸 + 구매 게이지 (캐릭터 위에 그려야 해서 따로)
   drawOver(ctx, S) {

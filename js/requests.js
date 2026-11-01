@@ -86,6 +86,7 @@ G.requests = (() => {
     S.wasted = Math.round((S.wasted + b.paid) * 10) / 10;
     G.gifts.add(S, -b.paid);                                  // 수상한 공방에 낸 돈만큼 저금통에서 빠짐
     S.stats.scammed = (S.stats.scammed || 0) + 1;
+    S.catchStreak = 0;
     const y = r.vill.yard;
     G.fx.add(S, y.x + y.w / 2, y.y + 16, r.fraud === 'empty' ? '빈 상자였어요…' : '불량품이에요!', '#ff8a7a', 16);
     G.fx.add(S, y.x + y.w / 2, y.y + 16, '신뢰 ' + C.TRUST_FRAUD + ' · 세금 ' + b.paid + '만원 낭비', '#ff8a7a');

@@ -55,6 +55,7 @@ G.screens = (() => {
     if (G.input.hit('escape') || G.input.hit('p') || ui.clicked(ui.PAUSE_BTN)) { G.screen = 'pause'; return; }
     if (G.input.hit('m')) { const m = G.audio.toggle(); G.fx.add(G.S, W / 2, 200, m ? '소리 끔 (M)' : '소리 켬 (M)', '#cfd8e3', 16); }
     if (G.debug && G.debug.update()) return;
+    if (G.S.hitStop > 0) { G.S.hitStop -= dt; return; }              // 적발 순간 한순간 멈춤
     G.dali.update(dt);
     G.shops.handleInspectInput(G.S);
     step(G.S, dt);
@@ -71,12 +72,15 @@ G.screens = (() => {
     G.villages.update(S, dt);
     G.gifts.update(S, dt);
     S.comboT += dt;
+    if (S.shakeT > 0) S.shakeT -= dt;
     if (S.trust <= C.TRUST_DANGER) { S.warnT = (S.warnT || 0) - dt; if (S.warnT <= 0) { G.audio.play('warn'); S.warnT = 2; } } else S.warnT = 0;
     if (S.timeLeft <= 10 && Math.ceil(S.timeLeft) !== Math.ceil(S.timeLeft + dt)) G.audio.play('tick');
     G.fx.update(S, dt);
     if (S.timeLeft <= 0) { S.timeLeft = 0; G.screen = 'end'; endT = C.END_HOLD; G.audio.play('end'); }
   }
   function playDraw(ctx) {
+    const S0 = G.S, shake = S0.shakeT > 0 ? S0.shakeT * 14 : 0;
+    ctx.save(); if (shake) ctx.translate(Math.round((Math.random() - 0.5) * shake), Math.round((Math.random() - 0.5) * shake));
     G.world.draw(ctx);
     G.shops.draw(ctx, G.S);
     G.villages.draw(ctx, G.S);
@@ -87,10 +91,12 @@ G.screens = (() => {
     G.dali.drawOver(ctx, G.S);
     G.shops.drawHover(ctx, G.S);
     G.fx.draw(ctx, G.S);
+    ctx.restore();
     G.villages.dangerEdge(ctx, G.S);
     G.director.draw(ctx, G.S);
     ui.hud(ctx, G.S);
     ui.comboBadge(ctx, G.S);
+    G.fx.drawParts(ctx, G.S);                                         // 파편·동전은 HUD 위로 (저금통까지 날아가게)
     if (G.debug) G.debug.draw(ctx);
     ui.joystick(ctx);
     const tl = G.S.timeLeft;                                   // 마지막 10초 카운트다운
