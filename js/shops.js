@@ -8,6 +8,8 @@ G.shops = (() => {
   function init(S) {
     S.shops = G.world.shops.map(w => ({ w, idx: w.idx, cat: w.cat.id, mult: 1, status: 'open' }));
     for (let r = 0; r < 4; r++) rollRow(S, r);
+    for (const sh of S.shops) sh.fx = null;
+    S.priceClock = C.PRICE_REROLL_SEC;
     S.buy = { shop: null, dwell: 0, warned: false };
   }
   // 같은 행 두 공방의 배율은 0.05 이상 차이 나게
@@ -39,8 +41,21 @@ G.shops = (() => {
     G.fx.add(S, d.x + d.w / 2, d.y - 6, G.ITEM[item].name + ' 구매 ' + p + '만원', '#fff');
   }
 
+  // 20초마다 가격 다시 뽑기. 바뀐 공방 간판은 1.5초 반짝이며 ▲(비싸짐)·▼(싸짐) 표시
+  function reroll(S) {
+    const before = S.shops.map(sh => sh.mult);
+    for (let r = 0; r < 4; r++) rollRow(S, r);
+    for (const sh of S.shops) {
+      const d = sh.mult - before[sh.idx];
+      sh.fx = S.openCats.has(sh.cat) && Math.abs(d) > 0.005 ? { t: 0, dir: d > 0 ? 1 : -1 } : null;
+    }
+  }
+
   // 매 프레임: 달이가 구매칸에 있으면 자동(0.4초 머무르기) 또는 E·Enter로 구매
   function update(S, dt) {
+    S.priceClock -= dt;
+    if (S.priceClock <= 0) { reroll(S); S.priceClock += C.PRICE_REROLL_SEC; }
+    for (const sh of S.shops) if (sh.fx && (sh.fx.t += dt) > 1.5) sh.fx = null;
     const dali = G.dali, B = S.buy;
     const sh = S.shops.find(s => isOpen(S, s) && U.inRect(dali.x, dali.y, s.w.door)) || null;
     if (sh !== B.shop) { B.shop = sh; B.dwell = 0; B.warned = false; }
@@ -75,12 +90,15 @@ G.shops = (() => {
         G.world.text(ctx, '준비 중', b.x + b.w / 2, b.y + 43, 12, '#fff');
         continue;
       }
+      const flash = sh.fx && Math.floor(sh.fx.t * 6) % 2 === 0;
+      if (sh.fx) { ctx.fillStyle = flash ? '#ffd84a' : '#fff3b0'; ctx.fillRect(b.x + 4, b.y + 23, 96, 38); }
       ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + 6, b.y + 25, 92, 34);
       ctx.fillStyle = '#3a3a3a'; ctx.fillRect(b.x + 6, b.y + 41, 92, 1);
       itemsOf(sh).forEach((it, i) => {
         const y = b.y + 33 + i * 17;
         G.icons.draw(ctx, it.id, b.x + 17, y, 14);
-        G.world.text(ctx, price(sh, it.id) + '만', b.x + 60, y + 1, 12, '#2a2416');
+        G.world.text(ctx, price(sh, it.id) + '만', b.x + 58, y + 1, 12, '#2a2416');
+        if (sh.fx) G.world.text(ctx, sh.fx.dir > 0 ? '▲' : '▼', b.x + 89, y + 1, 12, sh.fx.dir > 0 ? '#d9342b' : '#2e9b3a');
       });
     }
   }
