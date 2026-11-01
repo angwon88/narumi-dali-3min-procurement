@@ -41,8 +41,9 @@ G.dali = {
 /* 나르미: 지붕에서 대기 → 지정한 공방으로 날아가 1초 검증 → 복귀 (기획서 3.6)
    상태: perch(대기) · fly(가는 중) · inspect(검증 중) · back(돌아오는 중) */
 G.narmi = {
-  x: 0, y: 0, face: 's', t: 0, state: 'perch', target: null, timer: 0,
-  reset() { const p = G.world.roofPerch; Object.assign(this, { x: p.x, y: p.y, face: 's', t: 0, state: 'perch', target: null, timer: 0 }); },
+  x: 0, y: 0, face: 's', t: 0, state: 'perch', target: null, timer: 0, talk: null,
+  reset() { const p = G.world.roofPerch; Object.assign(this, { x: p.x, y: p.y, face: 's', t: 0, state: 'perch', target: null, timer: 0, talk: null }); },
+  say(text, sec) { this.talk = { text, left: sec }; },
   spot(sh) { const b = sh.w.body; return { x: b.x + b.w / 2, y: b.y + 20 }; },        // 공방 지붕 위 내려앉는 곳
   send(S, sh) { this.target = sh; this.state = 'fly'; S.inspectCD = G.C.INSPECT_COOLDOWN * (S.inspectCDMult || 1); S.inspectCDMax = S.inspectCD; },
   moveTo(p, dt) {
@@ -52,6 +53,7 @@ G.narmi = {
   },
   update(dt, S) {
     this.t += dt;
+    if (this.talk && (this.talk.left -= dt) <= 0) this.talk = null;
     if (S) S.inspectCD = Math.max(0, (S.inspectCD || 0) - dt);
     if (this.state === 'fly' && this.moveTo(this.spot(this.target), dt)) { this.state = 'inspect'; this.timer = 0; this.face = 's'; }
     else if (this.state === 'inspect' && (this.timer += dt) >= G.C.INSPECT_TIME) { G.shops.inspected(S, this.target); this.state = 'back'; }
@@ -63,6 +65,14 @@ G.narmi = {
     const lift = flying ? 14 : 0, bob = Math.round(Math.sin(this.t * (flying ? 10 : 2)) * (flying ? 2.5 : 1.5));
     if (flying) G.spr.shadow(ctx, this.x, this.y + 18, 9);
     G.spr.drawChar(ctx, 'narmi', flying ? 'walk' : 'rot', this.face, this.t, this.x, this.y - lift + bob);
+    if (this.talk) {                                     // 말풍선 (짧은 반응 한마디)
+      ctx.font = '12px ' + G.FONT; const w = ctx.measureText(this.talk.text).width + 16, x = Math.round(this.x - w / 2), y = Math.round(this.y - 76);
+      ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x + 2, y + 3, w, 22);
+      ctx.fillStyle = '#fffdf6'; ctx.fillRect(x, y, w, 22); ctx.fillStyle = '#3a3a3a';
+      ctx.fillRect(x, y, w, 2); ctx.fillRect(x, y + 20, w, 2); ctx.fillRect(x, y, 2, 22); ctx.fillRect(x + w - 2, y, 2, 22);
+      ctx.fillStyle = '#fffdf6'; ctx.fillRect(this.x - 3, y + 22, 6, 4);
+      G.world.text(ctx, this.talk.text, this.x, y + 11, 12, '#2a2416');
+    }
     if (this.state === 'inspect') {                     // 돋보기 + 진행 막대
       const f = this.timer / G.C.INSPECT_TIME, x = this.x, y = this.y - 52;
       ctx.fillStyle = 'rgba(20,24,30,.8)'; ctx.fillRect(x - 22, y - 2, 44, 6);

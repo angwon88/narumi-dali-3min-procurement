@@ -74,6 +74,19 @@ G.requests = (() => {
     G.fx.add(S, b.x + b.w / 2, b.y - 4, '늦었어요… 신뢰 ' + C.TRUST_FAIL, '#ff8a7a');
   }
 
+  // 수상한 공방 물건 납품: 50% 미납(빈 상자) · 50% 불량 → 요청 실패, 신뢰도 -15, 마을 피해, 낸 돈은 낭비된 세금
+  function fraud(S, r, b) {
+    r.state = 'expired'; r.fraud = Math.random() < 0.5 ? 'empty' : 'broken';
+    G.score.trust(S, C.TRUST_FRAUD);
+    G.villages.onFail(S, r.vid);
+    S.wasted = Math.round((S.wasted + b.paid) * 10) / 10;
+    S.stats.scammed = (S.stats.scammed || 0) + 1;
+    const y = r.vill.yard;
+    G.fx.add(S, y.x + y.w / 2, r.vill.slot.y + 30, r.fraud === 'empty' ? '빈 상자였어요…' : '불량품이에요!', '#ff8a7a', 16);
+    G.fx.add(S, y.x + y.w / 2, r.vill.slot.y + 30, '신뢰 ' + C.TRUST_FRAUD + ' · 세금 ' + b.paid + '만원 낭비', '#ff8a7a');
+    if (!S.firstScam) { S.firstScam = true; G.narmi.say('연기도 안 나던 공방이었는데…', 2.5); }
+  }
+
   // 납품: 달이가 마을 앞마당에 들어가면 그 마을 요청과 맞는 물건을 모두 납품
   function deliver(S) {
     const d = G.dali; if (!d.bag.length) return;
@@ -83,8 +96,9 @@ G.requests = (() => {
       const b = d.bag[i];
       const r = ofVillage(S, v.id).filter(q => q.item === b.item).sort((a, c) => a.left - c.left)[0];
       if (!r) continue;
-      r.state = 'done';
       d.bag.splice(i--, 1);
+      if (b.fake) { fraud(S, r, b); continue; }
+      r.state = 'done';
       G.score.delivered(S, r, b);
     }
   }

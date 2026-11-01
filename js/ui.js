@@ -71,9 +71,13 @@ G.ui = (() => {
     ctx.lineWidth = 3; ctx.strokeStyle = '#ddd6c4'; ctx.beginPath(); ctx.arc(cx, cy, 13, 0, Math.PI * 2); ctx.stroke();
     if (r.state === 'open') { ctx.strokeStyle = ringColor(f); ctx.beginPath(); ctx.arc(cx, cy, 13, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f); ctx.stroke(); }
     ctx.lineWidth = 1;
-    G.icons.draw(ctx, r.item, cx, cy, 18);
+    if (!r.fraud) G.icons.draw(ctx, r.item, cx, cy, 18);
     T(ctx, r.price + '만원', cx, 38, 12, '#4a3f2a');
-    if (r.state === 'expired') { ctx.strokeStyle = '#e5533d'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx - 9, cy - 9); ctx.lineTo(cx + 9, cy + 9); ctx.moveTo(cx + 9, cy - 9); ctx.lineTo(cx - 9, cy + 9); ctx.stroke(); ctx.lineWidth = 1; }
+    if (r.fraud) {                                                   // 미납: 빈 상자 / 불량: 부서진 상자
+      ctx.fillStyle = '#c9a26b'; ctx.fillRect(cx - 9, cy - 2, 18, 11); ctx.fillStyle = '#a07f4f'; ctx.fillRect(cx - 9, cy - 2, 18, 2);
+      if (r.fraud === 'empty') { ctx.fillStyle = '#5a4630'; ctx.fillRect(cx - 7, cy, 14, 7); ctx.fillStyle = '#c9a26b'; ctx.fillRect(cx - 12, cy - 8, 8, 3); ctx.fillRect(cx + 4, cy - 8, 8, 3); }
+      else { ctx.fillStyle = '#5a4630'; ctx.fillRect(cx - 2, cy - 2, 2, 11); ctx.fillRect(cx + 2, cy + 3, 5, 2); ctx.fillStyle = '#7d7d7d'; ctx.fillRect(cx - 12, cy + 6, 4, 3); ctx.fillRect(cx + 9, cy + 5, 3, 3); }
+    } else if (r.state === 'expired') { ctx.strokeStyle = '#e5533d'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx - 9, cy - 9); ctx.lineTo(cx + 9, cy + 9); ctx.moveTo(cx + 9, cy - 9); ctx.lineTo(cx - 9, cy + 9); ctx.stroke(); ctx.lineWidth = 1; }
     ctx.restore();
   }
   function bubbles(ctx, S) { for (const r of S.requests) bubble(ctx, r); }

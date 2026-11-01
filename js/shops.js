@@ -1,29 +1,92 @@
-/* 공방: 가격 · 영업 상태 · 구매 (기획서 3.3, 3.4)
-   경쟁 유지·수상한 공방·혁신은 이후 작업에서 이 파일에 얹는다. */
+/* 공방: 가격 · 영업 상태 · 구매 · 나르미 검증 · 수상한 공방 (기획서 3.3, 3.4, 3.6, 3.7)
+   상태(status): open 영업 / closing 속인 뒤 사라지는 중 / caught 적발 연출 / empty 빈 칸(REOPEN_SEC 뒤 새 공방)
+   경쟁 유지·혁신은 이후 작업에서 얹는다. */
 'use strict';
 G.shops = (() => {
   const C = G.C, U = G.U;
   const round1 = v => Math.round(v * 10) / 10;
+  const TAG_W = 72, FLAG_SEC = 15, CLOSE_SHOW = 1.5, REVEAL_SEC = 1.5;
 
   function init(S) {
-    S.shops = G.world.shops.map(w => ({ w, idx: w.idx, cat: w.cat.id, mult: 1, status: 'open' }));
+    S.shops = G.world.shops.map(w => ({
+      w, idx: w.idx, cat: w.cat.id, mult: 1, status: 'open', fake: false, verified: false,
+      fx: null, openFx: null, stampT: 0, flagT: 0, t: Math.random() * 3, closeT: 0, revealT: 0, reopenT: 0,
+    }));
     for (let r = 0; r < 4; r++) rollRow(S, r);
-    for (const sh of S.shops) { sh.fx = null; sh.openFx = null; sh.verified = false; sh.stampT = 0; }
-    S.inspectCD = 0; S.inspectCDMax = C.INSPECT_COOLDOWN;
     S.priceClock = C.PRICE_REROLL_SEC;
+    S.inspectCD = 0; S.inspectCDMax = C.INSPECT_COOLDOWN;
+    S.fakeClock = 0; S.firstFakeDone = false; S.firstScam = false;
     S.buy = { shop: null, dwell: 0, warned: false };
   }
-  // 같은 행 두 공방의 배율은 0.05 이상 차이 나게
+
+  // ---------- 가격 ----------
+  // 정상 공방끼리는 0.05 이상 차이. 수상한 공방은 자기 가격 유지
   function rollRow(S, r) {
     const a = S.shops[r * 2], b = S.shops[r * 2 + 1];
-    a.mult = U.rand(C.PRICE_NORMAL[0], C.PRICE_NORMAL[1]);
-    do b.mult = U.rand(C.PRICE_NORMAL[0], C.PRICE_NORMAL[1]); while (Math.abs(a.mult - b.mult) < 0.05);
+    const normal = sh => !sh.fake;
+    if (normal(a)) a.mult = U.rand(C.PRICE_NORMAL[0], C.PRICE_NORMAL[1]);
+    if (normal(b)) {
+      let n = 0;
+      do b.mult = U.rand(C.PRICE_NORMAL[0], C.PRICE_NORMAL[1]); while (normal(a) && Math.abs(a.mult - b.mult) < 0.05 && ++n < 50);
+    }
   }
   const isOpen = (S, sh) => sh.status === 'open' && S.openCats.has(sh.cat);
   const itemsOf = sh => G.ITEMS.filter(i => i.cat === sh.cat);
   const price = (sh, itemId) => round1(G.ITEM[itemId].price * sh.mult);
+  const partner = (S, sh) => S.shops[sh.idx ^ 1];
 
-  // 이 공방에서 지금 사야 하는 물건: 요청 중이고 아직 가방에 그만큼 없는 것 중 가장 급한 것
+  function opened(S, cat) { for (const sh of S.shops) if (sh.cat === cat) sh.openFx = 0; }
+
+  // 20초마다 가격 다시 뽑기. 바뀐 공방 간판은 1.5초 반짝이며 ▲(비싸짐)·▼(싸짐) 표시
+  function reroll(S) {
+    const before = S.shops.map(sh => sh.mult);
+    for (let r = 0; r < 4; r++) rollRow(S, r);
+    for (const sh of S.shops) {
+      const d = sh.mult - before[sh.idx];
+      sh.fx = isOpen(S, sh) && Math.abs(d) > 0.005 ? { t: 0, dir: d > 0 ? 1 : -1 } : null;
+    }
+  }
+
+  // ---------- 새 공방 개업 (빈 칸 재개업 · 수상한 공방 교체) ----------
+  function newShop(S, sh, fake) {
+    Object.assign(sh, { status: 'open', fake, verified: false, fx: null, openFx: 0, stampT: 0, flagT: FLAG_SEC, closeT: 0, revealT: 0, reopenT: 0 });
+    if (fake) sh.mult = U.rand(C.PRICE_FAKE[0], C.PRICE_FAKE[1]);
+    else {
+      const p = partner(S, sh); let n = 0;
+      do sh.mult = U.rand(C.PRICE_NORMAL[0], C.PRICE_NORMAL[1]); while (!p.fake && p.status === 'open' && Math.abs(p.mult - sh.mult) < 0.05 && ++n < 50);
+    }
+    if (fake) S.stats.fakeSpawned = (S.stats.fakeSpawned || 0) + 1;
+  }
+  const fakeCount = S => S.shops.filter(sh => sh.fake && (sh.status === 'open' || sh.status === 'closing')).length;
+  const fakeMax = S => (S.elapsed >= 110 ? 2 : 1);
+  // 수상한 공방 등장: 수상한 공방이 없는 열린 행에서, 빈 칸이 있으면 거기, 없으면 공방 하나를 교체
+  function spawnFake(S) {
+    if (fakeCount(S) >= fakeMax(S)) return false;
+    const d = G.dali;
+    const rows = [0, 1, 2, 3].filter(r => S.openCats.has(S.shops[r * 2].cat) && !S.shops[r * 2].fake && !S.shops[r * 2 + 1].fake);
+    if (!rows.length) return false;
+    const r = rows[Math.floor(Math.random() * rows.length)];
+    const pair = [S.shops[r * 2], S.shops[r * 2 + 1]];
+    let sh = pair.find(x => x.status === 'empty');
+    if (!sh) {
+      const cand = pair.filter(x => x.status === 'open' && !U.inRect(d.x, d.y, x.w.door));   // 달이가 서 있는 공방은 피함
+      if (!cand.length) return false;
+      sh = cand[Math.floor(Math.random() * cand.length)];
+    }
+    newShop(S, sh, true);
+    return true;
+  }
+  G.director.on('firstFake', S => { S.firstFakeDone = true; spawnFake(S); S.fakeClock = 25; });
+  function fakeTimer(S, dt) {
+    if (!S.firstFakeDone) return;
+    S.fakeClock -= dt;
+    if (S.fakeClock > 0) return;
+    const late = S.elapsed >= 110;
+    if (Math.random() < (late ? 0.6 : 0.5)) spawnFake(S);
+    S.fakeClock += late ? 20 : 25;
+  }
+
+  // ---------- 구매 ----------
   function wanted(S, sh) {
     let best = null;
     for (const it of itemsOf(sh)) {
@@ -33,36 +96,15 @@ G.shops = (() => {
     }
     return best && best.item;
   }
-
   function buy(S, sh, item) {
     const p = price(sh, item);
-    G.dali.bag.push({ item, paid: p, shop: sh.idx });
+    G.dali.bag.push({ item, paid: p, shop: sh.idx, fake: sh.fake });   // 수상한 물건도 겉보기는 같다
     S.stats.bought = (S.stats.bought || 0) + 1;
     const d = sh.w.door;
     G.fx.add(S, d.x + d.w / 2, d.y - 6, G.ITEM[item].name + ' 구매 ' + p + '만원', '#fff');
+    if (sh.fake && sh.closeT === 0) sh.closeT = 0.0001;                  // 3초 뒤 사라짐
   }
-
-  // 타임라인이 카테고리를 열 때: 셔터가 0.8초 동안 올라감
-  function opened(S, cat) { for (const sh of S.shops) if (sh.cat === cat) sh.openFx = 0; }
-
-  // 20초마다 가격 다시 뽑기. 바뀐 공방 간판은 1.5초 반짝이며 ▲(비싸짐)·▼(싸짐) 표시
-  function reroll(S) {
-    const before = S.shops.map(sh => sh.mult);
-    for (let r = 0; r < 4; r++) rollRow(S, r);
-    for (const sh of S.shops) {
-      const d = sh.mult - before[sh.idx];
-      sh.fx = S.openCats.has(sh.cat) && Math.abs(d) > 0.005 ? { t: 0, dir: d > 0 ? 1 : -1 } : null;
-    }
-  }
-
-  // 매 프레임: 달이가 구매칸에 있으면 자동(0.4초 머무르기) 또는 E·Enter로 구매
-  function update(S, dt) {
-    S.priceClock -= dt;
-    if (S.priceClock <= 0) { reroll(S); S.priceClock += C.PRICE_REROLL_SEC; }
-    for (const sh of S.shops) {
-      if (sh.fx && (sh.fx.t += dt) > 1.5) sh.fx = null;
-      if (sh.openFx != null && (sh.openFx += dt) > 0.8) sh.openFx = null;
-    }
+  function updateBuy(S, dt) {
     const dali = G.dali, B = S.buy;
     const sh = S.shops.find(s => isOpen(S, s) && U.inRect(dali.x, dali.y, s.w.door)) || null;
     if (sh !== B.shop) { B.shop = sh; B.dwell = 0; B.warned = false; }
@@ -72,7 +114,7 @@ G.shops = (() => {
     const press = G.input.hit('e') || G.input.hit('enter');
     if (!item || full) {
       B.dwell = 0;
-      if (!B.warned && (press || dali.moving === false)) {
+      if (!B.warned && (press || !dali.moving)) {
         const d = sh.w.door;
         G.fx.add(S, d.x + d.w / 2, d.y - 6, full ? '가방이 가득 찼어요' : '필요한 물건이 아니에요', '#ffd6a0');
         B.warned = true;
@@ -87,10 +129,34 @@ G.shops = (() => {
     }
   }
 
+  // ---------- 매 프레임 ----------
+  function update(S, dt) {
+    S.priceClock -= dt;
+    if (S.priceClock <= 0) { reroll(S); S.priceClock += C.PRICE_REROLL_SEC; }
+    fakeTimer(S, dt);
+    for (const sh of S.shops) {
+      sh.t += dt;
+      if (sh.fx && (sh.fx.t += dt) > 1.5) sh.fx = null;
+      if (sh.openFx != null && (sh.openFx += dt) > 0.8) sh.openFx = null;
+      if (sh.flagT > 0) sh.flagT = Math.max(0, sh.flagT - dt);
+      if (sh.status === 'open' && sh.closeT > 0 && (sh.closeT += dt) >= C.FAKE_VANISH_SEC) {   // 속인 수상한 공방이 사라짐
+        sh.status = 'closing'; sh.closeT = 0;
+        const b = sh.w.body; G.fx.add(S, b.x + b.w / 2, b.y + 10, '앗, 공방이 문을 닫았어요?', '#ffd6a0');
+      } else if (sh.status === 'closing' && (sh.closeT += dt) >= CLOSE_SHOW) toEmpty(sh);
+      else if (sh.status === 'caught' && (sh.revealT += dt) >= REVEAL_SEC) toEmpty(sh);
+      else if (sh.status === 'empty' && (sh.reopenT -= dt) <= 0) {
+        const fake = S.firstFakeDone && fakeCount(S) < fakeMax(S) && Math.random() < C.REOPEN_FAKE_CHANCE;
+        newShop(S, sh, fake);
+      }
+    }
+    updateBuy(S, dt);
+  }
+  function toEmpty(sh) { Object.assign(sh, { status: 'empty', fake: false, verified: false, reopenT: C.REOPEN_SEC, closeT: 0, revealT: 0, flagT: 0 }); }
+
   // ---------- 나르미 검증 (기획서 3.6) ----------
   const shopAt = (S, p) => S.shops.find(sh => U.inRect(p.x, p.y, sh.w.body)) || null;
-  // 지정할 수 없으면 이유 문자열, 가능하면 null
   function whyNot(S, sh) {
+    if (sh.status === 'empty' || sh.status === 'closing' || sh.status === 'caught') return '빈 가게예요';
     if (!isOpen(S, sh)) return '아직 문을 안 열었어요';
     if (sh.verified) return '이미 검증한 공방이에요';
     if (G.narmi.busy() || S.inspectCD > 0) return '나르미가 숨 고르는 중 (' + Math.ceil(S.inspectCD) + '초)';
@@ -103,12 +169,21 @@ G.shops = (() => {
     S.stats.inspected = (S.stats.inspected || 0) + 1;
     return true;
   }
-  // 검증 결과: 지금은 모두 정상 → 초록 도장. 수상한 공방 적발은 6번 작업에서 이 함수에 추가
+  // 검증 결과: 정상 → 초록 도장 / 수상한 공방 → 적발
   function inspected(S, sh) {
-    sh.verified = true; sh.stampT = 0;
-    const b = sh.w.body; G.fx.add(S, b.x + b.w / 2, b.y + 8, '✔ 정상 공방', '#9be37a');
+    const b = sh.w.body;
+    if (sh.status !== 'open') return;                                   // 그사이 사라짐
+    if (sh.fake) {
+      sh.status = 'caught'; sh.revealT = 0; sh.closeT = 0;
+      S.score += C.CATCH_SCORE; G.score.trust(S, C.TRUST_CATCH);
+      S.stats.caught = (S.stats.caught || 0) + 1;
+      G.fx.add(S, b.x + b.w / 2, b.y + 8, '적발! 수상한 공방 +' + C.CATCH_SCORE, '#ffe48a', 16);
+      G.fx.add(S, b.x + b.w / 2, b.y + 8, '마을 신뢰 +' + C.TRUST_CATCH, '#9be37a');
+    } else {
+      sh.verified = true; sh.stampT = 0;
+      G.fx.add(S, b.x + b.w / 2, b.y + 8, '✔ 정상 공방', '#9be37a');
+    }
   }
-  // 클릭·탭 또는 Space(달이에게 가장 가까운 열린 공방)
   function handleInspectInput(S) {
     for (const p of G.input.taps) { const sh = shopAt(S, p); if (sh) { request(S, sh); return; } }
     if (G.input.hit(' ')) {
@@ -121,7 +196,111 @@ G.shops = (() => {
       if (best) request(S, best);
     }
   }
-  // 마우스를 올린 공방 테두리 (지정 가능하면 노랑, 아니면 회색)
+
+  // ---------- 그리기 ----------
+  const T = (...a) => G.world.text(...a);
+  function shutter(ctx, b, k, label) {
+    const h = Math.round((b.h - 22) * k); if (h <= 0) return;
+    ctx.fillStyle = '#7d8590'; ctx.fillRect(b.x + 4, b.y + 22, b.w - 8, h);
+    ctx.fillStyle = '#6a7179'; for (let y = b.y + 26; y < b.y + 22 + h; y += 6) ctx.fillRect(b.x + 4, y, b.w - 8, 2);
+    if (label) T(ctx, label, b.x + b.w / 2, b.y + 43, 12, '#fff');
+  }
+  // 단서 ①: 굴뚝 연기 (정상만)
+  function chimney(ctx, sh) {
+    const b = sh.w.body, x = sh.w.wndX + 6, y = b.y - 10;
+    ctx.fillStyle = '#7a3b2e'; ctx.fillRect(x, y, 10, 14); ctx.fillStyle = '#5c2a20'; ctx.fillRect(x - 1, y, 12, 3);
+    if (sh.fake) return;
+    for (let i = 0; i < 3; i++) {
+      const k = ((sh.t / 1.5) + i / 3) % 1, r = 3 + k * 4;
+      ctx.globalAlpha = 0.75 * (1 - k); ctx.fillStyle = '#e9ecef';
+      ctx.beginPath(); ctx.arc(x + 5 + Math.sin(k * 5 + i) * 3, y - 4 - k * 22, r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  // 단서 ②: 창문 안 일꾼 (수상한 공방은 커튼만)
+  function windowView(ctx, sh) {
+    const x = sh.w.wndX, y = sh.w.body.y + 30;
+    ctx.fillStyle = '#3a3a3a'; ctx.fillRect(x - 1, y - 1, 24, 20);
+    if (sh.fake) {
+      ctx.fillStyle = '#c9a3b8'; ctx.fillRect(x, y, 22, 18);
+      ctx.fillStyle = '#b08aa0'; for (let i = 0; i < 22; i += 4) ctx.fillRect(x + i, y, 2, 18);
+      ctx.fillStyle = '#8d6a7f'; ctx.fillRect(x + 10, y, 2, 18);
+      return;
+    }
+    ctx.fillStyle = '#ffe9b0'; ctx.fillRect(x, y, 22, 18);
+    const up = Math.floor(sh.t * 4) % 2 === 0;
+    ctx.fillStyle = '#4a3020'; ctx.fillRect(x + 6, y + 4, 6, 2);           // 머리카락
+    ctx.fillStyle = '#f2c79b'; ctx.fillRect(x + 6, y + 6, 6, 5);           // 얼굴
+    ctx.fillStyle = '#4f7cac'; ctx.fillRect(x + 4, y + 11, 10, 7);         // 몸
+    ctx.fillStyle = '#6b4423'; ctx.fillRect(x + 14, up ? y + 6 : y + 10, 2, 6);   // 망치 자루
+    ctx.fillStyle = '#7d7d7d'; ctx.fillRect(x + 13, up ? y + 4 : y + 9, 5, 3);    // 망치 머리
+  }
+  function priceTag(ctx, S, sh) {
+    const b = sh.w.body, tx = sh.w.tagX, flash = sh.fx && Math.floor(sh.fx.t * 6) % 2 === 0;
+    if (sh.fx) { ctx.fillStyle = flash ? '#ffd84a' : '#fff3b0'; ctx.fillRect(tx - 2, b.y + 23, TAG_W + 4, 38); }
+    ctx.fillStyle = '#fffdf6'; ctx.fillRect(tx, b.y + 25, TAG_W, 34);
+    ctx.fillStyle = '#3a3a3a'; ctx.fillRect(tx, b.y + 41, TAG_W, 1);
+    itemsOf(sh).forEach((it, i) => {
+      const y = b.y + 33 + i * 17;
+      G.icons.draw(ctx, it.id, tx + 10, y, 14);
+      T(ctx, price(sh, it.id) + '만', tx + 40, y + 1, 12, '#2a2416');
+      if (sh.fx) T(ctx, sh.fx.dir > 0 ? '▲' : '▼', tx + 65, y + 1, 12, sh.fx.dir > 0 ? '#d9342b' : '#2e9b3a');
+    });
+  }
+  function flag(ctx, sh) {                       // '개업!' 깃발 (정상·수상한 공방 모두 같음)
+    const b = sh.w.body, x = sh.w.doorGfx + 11, y = b.y - 22, wave = Math.sin(sh.t * 6) * 2;
+    ctx.fillStyle = '#5a5a5a'; ctx.fillRect(x, y, 2, 24);
+    ctx.fillStyle = '#e2433b'; ctx.beginPath(); ctx.moveTo(x + 2, y); ctx.lineTo(x + 30, y + 3 + wave); ctx.lineTo(x + 30, y + 15 + wave); ctx.lineTo(x + 2, y + 14); ctx.fill();
+    T(ctx, '개업!', x + 16, y + 8 + wave / 2, 12, '#fff');
+  }
+  function stamp(ctx, sh, text, col, cx, cy, big) {
+    sh.stampT = Math.min(1, (sh.stampT || 0) + 1 / 60);
+    const k = sh.stampT < 0.15 ? 1.8 - sh.stampT / 0.15 * 0.8 : 1, w = big ? 64 : 52;
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.rotate(-0.12);
+    ctx.fillStyle = col; ctx.fillRect(-w / 2, -8, w, 16); ctx.fillStyle = '#fffdf6'; ctx.fillRect(-w / 2 + 2, -6, w - 4, 12);
+    ctx.fillStyle = col; ctx.fillRect(-w / 2 + 3, -5, w - 6, 10);
+    T(ctx, text, 0, 1, 12, '#fff'); ctx.restore();
+  }
+  function emptyLot(ctx, sh, S) {
+    const b = sh.w.body;
+    ctx.fillStyle = '#d9c38f'; ctx.fillRect(b.x - 4, b.y - 2, b.w + 8, b.h + 4);
+    ctx.fillStyle = '#b89d66'; for (let x = b.x; x < b.x + b.w; x += 10) ctx.fillRect(x, b.y + b.h - 14, 3, 12);
+    ctx.fillRect(b.x, b.y + b.h - 11, b.w, 2); ctx.fillRect(b.x, b.y + b.h - 6, b.w, 2);
+    ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + b.w / 2 - 34, b.y + 14, 68, 22);
+    ctx.fillStyle = '#6b4423'; ctx.fillRect(b.x + b.w / 2 - 1, b.y + 36, 2, 14);
+    T(ctx, '빈 가게', b.x + b.w / 2, b.y + 25, 12, '#4a3f2a');
+  }
+  function caughtView(ctx, sh) {                // 적발: 간판이 떨어지고 빈 창고·서류 더미가 드러남
+    const b = sh.w.body, k = Math.min(1, sh.revealT / 0.4);
+    ctx.fillStyle = '#4a4f57'; ctx.fillRect(b.x + 4, b.y + 22, b.w - 8, b.h - 22);
+    ctx.fillStyle = '#f4f4f4';
+    for (let i = 0; i < 3; i++) { ctx.fillRect(b.x + 22 + i * 4, b.y + 50 - i * 5, 22, 4); }
+    ctx.fillStyle = '#c9c9c9'; ctx.fillRect(b.x + 22, b.y + 54, 30, 2);
+    T(ctx, '텅…', b.x + b.w - 34, b.y + 44, 12, '#cfd8e3');
+    ctx.save(); ctx.translate(b.x + b.w / 2, b.y + 11 + k * 40); ctx.rotate(k * 0.5);          // 떨어지는 간판
+    ctx.fillStyle = '#7a5a3a'; ctx.fillRect(-50, -10, 100, 20); T(ctx, sh.w.cat.name + '공방', 0, 0, 12, '#fff'); ctx.restore();
+    stamp(ctx, sh, '적발!', '#d9342b', b.x + b.w / 2, b.y + 30, true);
+  }
+  function draw(ctx, S) {
+    for (const sh of S.shops) {
+      const b = sh.w.body;
+      if (!S.openCats.has(sh.cat)) { shutter(ctx, b, 1, '준비 중'); continue; }
+      if (sh.status === 'empty') { emptyLot(ctx, sh, S); continue; }
+      if (sh.status === 'caught') { caughtView(ctx, sh); continue; }
+      chimney(ctx, sh);
+      windowView(ctx, sh);
+      priceTag(ctx, S, sh);
+      if (sh.status === 'closing') {               // 속인 뒤: 셔터 + 폐업 팻말
+        shutter(ctx, b, Math.min(1, sh.closeT / 0.4), '');
+        ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + b.w / 2 - 26, b.y + 34, 52, 20);
+        T(ctx, '폐업', b.x + b.w / 2, b.y + 44, 12, '#d9342b');
+        continue;
+      }
+      if (sh.openFx != null) shutter(ctx, b, 1 - sh.openFx / 0.8, '');
+      if (sh.flagT > 0) flag(ctx, sh);
+      if (sh.verified) stamp(ctx, sh, '✔ 검증', '#2e9b3a', sh.w.tagX + TAG_W / 2, b.y + 60);
+    }
+  }
   function drawHover(ctx, S) {
     const m = G.input.mouse; if (m.x < 0) { G.canvas.style.cursor = ''; return; }
     const sh = shopAt(S, m);
@@ -131,40 +310,5 @@ G.shops = (() => {
     ctx.strokeStyle = ok ? '#ffd84a' : 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
     ctx.strokeRect(b.x - 3, b.y - 3, b.w + 6, b.h + 6); ctx.setLineDash([]); ctx.lineWidth = 1;
   }
-
-  // 셔터: k = 내려온 비율(1 = 다 닫힘)
-  function shutter(ctx, b, k, label) {
-    const h = Math.round((b.h - 22) * k); if (h <= 0) return;
-    ctx.fillStyle = '#7d8590'; ctx.fillRect(b.x + 4, b.y + 22, b.w - 8, h);
-    ctx.fillStyle = '#6a7179'; for (let y = b.y + 26; y < b.y + 22 + h; y += 6) ctx.fillRect(b.x + 4, y, b.w - 8, 2);
-    if (label) G.world.text(ctx, '준비 중', b.x + b.w / 2, b.y + 43, 12, '#fff');
-  }
-
-  // 간판 가격표(건물 벽) + 준비 중 셔터
-  function draw(ctx, S) {
-    for (const sh of S.shops) {
-      const b = sh.w.body;
-      if (!S.openCats.has(sh.cat)) { shutter(ctx, b, 1, true); continue; }
-      const flash = sh.fx && Math.floor(sh.fx.t * 6) % 2 === 0, tx = sh.w.tagX;
-      if (sh.fx) { ctx.fillStyle = flash ? '#ffd84a' : '#fff3b0'; ctx.fillRect(tx - 2, b.y + 23, 96, 38); }
-      ctx.fillStyle = '#fffdf6'; ctx.fillRect(tx, b.y + 25, 92, 34);
-      ctx.fillStyle = '#3a3a3a'; ctx.fillRect(tx, b.y + 41, 92, 1);
-      itemsOf(sh).forEach((it, i) => {
-        const y = b.y + 33 + i * 17;
-        G.icons.draw(ctx, it.id, tx + 11, y, 14);
-        G.world.text(ctx, price(sh, it.id) + '만', tx + 52, y + 1, 12, '#2a2416');
-        if (sh.fx) G.world.text(ctx, sh.fx.dir > 0 ? '▲' : '▼', tx + 83, y + 1, 12, sh.fx.dir > 0 ? '#d9342b' : '#2e9b3a');
-      });
-      if (sh.openFx != null) shutter(ctx, b, 1 - sh.openFx / 0.8, false);
-      if (sh.verified) {                               // 초록 '✔ 검증' 도장 (찍힐 때 커졌다 작아짐)
-        sh.stampT = Math.min(1, (sh.stampT || 0) + 1 / 60);
-        const k = sh.stampT < 0.15 ? 1.8 - sh.stampT / 0.15 * 0.8 : 1, cx = sh.w.tagX + 46, cy = b.y + 60;
-        ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.rotate(-0.12);
-        ctx.fillStyle = '#2e9b3a'; ctx.fillRect(-26, -8, 52, 16); ctx.fillStyle = '#fffdf6'; ctx.fillRect(-24, -6, 48, 12);
-        ctx.fillStyle = '#2e9b3a'; ctx.fillRect(-23, -5, 46, 10);
-        G.world.text(ctx, '✔ 검증', 0, 1, 12, '#fff'); ctx.restore();
-      }
-    }
-  }
-  return { init, update, draw, price, isOpen, rollRow, opened, inspected, handleInspectInput, drawHover, shopAt };
+  return { init, update, draw, drawHover, price, isOpen, rollRow, opened, inspected, handleInspectInput, shopAt, spawnFake, newShop };
 })();

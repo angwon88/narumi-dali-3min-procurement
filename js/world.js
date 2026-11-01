@@ -25,7 +25,7 @@ G.world = (() => {
       slot: { x, y, w: 140, h: 100 }, body: { x, y, w: 140, h: 64 },
       // A는 오른쪽 아래, B는 왼쪽 아래 문 → 두 문이 가운데에서 마주 봄 (광장까지 거리 차이 최소화)
       door: { x: c ? x : x + 100, y: y + 72, w: 40, h: 28 },
-      doorGfx: c ? x + 10 : x + 108, tagX: c ? x + 42 : x + 6,
+      doorGfx: c ? x + 10 : x + 108, tagX: c ? x + 64 : x + 4, wndX: c ? x + 38 : x + 80,   // 가격표(72px)·일꾼 창문(22px)
     });
   }
   VILLAGES.forEach((v, i) => {
@@ -72,7 +72,7 @@ G.world = (() => {
     const b = s.body, cat = s.cat;
     house(ctx, b, shade(cat.col, 1), shade(cat.col, 0.6), cat.name + '공방 ' + s.side);
     ctx.fillStyle = '#3b2a1e'; ctx.fillRect(s.doorGfx, b.y + 34, 22, 30);            // 문
-    ctx.fillStyle = '#9fd3ff'; ctx.fillRect(s.tagX + 8, b.y + 30, 26, 18); ctx.fillRect(s.tagX + 48, b.y + 30, 26, 18);  // 창
+    ctx.fillStyle = '#9fd3ff'; ctx.fillRect(s.wndX, b.y + 30, 22, 18);                // 창 (일꾼은 shops.js가 그림)
     ctx.strokeStyle = 'rgba(80,60,30,.5)'; ctx.setLineDash([3, 3]); ctx.strokeRect(s.door.x + .5, s.door.y + .5, s.door.w - 1, s.door.h - 1); ctx.setLineDash([]);
   }
   function drawVillage(ctx, v) {
