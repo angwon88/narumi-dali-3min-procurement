@@ -8,7 +8,7 @@ G.screens = (() => {
 
   function newGame() {
     G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, floats: [], bagCap: C.BAG_START, scoreMult: 1 };
-    G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S);
+    G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S); G.gifts.init(G.S);
     G.dali.reset(); G.narmi.reset(); G.input.reset();
     G.screen = 'play';
   }
@@ -67,6 +67,7 @@ G.screens = (() => {
     G.shops.update(S, dt);
     G.requests.deliver(S);
     G.villages.update(S, dt);
+    G.gifts.update(S, dt);
     G.fx.update(S, dt);
     if (S.timeLeft <= 0) { S.timeLeft = 0; G.screen = 'end'; endT = C.END_HOLD; }
   }
@@ -74,6 +75,7 @@ G.screens = (() => {
     G.world.draw(ctx);
     G.shops.draw(ctx, G.S);
     G.villages.draw(ctx, G.S);
+    G.gifts.draw(ctx, G.S);
     G.narmi.draw(ctx);
     G.dali.draw(ctx);
     ui.bubbles(ctx, G.S);

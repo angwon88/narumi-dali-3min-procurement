@@ -26,7 +26,8 @@ G.ui = (() => {
     T(ctx, '⏱', 20, 22, 16, '#fff');
     T(ctx, G.U.fmtTime(S.timeLeft), 64, 22, 24, low ? (Math.floor(S.timeLeft * 2) % 2 ? '#ff6b5b' : '#ffb3a8') : '#fff');
     T(ctx, '점수', 128, 22, 12, '#8fa3b8', 'left'); T(ctx, String(S.score), 160, 22, 18, '#ffe48a', 'left');
-    T(ctx, '아낀 세금', 262, 22, 12, '#8fa3b8', 'left'); T(ctx, S.saved + '만원', 322, 22, 16, '#9be37a', 'left');
+    T(ctx, '아낀 세금', 262, 17, 12, '#8fa3b8', 'left'); T(ctx, S.saved + '만원', 322, 17, 16, '#9be37a', 'left');
+    G.gifts.hudBar(ctx, S, 262, 29, 128);                       // 다음 마을 선물까지
     // 마을 신뢰도 게이지
     const gx = 452, gw = 170, f = S.trust / 100, danger = S.trust <= C.TRUST_DANGER;
     T(ctx, '마을 신뢰', gx - 6, 22, 12, '#8fa3b8', 'right');

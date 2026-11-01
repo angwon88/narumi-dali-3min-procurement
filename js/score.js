@@ -16,6 +16,7 @@ G.score = (() => {
     S.score += pts; S.delivered++; S.onTime++;
     G.levelup.gain(S);
     if (saving > 0) S.saved = r1(S.saved + saving); else if (saving < 0) S.wasted = r1(S.wasted - saving);
+    G.gifts.add(S, saving);                                   // 아낀 만큼 저금통 +, 비싸게 산 만큼 -
     trust(S, frac >= 0.5 ? C.TRUST_FAST : C.TRUST_ON_TIME);
     G.villages.onSuccess(S, r.vid);
     const v = r.vill.yard;

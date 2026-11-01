@@ -4,6 +4,7 @@ G.U = {
   overlap: (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y,
   inRect: (px, py, r) => px >= r.x && px < r.x + r.w && py >= r.y && py < r.y + r.h,
   rand: (a, b) => a + Math.random() * (b - a),
+  josa: (w, a, b) => { const c = w.charCodeAt(w.length - 1); return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? a : b; },   // 받침 있으면 a
   fmtTime: s => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); },
 };
 // localStorage는 막혀 있어도 게임이 돌아가야 한다
