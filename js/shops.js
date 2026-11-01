@@ -1,6 +1,7 @@
 /* 공방: 가격 · 영업 상태 · 구매 · 나르미 검증 · 수상한 공방 (기획서 3.3, 3.4, 3.6, 3.7)
    상태(status): open 영업 / closing 속인 뒤 사라지는 중 / caught 적발 연출 / empty 빈 칸(REOPEN_SEC 뒤 새 공방)
-   경쟁 유지·혁신은 이후 작업에서 얹는다. */
+   경쟁 유지(기획서 3.8): 행마다 연속 구매 수 → 3이면 옆 공방 경고, 5면 옆 공방 폐업 + 남은 공방 독점(가격 ×1.3)
+   혁신은 이후 작업에서 얹는다. */
 'use strict';
 G.shops = (() => {
   const C = G.C, U = G.U;
@@ -11,7 +12,10 @@ G.shops = (() => {
     S.shops = G.world.shops.map(w => ({
       w, idx: w.idx, cat: w.cat.id, mult: 1, status: 'open', fake: false, verified: false,
       fx: null, openFx: null, stampT: 0, flagT: 0, t: Math.random() * 3, closeT: 0, revealT: 0, reopenT: 0,
+      lonely: false, monopoly: false, innov: false,
     }));
+    S.streak = [0, 1, 2, 3].map(() => ({ shop: -1, n: 0 }));
+    S.streakWarn = C.STREAK_WARN; S.streakClose = C.STREAK_CLOSE;
     for (let r = 0; r < 4; r++) rollRow(S, r);
     S.priceClock = C.PRICE_REROLL_SEC;
     S.inspectCD = 0; S.inspectCDMax = C.INSPECT_COOLDOWN;
@@ -32,7 +36,7 @@ G.shops = (() => {
   }
   const isOpen = (S, sh) => sh.status === 'open' && S.openCats.has(sh.cat);
   const itemsOf = sh => G.ITEMS.filter(i => i.cat === sh.cat);
-  const price = (sh, itemId) => round1(G.ITEM[itemId].price * sh.mult);
+  const price = (sh, itemId) => round1(G.ITEM[itemId].price * sh.mult * (sh.monopoly ? C.MONOPOLY_MULT : 1));
   const partner = (S, sh) => S.shops[sh.idx ^ 1];
 
   function opened(S, cat) { for (const sh of S.shops) if (sh.cat === cat) sh.openFx = 0; }
@@ -49,7 +53,10 @@ G.shops = (() => {
 
   // ---------- 새 공방 개업 (빈 칸 재개업 · 수상한 공방 교체) ----------
   function newShop(S, sh, fake) {
-    Object.assign(sh, { status: 'open', fake, verified: false, fx: null, openFx: 0, stampT: 0, flagT: FLAG_SEC, closeT: 0, revealT: 0, reopenT: 0 });
+    Object.assign(sh, { status: 'open', fake, verified: false, fx: null, openFx: 0, stampT: 0, flagT: FLAG_SEC, closeT: 0, revealT: 0, reopenT: 0, lonely: false, monopoly: false, closeWhy: null });
+    const p0 = partner(S, sh);
+    if (p0.monopoly) { p0.monopoly = false; const b = p0.w.body; G.fx.add(S, b.x + b.w / 2, b.y + 8, '경쟁 공방이 생겨 독점이 풀렸어요', '#9be37a'); }
+    S.streak[sh.idx >> 1] = { shop: -1, n: 0 };
     if (fake) sh.mult = U.rand(C.PRICE_FAKE[0], C.PRICE_FAKE[1]);
     else {
       const p = partner(S, sh); let n = 0;
@@ -103,6 +110,23 @@ G.shops = (() => {
     const d = sh.w.door;
     G.fx.add(S, d.x + d.w / 2, d.y - 6, G.ITEM[item].name + ' 구매 ' + p + '만원', '#fff');
     if (sh.fake && sh.closeT === 0) sh.closeT = 0.0001;                  // 3초 뒤 사라짐
+    compete(S, sh);
+  }
+  // ---------- 경쟁 유지 (기획서 3.8) ----------
+  // 같은 공방에서 연달아 사면 streak +1, 옆 공방에서 사면 1부터 다시
+  function compete(S, sh) {
+    const row = sh.idx >> 1, st = S.streak[row], p = partner(S, sh);
+    if (st.shop === sh.idx) st.n++; else { st.shop = sh.idx; st.n = 1; }
+    sh.lonely = false;
+    if (p.status !== 'open' || p.fake || p.innov) return;                // 비어 있거나 수상한·혁신 공방은 대상 아님
+    if (st.n >= S.streakClose) {
+      p.lonely = false; p.status = 'closing'; p.closeT = 0; p.closeWhy = 'comp';
+      sh.monopoly = true;
+      S.stats.closedByStreak = (S.stats.closedByStreak || 0) + 1;
+      const b = p.w.body;
+      G.fx.add(S, b.x + b.w / 2, b.y + 10, '손님이 없어 문을 닫았어요…', '#ffd6a0');
+      G.fx.add(S, sh.w.body.x + sh.w.body.w / 2, sh.w.body.y + 10, '독점! 가격 ×' + C.MONOPOLY_MULT, '#ff8a7a', 16);
+    } else if (st.n >= S.streakWarn) p.lonely = true;
   }
   function updateBuy(S, dt) {
     const dali = G.dali, B = S.buy;
@@ -140,7 +164,7 @@ G.shops = (() => {
       if (sh.openFx != null && (sh.openFx += dt) > 0.8) sh.openFx = null;
       if (sh.flagT > 0) sh.flagT = Math.max(0, sh.flagT - dt);
       if (sh.status === 'open' && sh.closeT > 0 && (sh.closeT += dt) >= C.FAKE_VANISH_SEC) {   // 속인 수상한 공방이 사라짐
-        sh.status = 'closing'; sh.closeT = 0;
+        sh.status = 'closing'; sh.closeT = 0; sh.closeWhy = 'scam';
         const b = sh.w.body; G.fx.add(S, b.x + b.w / 2, b.y + 10, '앗, 공방이 문을 닫았어요?', '#ffd6a0');
       } else if (sh.status === 'closing' && (sh.closeT += dt) >= CLOSE_SHOW) toEmpty(sh);
       else if (sh.status === 'caught' && (sh.revealT += dt) >= REVEAL_SEC) toEmpty(sh);
@@ -151,7 +175,7 @@ G.shops = (() => {
     }
     updateBuy(S, dt);
   }
-  function toEmpty(sh) { Object.assign(sh, { status: 'empty', fake: false, verified: false, reopenT: C.REOPEN_SEC, closeT: 0, revealT: 0, flagT: 0 }); }
+  function toEmpty(sh) { Object.assign(sh, { status: 'empty', fake: false, verified: false, reopenT: C.REOPEN_SEC, closeT: 0, revealT: 0, flagT: 0, lonely: false, monopoly: false }); }
 
   // ---------- 나르미 검증 (기획서 3.6) ----------
   const shopAt = (S, p) => S.shops.find(sh => U.inRect(p.x, p.y, sh.w.body)) || null;
@@ -243,7 +267,7 @@ G.shops = (() => {
     itemsOf(sh).forEach((it, i) => {
       const y = b.y + 33 + i * 17;
       G.icons.draw(ctx, it.id, tx + 10, y, 14);
-      T(ctx, price(sh, it.id) + '만', tx + 40, y + 1, 12, '#2a2416');
+      T(ctx, price(sh, it.id) + '만', tx + 40, y + 1, 12, sh.monopoly ? '#d9342b' : '#2a2416');
       if (sh.fx) T(ctx, sh.fx.dir > 0 ? '▲' : '▼', tx + 65, y + 1, 12, sh.fx.dir > 0 ? '#d9342b' : '#2e9b3a');
     });
   }
@@ -292,9 +316,20 @@ G.shops = (() => {
       priceTag(ctx, S, sh);
       if (sh.status === 'closing') {               // 속인 뒤: 셔터 + 폐업 팻말
         shutter(ctx, b, Math.min(1, sh.closeT / 0.4), '');
-        ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + b.w / 2 - 26, b.y + 34, 52, 20);
-        T(ctx, '폐업', b.x + b.w / 2, b.y + 44, 12, '#d9342b');
+        ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + b.w / 2 - 34, b.y + 34, 68, 20);
+        T(ctx, sh.closeWhy === 'comp' ? '손님 없음' : '폐업', b.x + b.w / 2, b.y + 44, 12, '#d9342b');
         continue;
+      }
+      if (sh.lonely) {                             // 경고: 간판이 어두워지고 '손님이 없어요…'
+        ctx.fillStyle = 'rgba(20,24,30,.38)'; ctx.fillRect(b.x, b.y + 18, b.w, b.h - 18);
+        const bx = b.x + b.w / 2, by = b.y - 14 + Math.sin(sh.t * 3) * 1.5;
+        ctx.fillStyle = '#fffdf6'; ctx.fillRect(bx - 50, by - 9, 100, 18); ctx.fillRect(bx - 3, by + 9, 6, 4);
+        ctx.fillStyle = '#3a3a3a'; ctx.fillRect(bx - 50, by - 9, 100, 1); ctx.fillRect(bx - 50, by + 8, 100, 1);
+        T(ctx, '손님이 없어요…', bx, by, 12, '#4a3f2a');
+      }
+      if (sh.monopoly) {                           // 독점: 빨간 띠
+        ctx.fillStyle = '#d9342b'; ctx.fillRect(sh.w.tagX, b.y + 18, 36, 12);
+        T(ctx, '독점', sh.w.tagX + 18, b.y + 24, 12, '#fff');
       }
       if (sh.openFx != null) shutter(ctx, b, 1 - sh.openFx / 0.8, '');
       if (sh.flagT > 0) flag(ctx, sh);
