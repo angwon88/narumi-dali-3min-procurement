@@ -14,10 +14,11 @@ G.score = (() => {
   function delivered(S, r, bagItem) {
     const frac = r.left / r.limit;
     const saving = r1(r.price - bagItem.paid);
-    let pts = C.DELIVER_BASE + Math.round(frac * C.TIME_BONUS) + (saving > 0 ? Math.round(saving * C.SAVING_MULT) : 0);
+    let pts = C.DELIVER_BASE + Math.round(frac * C.TIME_BONUS * (S.timeBonusMult || 1)) + (saving > 0 ? Math.round(saving * C.SAVING_MULT) : 0);
     S.combo++; S.maxCombo = Math.max(S.maxCombo, S.combo); S.comboT = 0;
     const cm = comboMult(S);
-    pts = Math.round(pts * (S.scoreMult || 1) * cm);
+    pts = Math.round(pts * (S.scoreMult || 1) * cm * (bagItem.innov ? C.INNOV_SCORE_MULT : 1));
+    if (bagItem.innov) { trust(S, C.INNOV_TRUST_BONUS); S.stats.innovDelivered = (S.stats.innovDelivered || 0) + 1; }
     S.score += pts; S.delivered++; S.onTime++;
     G.levelup.gain(S);
     if (saving > 0) S.saved = r1(S.saved + saving); else if (saving < 0) S.wasted = r1(S.wasted - saving);
