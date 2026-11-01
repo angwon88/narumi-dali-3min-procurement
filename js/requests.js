@@ -66,9 +66,10 @@ G.requests = (() => {
     }
     S.requests = S.requests.filter(r => r.state === 'open' || r.endT < 0.6);   // 끝난 요청은 0.6초 연출 뒤 제거
   }
-  // 시간 초과: 신뢰도 감소 (마을 피해 연출은 3번 작업에서 추가)
+  // 시간 초과: 신뢰도 감소 + 마을 피해 8초
   function onExpire(S, r) {
     G.score.trust(S, C.TRUST_FAIL);
+    G.villages.onFail(S, r.vid);
     const b = G.ui.bubbleRect(r);
     G.fx.add(S, b.x + b.w / 2, b.y - 4, '늦었어요… 신뢰 ' + C.TRUST_FAIL, '#ff8a7a');
   }
