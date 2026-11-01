@@ -8,7 +8,7 @@ G.screens = (() => {
 
   function newGame() {
     G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, floats: [], bagCap: C.BAG_START, scoreMult: 1 };
-    G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S); G.gifts.init(G.S);
+    G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S); G.gifts.init(G.S); G.events.init(G.S);
     G.dali.reset(); G.narmi.reset(); G.input.reset();
     G.screen = 'play';
   }
@@ -71,6 +71,7 @@ G.screens = (() => {
     G.requests.deliver(S);
     G.villages.update(S, dt);
     G.gifts.update(S, dt);
+    G.events.update(S, dt);
     S.comboT += dt;
     if (S.shakeT > 0) S.shakeT -= dt;
     if (S.trust <= C.TRUST_DANGER) { S.warnT = (S.warnT || 0) - dt; if (S.warnT <= 0) { G.audio.play('warn'); S.warnT = 2; } } else S.warnT = 0;
@@ -85,12 +86,14 @@ G.screens = (() => {
     G.shops.draw(ctx, G.S);
     G.villages.draw(ctx, G.S);
     G.gifts.draw(ctx, G.S);
+    G.events.drawWorld(ctx, G.S);
     G.narmi.draw(ctx);
     G.dali.draw(ctx);
     ui.bubbles(ctx, G.S);
     G.dali.drawOver(ctx, G.S);
     G.shops.drawHover(ctx, G.S);
     G.fx.draw(ctx, G.S);
+    G.events.drawOverlay(ctx, G.S);
     ctx.restore();
     G.villages.dangerEdge(ctx, G.S);
     G.director.draw(ctx, G.S);

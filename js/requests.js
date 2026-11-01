@@ -27,12 +27,15 @@ G.requests = (() => {
       const vs = G.world.villages.filter(v => S.openVillages.has(v.id) && ofVillage(S, v.id).length < C.MAX_REQ_PER_VILLAGE);
       if (!vs.length) return null;
       const v = vs[Math.floor(Math.random() * vs.length)];
+      if (S.dust && S.openCats.has('health') && Math.random() < 0.6) { vid = v.id; item = 'mask'; }   // 미세먼지 경보: 마스크 요청 몰림
+      else {
       const have = new Set(ofVillage(S, v.id).map(r => r.item));
       let pool = v.wants.filter(id => S.openCats.has(G.ITEM[id].cat));
       if (!pool.length) return null;
       const fresh = pool.filter(id => !have.has(id));           // 같은 마을에 같은 물건 겹치지 않게(가능하면)
       if (fresh.length) pool = fresh;
       vid = v.id; item = pool[Math.floor(Math.random() * pool.length)];
+      }
     }
     const vill = G.world.villages.find(v => v.id === vid);
     const slot = [0, 1].find(i => !ofVillage(S, vid).some(r => r.slot === i));

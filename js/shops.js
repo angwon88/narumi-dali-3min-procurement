@@ -36,7 +36,7 @@ G.shops = (() => {
   }
   const isOpen = (S, sh) => sh.status === 'open' && S.openCats.has(sh.cat);
   const itemsOf = sh => G.ITEMS.filter(i => i.cat === sh.cat);
-  const price = (sh, itemId) => round1(G.ITEM[itemId].price * (sh.mults[itemId] || 1) * (sh.monopoly ? C.MONOPOLY_MULT : 1) * (sh.innov ? C.INNOV_PRICE_MULT : 1));
+  const price = (sh, itemId) => round1(G.ITEM[itemId].price * (sh.mults[itemId] || 1) * (sh.monopoly ? C.MONOPOLY_MULT : 1) * (sh.innov ? C.INNOV_PRICE_MULT : 1) * G.events.priceMult(sh));
   const partner = (S, sh) => S.shops[sh.idx ^ 1];
 
   function opened(S, cat) { for (const sh of S.shops) if (sh.cat === cat) sh.openFx = 0; }

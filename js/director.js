@@ -20,7 +20,12 @@ G.director = (() => {
     { at: 30, open: { village: 'fire', cat: 'safety' }, banner: '소방서가 문을 열었어요!', sub: '안전 공방도 영업 시작' },
     { at: 45, open: { village: 'library' }, banner: '도서관이 문을 열었어요!', sub: '공방 거리가 바빠져요' },
     { at: 50, hook: 'firstFake' },                 // 첫 수상한 공방 확정 등장 (적발 기회를 늘리려고 1:00 → 0:50)
+    { at: 65, hook: 'dustStart' },                 // 미세먼지 경보 1:05~1:20
+    { at: 80, hook: 'dustEnd' },
     { at: 88, hook: 'stormWarn' },                 // 10번 작업: 태풍 경보
+    { at: 117, hook: 'surgeWarn' },                // 원자재 가격 폭등 예고 → 2:05~2:25 폭등
+    { at: 125, hook: 'surgeStart' },
+    { at: 145, hook: 'surgeEnd' },
     { at: C.FINAL_RUSH_AT, rush: true, banner: '막바지! 점수 1.5배', sub: '조금만 더 힘내요' },
   ];
   const hooks = {};                                // 다른 작업이 등록: G.director.on('firstFake', fn)

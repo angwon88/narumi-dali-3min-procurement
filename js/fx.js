@@ -16,9 +16,9 @@ G.fx = (() => {
     }
   }
   // 동전: (x, y)에서 (tx, ty)로 날아감. 모두 도착하면 done()
-  function coins(S, x, y, tx, ty, n, done) {
+  function coins(S, x, y, tx, ty, n, done, look, delay) {
     S.parts = S.parts || [];
-    for (let i = 0; i < n; i++) S.parts.push({ kind: 'coin', x, y, sx: x + (Math.random() - 0.5) * 60, sy: y - 30 - Math.random() * 40, tx, ty, age: -i * 0.05, life: 0.75, done: i === n - 1 ? done : null });
+    for (let i = 0; i < n; i++) S.parts.push({ kind: 'coin', look: look || 'coin', x, y, sx: (x + tx) / 2 + (Math.random() - 0.5) * 60, sy: Math.min(y, ty) - 40 - Math.random() * 40, tx, ty, age: -i * 0.05 - (delay || 0), life: 0.75, done: i === n - 1 ? done : null });
   }
   function update(S, dt) {
     if (S.floats) { for (const f of S.floats) f.age += dt; S.floats = S.floats.filter(f => f.age < LIFE); }
@@ -38,7 +38,9 @@ G.fx = (() => {
       if (p.kind === 'spark') { ctx.globalAlpha = 1 - k; ctx.fillStyle = p.col; ctx.fillRect(Math.round(p.x), Math.round(p.y), p.sz, p.sz); }
       else {                                       // 위로 튀었다가 저금통으로 (베지어 곡선)
         const u = 1 - k, x = u * u * p.x + 2 * u * k * p.sx + k * k * p.tx, y = u * u * p.y + 2 * u * k * p.sy + k * k * p.ty;
-        ctx.globalAlpha = 1; ctx.fillStyle = '#a07800'; ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+        if (p.look === 'crate') { G.events.crate(ctx, Math.round(x) - 7, Math.round(y) - 6); continue; }
+        ctx.fillStyle = '#a07800'; ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#a07800'; ctx.fillRect(Math.round(x) - 1, Math.round(y) - 3, 2, 6);
       }
