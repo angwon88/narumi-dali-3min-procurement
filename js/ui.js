@@ -56,7 +56,7 @@ G.ui = (() => {
   }
 
   // 마을 요청 말풍선: 마을 앞마당 위, 마을당 최대 2개(왼쪽·오른쪽 칸)
-  const BW = 56, BH = 46;
+  const BW = 62, BH = 46;
   function bubbleRect(r) { const v = r.vill; return { x: v.yard.x + v.yard.w / 2 - BW - 4 + r.slot * (BW + 8), y: v.yard.y - BH - 10, w: BW, h: BH }; }
   function ringColor(f) { return f > 0.5 ? '#46b04a' : f > 0.25 ? '#f2b632' : '#e5533d'; }
   function bubble(ctx, r) {
@@ -77,7 +77,9 @@ G.ui = (() => {
     if (r.state === 'open') { ctx.strokeStyle = ringColor(f); ctx.beginPath(); ctx.arc(cx, cy, 13, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f); ctx.stroke(); }
     ctx.lineWidth = 1;
     if (!r.fraud) G.icons.draw(ctx, r.item, cx, cy, 18);
-    T(ctx, r.price + '만원', cx, 38, 12, '#4a3f2a');
+    T(ctx, '예정 ' + r.price + '만', cx, 38, 12, '#4a3f2a');
+    ctx.fillStyle = '#2f4f8a'; ctx.fillRect(0, -11, 44, 11);                       // '나라장터' 탭 (전자조달 주문)
+    ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('나라장터', 22, -5);
     if (r.fraud) {                                                   // 미납: 빈 상자 / 불량: 부서진 상자
       ctx.fillStyle = '#c9a26b'; ctx.fillRect(cx - 9, cy - 2, 18, 11); ctx.fillStyle = '#a07f4f'; ctx.fillRect(cx - 9, cy - 2, 18, 2);
       if (r.fraud === 'empty') { ctx.fillStyle = '#5a4630'; ctx.fillRect(cx - 7, cy, 14, 7); ctx.fillStyle = '#c9a26b'; ctx.fillRect(cx - 12, cy - 8, 8, 3); ctx.fillRect(cx + 4, cy - 8, 8, 3); }

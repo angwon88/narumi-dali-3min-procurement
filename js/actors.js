@@ -44,7 +44,7 @@ G.narmi = {
   x: 0, y: 0, face: 's', t: 0, state: 'perch', target: null, timer: 0, talk: null,
   reset() { const p = G.world.roofPerch; Object.assign(this, { x: p.x, y: p.y, face: 's', t: 0, state: 'perch', target: null, timer: 0, talk: null }); },
   say(text, sec) { this.talk = { text, left: sec }; },
-  spot(sh) { const b = sh.w.body; return { x: b.x + b.w / 2, y: b.y + 20 }; },        // 공방 지붕 위 내려앉는 곳
+  spot(sh) { const b = sh.w.body; return { x: b.x + b.w / 2, y: b.y + 62 }; },        // 공방 앞에 내려앉는 곳 (HUD에 가리지 않게)
   send(S, sh) { this.target = sh; this.state = 'fly'; S.inspectCD = G.C.INSPECT_COOLDOWN * (S.inspectCDMult || 1); S.inspectCDMax = S.inspectCD; },
   moveTo(p, dt) {
     const dx = p.x - this.x, dy = p.y - this.y, d = Math.hypot(dx, dy), step = G.C.NARMI_SPEED * dt;
@@ -73,13 +73,16 @@ G.narmi = {
       ctx.fillStyle = '#fffdf6'; ctx.fillRect(this.x - 3, y + 22, 6, 4);
       G.world.text(ctx, this.talk.text, this.x, y + 11, 12, '#2a2416');
     }
-    if (this.state === 'inspect') {                     // 돋보기 + 진행 막대
-      const f = this.timer / G.C.INSPECT_TIME, x = this.x, y = this.y - 52;
-      ctx.fillStyle = 'rgba(20,24,30,.8)'; ctx.fillRect(x - 22, y - 2, 44, 6);
-      ctx.fillStyle = '#9be37a'; ctx.fillRect(x - 21, y - 1, Math.round(42 * f), 4);
-      const a = this.t * 8; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(x + 16 + Math.cos(a) * 3, y - 14 + Math.sin(a) * 3, 5, 0, Math.PI * 2); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x + 19 + Math.cos(a) * 3, y - 10 + Math.sin(a) * 3); ctx.lineTo(x + 23 + Math.cos(a) * 3, y - 5 + Math.sin(a) * 3); ctx.stroke(); ctx.lineWidth = 1;
+    if (this.state === 'inspect') {                     // 데이터 분석: 화면판 + 자라는 막대그래프 + 진행 막대
+      const f = this.timer / G.C.INSPECT_TIME, x = Math.round(this.x), y = Math.round(this.y + 36);   // 나르미 아래 길 쪽
+      ctx.fillStyle = '#1e2a3a'; ctx.fillRect(x - 26, y - 22, 52, 30);
+      ctx.fillStyle = '#5ec8f2'; ctx.fillRect(x - 26, y - 22, 52, 2);
+      const hs = [0.5, 0.9, 0.35, 0.7];
+      hs.forEach((h, i) => { const k = Math.min(1, f * 1.6 - i * 0.15); if (k > 0) { ctx.fillStyle = i % 2 ? '#9be37a' : '#5ec8f2'; const bh = Math.round(18 * h * k); ctx.fillRect(x - 20 + i * 11, y + 2 - bh, 7, bh); } });
+      ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fillRect(x - 22, y - 16 + Math.round(f * 18) % 18, 44, 1);   // 스캔 줄
+      ctx.fillStyle = 'rgba(20,24,30,.85)'; ctx.fillRect(x - 26, y + 10, 52, 6);
+      ctx.fillStyle = '#9be37a'; ctx.fillRect(x - 25, y + 11, Math.round(50 * f), 4);
+      ctx.fillStyle = '#1e2a3a'; ctx.fillRect(x - 32, y + 16, 64, 16); G.world.text(ctx, '데이터 분석', x, y + 24, 12, '#fff');
     }
   },
 };

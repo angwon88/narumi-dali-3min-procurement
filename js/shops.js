@@ -203,11 +203,11 @@ G.shops = (() => {
       sh.status = 'caught'; sh.revealT = 0; sh.closeT = 0;
       S.score += C.CATCH_SCORE; G.score.trust(S, C.TRUST_CATCH);
       S.stats.caught = (S.stats.caught || 0) + 1;
-      G.fx.add(S, b.x + b.w / 2, b.y + 8, '적발! 수상한 공방 +' + C.CATCH_SCORE, '#ffe48a', 16);
+      G.fx.add(S, b.x + b.w / 2, b.y + 8, '적발! 실체 없는 공방 +' + C.CATCH_SCORE, '#ffe48a', 16);
       G.fx.add(S, b.x + b.w / 2, b.y + 8, '마을 신뢰 +' + C.TRUST_CATCH, '#9be37a');
     } else {
       sh.verified = true; sh.stampT = 0;
-      G.fx.add(S, b.x + b.w / 2, b.y + 8, '✔ 정상 공방', '#9be37a');
+      G.fx.add(S, b.x + b.w / 2, b.y + 8, '✔ 거래 기록 정상', '#9be37a');
     }
   }
   function handleInspectInput(S) {

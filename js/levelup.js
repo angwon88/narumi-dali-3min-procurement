@@ -15,7 +15,7 @@ G.levelup = (() => {
       ok: S => S.level - S.pendingLevels + 1 >= 4 && S.bagCap < C.BAG_MAX, apply: S => { S.bagCap = Math.min(C.BAG_MAX, S.bagCap + 1); } },
     { id: 'wings', name: '나르미의 날개', icon: 'wing', col: '#5b8fb9', max: 2, desc: () => '검증 쉬는 시간 -30%',
       apply: S => { S.inspectCDMult *= 0.7; } },
-    { id: 'eye', name: '나르미의 눈썰미', icon: 'eye', col: '#7a5ab8', max: 1, desc: () => '수상한 공방 간판에 "?" 표시',
+    { id: 'eye', name: '나르미의 데이터 분석', icon: 'chart', col: '#7a5ab8', max: 1, desc: () => '거래 기록을 분석해 수상한 공방 간판에 "?" 표시',
       apply: S => { S.fakeHint = true; } },
     { id: 'talk', name: '마을과 소통', icon: 'talk', col: '#46b04a', max: 2, desc: () => '새 요청 제한 시간 +15%',
       apply: S => { S.limitMult *= 1.15; } },
@@ -76,7 +76,7 @@ G.levelup = (() => {
       case 'shoes': R(-16, 0, 24, 10); R(-16, -10, 10, 10); R(8, 4, 10, 6); ctx.fillStyle = '#3a3a3a'; R(-16, 10, 34, 3); break;
       case 'bag': R(-14, -6, 28, 22); R(-8, -14, 16, 4); R(-10, -12, 3, 8); R(7, -12, 3, 8); ctx.fillStyle = col; R(-4, 0, 8, 6); break;
       case 'wing': for (let i = 0; i < 4; i++) R(-16 + i * 6, -10 + i * 4, 30 - i * 6, 4); break;
-      case 'eye': R(-18, -4, 36, 8); R(-12, -8, 24, 16); ctx.fillStyle = col; R(-5, -5, 10, 10); ctx.fillStyle = '#2a2a2a'; R(-2, -2, 4, 4); break;
+      case 'chart': R(-18, 12, 36, 3); R(-14, -2, 6, 14); R(-5, -12, 6, 24); R(4, 2, 6, 10); R(13, -8, 5, 20); break;
       case 'talk': R(-18, -14, 36, 22); R(-10, 8, 6, 6); ctx.fillStyle = col; R(-12, -6, 6, 4); R(-2, -6, 6, 4); R(8, -6, 4, 4); break;
       case 'book': R(-16, -14, 32, 28); ctx.fillStyle = col; R(-1, -14, 2, 28); R(-12, -8, 9, 2); R(4, -8, 9, 2); R(-12, -2, 9, 2); R(4, -2, 9, 2); break;
       case 'coin': ctx.beginPath(); ctx.arc(cx, cy, 16, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = col; R(-2, -10, 4, 20); R(-8, -6, 16, 3); R(-8, 3, 16, 3); break;
