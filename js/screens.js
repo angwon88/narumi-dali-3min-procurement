@@ -8,7 +8,7 @@ G.screens = (() => {
 
   function newGame() {
     G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, floats: [], bagCap: C.BAG_START, scoreMult: 1 };
-    G.score.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S);
+    G.score.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S);
     G.dali.reset(); G.narmi.reset(); G.input.reset();
     G.screen = 'play';
   }
@@ -59,6 +59,7 @@ G.screens = (() => {
   // 달이 이동을 뺀 한 프레임 진행 (debug.js의 시간 건너뛰기도 이것을 쓴다)
   function step(S, dt) {
     S.timeLeft -= dt; S.elapsed += dt;
+    G.director.update(S, dt);
     G.requests.update(S, dt);
     G.narmi.update(dt);
     G.shops.update(S, dt);
@@ -77,6 +78,7 @@ G.screens = (() => {
     G.dali.drawOver(ctx, G.S);
     G.fx.draw(ctx, G.S);
     G.villages.dangerEdge(ctx, G.S);
+    G.director.draw(ctx, G.S);
     ui.hud(ctx, G.S);
     if (G.debug) G.debug.draw(ctx);
     ui.joystick(ctx);

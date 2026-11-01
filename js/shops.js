@@ -8,7 +8,7 @@ G.shops = (() => {
   function init(S) {
     S.shops = G.world.shops.map(w => ({ w, idx: w.idx, cat: w.cat.id, mult: 1, status: 'open' }));
     for (let r = 0; r < 4; r++) rollRow(S, r);
-    for (const sh of S.shops) sh.fx = null;
+    for (const sh of S.shops) { sh.fx = null; sh.openFx = null; }
     S.priceClock = C.PRICE_REROLL_SEC;
     S.buy = { shop: null, dwell: 0, warned: false };
   }
@@ -41,6 +41,9 @@ G.shops = (() => {
     G.fx.add(S, d.x + d.w / 2, d.y - 6, G.ITEM[item].name + ' 구매 ' + p + '만원', '#fff');
   }
 
+  // 타임라인이 카테고리를 열 때: 셔터가 0.8초 동안 올라감
+  function opened(S, cat) { for (const sh of S.shops) if (sh.cat === cat) sh.openFx = 0; }
+
   // 20초마다 가격 다시 뽑기. 바뀐 공방 간판은 1.5초 반짝이며 ▲(비싸짐)·▼(싸짐) 표시
   function reroll(S) {
     const before = S.shops.map(sh => sh.mult);
@@ -55,7 +58,10 @@ G.shops = (() => {
   function update(S, dt) {
     S.priceClock -= dt;
     if (S.priceClock <= 0) { reroll(S); S.priceClock += C.PRICE_REROLL_SEC; }
-    for (const sh of S.shops) if (sh.fx && (sh.fx.t += dt) > 1.5) sh.fx = null;
+    for (const sh of S.shops) {
+      if (sh.fx && (sh.fx.t += dt) > 1.5) sh.fx = null;
+      if (sh.openFx != null && (sh.openFx += dt) > 0.8) sh.openFx = null;
+    }
     const dali = G.dali, B = S.buy;
     const sh = S.shops.find(s => isOpen(S, s) && U.inRect(dali.x, dali.y, s.w.door)) || null;
     if (sh !== B.shop) { B.shop = sh; B.dwell = 0; B.warned = false; }
@@ -80,16 +86,19 @@ G.shops = (() => {
     }
   }
 
+  // 셔터: k = 내려온 비율(1 = 다 닫힘)
+  function shutter(ctx, b, k, label) {
+    const h = Math.round((b.h - 22) * k); if (h <= 0) return;
+    ctx.fillStyle = '#7d8590'; ctx.fillRect(b.x + 4, b.y + 22, b.w - 8, h);
+    ctx.fillStyle = '#6a7179'; for (let y = b.y + 26; y < b.y + 22 + h; y += 6) ctx.fillRect(b.x + 4, y, b.w - 8, 2);
+    if (label) G.world.text(ctx, '준비 중', b.x + b.w / 2, b.y + 43, 12, '#fff');
+  }
+
   // 간판 가격표(건물 벽) + 준비 중 셔터
   function draw(ctx, S) {
     for (const sh of S.shops) {
       const b = sh.w.body;
-      if (!S.openCats.has(sh.cat)) {
-        ctx.fillStyle = '#7d8590'; ctx.fillRect(b.x + 4, b.y + 22, b.w - 8, b.h - 22);
-        ctx.fillStyle = '#6a7179'; for (let y = b.y + 26; y < b.y + b.h; y += 6) ctx.fillRect(b.x + 4, y, b.w - 8, 2);
-        G.world.text(ctx, '준비 중', b.x + b.w / 2, b.y + 43, 12, '#fff');
-        continue;
-      }
+      if (!S.openCats.has(sh.cat)) { shutter(ctx, b, 1, true); continue; }
       const flash = sh.fx && Math.floor(sh.fx.t * 6) % 2 === 0;
       if (sh.fx) { ctx.fillStyle = flash ? '#ffd84a' : '#fff3b0'; ctx.fillRect(b.x + 4, b.y + 23, 96, 38); }
       ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + 6, b.y + 25, 92, 34);
@@ -100,7 +109,8 @@ G.shops = (() => {
         G.world.text(ctx, price(sh, it.id) + '만', b.x + 58, y + 1, 12, '#2a2416');
         if (sh.fx) G.world.text(ctx, sh.fx.dir > 0 ? '▲' : '▼', b.x + 89, y + 1, 12, sh.fx.dir > 0 ? '#d9342b' : '#2e9b3a');
       });
+      if (sh.openFx != null) shutter(ctx, b, 1 - sh.openFx / 0.8, false);
     }
   }
-  return { init, update, draw, price, isOpen, rollRow };
+  return { init, update, draw, price, isOpen, rollRow, opened };
 })();

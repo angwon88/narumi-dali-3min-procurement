@@ -17,7 +17,7 @@ G.C = {
   FINAL_RUSH_AT: 150, FINAL_RUSH_MULT: 1.5,
   STORM: { warnAt: 88, start: 90, end: 110, limit: 18, mult: 2, slow: 0.9 },
   MAX_REQ_PER_VILLAGE: 2, MAX_REQ_TOTAL: 6,
-  REQ_FIRST_AT: 2, REQ_INTERVAL: 6.0, REQ_LIMIT: 35, REQ_EMPTY_FILL: 1,   // 첫 구간 값 (타임라인 작업 때 구간별로 바뀜)
+  REQ_FIRST_AT: 2, REQ_INTERVAL: 6.0, REQ_LIMIT: 35, REQ_EMPTY_FILL: 1,   // 기본값. 실제 구간별 값은 director.js
   GRADE: { S: [9000, 80], A: [6000, 60], B: [3000, 0] },
 };
 G.FONT = 'Galmuri11';

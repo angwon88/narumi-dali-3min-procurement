@@ -41,6 +41,12 @@ G.villages = (() => {
   function draw(ctx, S) {
     for (const v of G.world.villages) {
       const s = S.vstate[v.id], b = v.body, y = v.yard, hurt = s.hurtT > 0;
+      if (!S.openVillages.has(v.id)) {               // 아직 안 열린 마을: 어둡게 + 팻말
+        ctx.fillStyle = 'rgba(30,36,46,.55)'; ctx.fillRect(b.x - 4, b.y, b.w + 8, b.h); ctx.fillRect(y.x, y.y, y.w, y.h);
+        ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + 40, b.y + 40, 80, 22);
+        G.world.text(ctx, '곧 열려요', b.x + 80, b.y + 51, 12, '#4a3f2a');
+        continue;
+      }
       const blink = Math.floor(s.t * 3) % 2 === 0;
       if (v.id === 'fire') {                         // 경광등: 평소 빨강 깜빡, 피해 시 회색
         ctx.fillStyle = hurt ? '#7d7d7d' : blink ? '#ff3b30' : '#a8231b';

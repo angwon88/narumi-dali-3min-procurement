@@ -1,5 +1,5 @@
 /* 요청: 생성 · 시간 감소 · 만료 (기획서 3.4, 4.1)
-   구간별 간격·제한 시간은 4번(타임라인) 작업에서 director.js로 옮긴다. 지금은 첫 구간 값으로 고정. */
+   구간별 간격(S.reqInterval)·제한 시간(S.reqLimit)은 director.js가 정한다. */
 'use strict';
 G.requests = (() => {
   const C = G.C;
