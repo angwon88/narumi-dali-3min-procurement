@@ -52,10 +52,15 @@ G.screens = (() => {
   // ---------- 플레이 ----------
   function playUpdate(dt) {
     if (G.input.hit('escape') || G.input.hit('p') || ui.clicked(ui.PAUSE_BTN)) { G.screen = 'pause'; return; }
-    const S = G.S;
+    if (G.debug && G.debug.update()) return;
+    G.dali.update(dt);
+    step(G.S, dt);
+  }
+  // 달이 이동을 뺀 한 프레임 진행 (debug.js의 시간 건너뛰기도 이것을 쓴다)
+  function step(S, dt) {
     S.timeLeft -= dt; S.elapsed += dt;
     G.requests.update(S, dt);
-    G.dali.update(dt); G.narmi.update(dt);
+    G.narmi.update(dt);
     G.shops.update(S, dt);
     G.requests.deliver(S);
     G.villages.update(S, dt);
@@ -73,6 +78,7 @@ G.screens = (() => {
     G.fx.draw(ctx, G.S);
     G.villages.dangerEdge(ctx, G.S);
     ui.hud(ctx, G.S);
+    if (G.debug) G.debug.draw(ctx);
     ui.joystick(ctx);
     const tl = G.S.timeLeft;                                   // 마지막 10초 카운트다운
     if (tl > 0 && tl <= 10 && G.screen === 'play') {
@@ -126,7 +132,7 @@ G.screens = (() => {
     end: [endUpdate, endDraw], result: [resultUpdate, resultDraw],
   };
   return {
-    newGame,
+    newGame, step,
     update(dt) { const f = table[G.screen]; if (f) f[0](dt); },
     draw(ctx, t) { const f = table[G.screen]; if (f) f[1](ctx, t); },
     autoPause() { if (G.screen === 'play') G.screen = 'pause'; },

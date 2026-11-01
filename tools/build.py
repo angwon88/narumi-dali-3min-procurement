@@ -10,6 +10,8 @@ def data_uri(rel):
     return f"data:{MIME.get(p.suffix) or mimetypes.guess_type(p.name)[0]};base64," + base64.b64encode(p.read_bytes()).decode()
 
 html = (ROOT / 'index.html').read_text(encoding='utf-8')
+# 개발 전용 스크립트(data-dev, 예: 시간 건너뛰기)는 제출용에서 뺀다
+html = re.sub(r'<script src="[^"]+" data-dev></script>\n?', '', html)
 html = re.sub(r'<link rel="stylesheet" href="([^"]+)">',
               lambda m: '<style>\n' + (ROOT / m.group(1)).read_text(encoding='utf-8') + '</style>', html)
 html = re.sub(r'<script src="([^"]+)"></script>',
