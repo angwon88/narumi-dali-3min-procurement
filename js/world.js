@@ -1,5 +1,5 @@
 /* 맵 배치 (기획서 3.2). 한 화면 960×540, 스크롤 없음.
-   공방: 140×100 칸 중 위 64px이 건물(충돌), 아래는 길. 구매칸 = 칸의 오른쪽 아래 40×28.
+   공방: 140×100 칸 중 위 64px이 건물(충돌), 아래는 길. 구매칸 = A는 칸의 오른쪽 아래, B는 왼쪽 아래 40×28.
    마을: 220×100 중 왼쪽 60px이 앞마당(납품칸), 나머지가 건물(충돌).
    그림은 임시(3주차에 픽셀아트로 교체). */
 'use strict';
@@ -22,7 +22,10 @@ G.world = (() => {
     const x = 16 + c * 150, y = 60 + r * 116;
     shops.push({
       idx: r * 2 + c, cat: CATS[r], side: c ? 'B' : 'A',
-      slot: { x, y, w: 140, h: 100 }, body: { x, y, w: 140, h: 64 }, door: { x: x + 100, y: y + 72, w: 40, h: 28 },
+      slot: { x, y, w: 140, h: 100 }, body: { x, y, w: 140, h: 64 },
+      // A는 오른쪽 아래, B는 왼쪽 아래 문 → 두 문이 가운데에서 마주 봄 (광장까지 거리 차이 최소화)
+      door: { x: c ? x : x + 100, y: y + 72, w: 40, h: 28 },
+      doorGfx: c ? x + 10 : x + 108, tagX: c ? x + 42 : x + 6,
     });
   }
   VILLAGES.forEach((v, i) => {
@@ -68,8 +71,8 @@ G.world = (() => {
   function drawShop(ctx, s) {
     const b = s.body, cat = s.cat;
     house(ctx, b, shade(cat.col, 1), shade(cat.col, 0.6), cat.name + '공방 ' + s.side);
-    ctx.fillStyle = '#3b2a1e'; ctx.fillRect(b.x + 108, b.y + 34, 22, 30);           // 문
-    ctx.fillStyle = '#9fd3ff'; ctx.fillRect(b.x + 14, b.y + 30, 26, 18); ctx.fillRect(b.x + 54, b.y + 30, 26, 18);  // 창
+    ctx.fillStyle = '#3b2a1e'; ctx.fillRect(s.doorGfx, b.y + 34, 22, 30);            // 문
+    ctx.fillStyle = '#9fd3ff'; ctx.fillRect(s.tagX + 8, b.y + 30, 26, 18); ctx.fillRect(s.tagX + 48, b.y + 30, 26, 18);  // 창
     ctx.strokeStyle = 'rgba(80,60,30,.5)'; ctx.setLineDash([3, 3]); ctx.strokeRect(s.door.x + .5, s.door.y + .5, s.door.w - 1, s.door.h - 1); ctx.setLineDash([]);
   }
   function drawVillage(ctx, v) {

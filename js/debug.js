@@ -24,7 +24,7 @@ G.debug = (() => {
     G.ui.button(ctx, BTN5, '+5초', { size: 12, fill: '#9fd3ff', hot: '#c9e7ff' });
     G.ui.button(ctx, BTN10, '+10초', { size: 12, fill: '#9fd3ff', hot: '#c9e7ff' });
     const e = G.S.elapsed;
-    G.world.text(ctx, 'DEV 경과 ' + Math.floor(e / 60) + ':' + String(Math.floor(e % 60)).padStart(2, '0'), W - 160, 22, 12, '#9fd3ff', 'right');
+    G.world.text(ctx, 'DEV 경과 ' + Math.floor(e / 60) + ':' + String(Math.floor(e % 60)).padStart(2, '0'), W - 12, 56, 12, '#9fd3ff', 'right');
   }
   return { skip, update, draw };
 })();

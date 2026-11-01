@@ -38,12 +38,38 @@ G.dali = {
     }
   },
 };
+/* 나르미: 지붕에서 대기 → 지정한 공방으로 날아가 1초 검증 → 복귀 (기획서 3.6)
+   상태: perch(대기) · fly(가는 중) · inspect(검증 중) · back(돌아오는 중) */
 G.narmi = {
-  x: 0, y: 0, face: 's', t: 0,
-  reset() { const p = G.world.roofPerch; Object.assign(this, { x: p.x, y: p.y, face: 's', t: 0 }); },
-  update(dt) { this.t += dt; },
+  x: 0, y: 0, face: 's', t: 0, state: 'perch', target: null, timer: 0,
+  reset() { const p = G.world.roofPerch; Object.assign(this, { x: p.x, y: p.y, face: 's', t: 0, state: 'perch', target: null, timer: 0 }); },
+  spot(sh) { const b = sh.w.body; return { x: b.x + b.w / 2, y: b.y + 20 }; },        // 공방 지붕 위 내려앉는 곳
+  send(S, sh) { this.target = sh; this.state = 'fly'; S.inspectCD = G.C.INSPECT_COOLDOWN * (S.inspectCDMult || 1); S.inspectCDMax = S.inspectCD; },
+  moveTo(p, dt) {
+    const dx = p.x - this.x, dy = p.y - this.y, d = Math.hypot(dx, dy), step = G.C.NARMI_SPEED * dt;
+    if (d <= step) { this.x = p.x; this.y = p.y; return true; }
+    this.x += dx / d * step; this.y += dy / d * step; this.face = G.spr.dir8(dx, dy); return false;
+  },
+  update(dt, S) {
+    this.t += dt;
+    if (S) S.inspectCD = Math.max(0, (S.inspectCD || 0) - dt);
+    if (this.state === 'fly' && this.moveTo(this.spot(this.target), dt)) { this.state = 'inspect'; this.timer = 0; this.face = 's'; }
+    else if (this.state === 'inspect' && (this.timer += dt) >= G.C.INSPECT_TIME) { G.shops.inspected(S, this.target); this.state = 'back'; }
+    else if (this.state === 'back' && this.moveTo(G.world.roofPerch, dt)) { this.state = 'perch'; this.target = null; this.face = 's'; }
+  },
+  busy() { return this.state !== 'perch'; },
   draw(ctx) {
-    const bob = Math.round(Math.sin(this.t * 2) * 1.5);
-    G.spr.drawChar(ctx, 'narmi', 'rot', this.face, this.t, this.x, this.y + bob);
+    const flying = this.state === 'fly' || this.state === 'back';
+    const lift = flying ? 14 : 0, bob = Math.round(Math.sin(this.t * (flying ? 10 : 2)) * (flying ? 2.5 : 1.5));
+    if (flying) G.spr.shadow(ctx, this.x, this.y + 18, 9);
+    G.spr.drawChar(ctx, 'narmi', flying ? 'walk' : 'rot', this.face, this.t, this.x, this.y - lift + bob);
+    if (this.state === 'inspect') {                     // 돋보기 + 진행 막대
+      const f = this.timer / G.C.INSPECT_TIME, x = this.x, y = this.y - 52;
+      ctx.fillStyle = 'rgba(20,24,30,.8)'; ctx.fillRect(x - 22, y - 2, 44, 6);
+      ctx.fillStyle = '#9be37a'; ctx.fillRect(x - 21, y - 1, Math.round(42 * f), 4);
+      const a = this.t * 8; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x + 16 + Math.cos(a) * 3, y - 14 + Math.sin(a) * 3, 5, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + 19 + Math.cos(a) * 3, y - 10 + Math.sin(a) * 3); ctx.lineTo(x + 23 + Math.cos(a) * 3, y - 5 + Math.sin(a) * 3); ctx.stroke(); ctx.lineWidth = 1;
+    }
   },
 };

@@ -30,6 +30,16 @@ G.ui = (() => {
     ctx.fillStyle = blink ? '#ff8a7a' : f > 0.5 ? '#46b04a' : f > 0.25 ? '#f2b632' : '#e5533d';
     ctx.fillRect(gx + 2, 16, Math.round((gw - 4) * f), 12);
     T(ctx, String(Math.round(S.trust)), gx + gw / 2, 22, 12, '#fff');
+    // 나르미 검증 준비 상태 (원형 게이지)
+    const nx = 660, ny = 22, cd = S.inspectCD || 0, ready = cd <= 0 && !G.narmi.busy();
+    ctx.fillStyle = '#0f1620'; ctx.beginPath(); ctx.arc(nx, ny, 17, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = ready ? '#9be37a' : '#3a4656';
+    ctx.beginPath(); ctx.arc(nx, ny, 15, 0, Math.PI * 2); ctx.stroke();
+    if (!ready && S.inspectCDMax) { ctx.strokeStyle = '#ffd84a'; ctx.beginPath(); ctx.arc(nx, ny, 15, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - cd / S.inspectCDMax)); ctx.stroke(); }
+    ctx.lineWidth = 1;
+    ctx.save(); ctx.beginPath(); ctx.arc(nx, ny, 13, 0, Math.PI * 2); ctx.clip();
+    G.spr.drawChar(ctx, 'narmi', 'rot', 's', 0, nx, ny + 30, 0.6); ctx.restore();
+    T(ctx, ready ? '검증 OK' : Math.ceil(cd) + '초', nx + 22, 22, 12, ready ? '#9be37a' : '#8fa3b8', 'left');
     T(ctx, '‖', C.VIEW.w - 22, 22, 18, '#fff');
   }
   const PAUSE_BTN = { x: C.VIEW.w - 40, y: 4, w: 36, h: 36 };

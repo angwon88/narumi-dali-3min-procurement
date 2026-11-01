@@ -54,6 +54,7 @@ G.screens = (() => {
     if (G.input.hit('escape') || G.input.hit('p') || ui.clicked(ui.PAUSE_BTN)) { G.screen = 'pause'; return; }
     if (G.debug && G.debug.update()) return;
     G.dali.update(dt);
+    G.shops.handleInspectInput(G.S);
     step(G.S, dt);
   }
   // 달이 이동을 뺀 한 프레임 진행 (debug.js의 시간 건너뛰기도 이것을 쓴다)
@@ -61,7 +62,7 @@ G.screens = (() => {
     S.timeLeft -= dt; S.elapsed += dt;
     G.director.update(S, dt);
     G.requests.update(S, dt);
-    G.narmi.update(dt);
+    G.narmi.update(dt, S);
     G.shops.update(S, dt);
     G.requests.deliver(S);
     G.villages.update(S, dt);
@@ -76,6 +77,7 @@ G.screens = (() => {
     G.dali.draw(ctx);
     ui.bubbles(ctx, G.S);
     G.dali.drawOver(ctx, G.S);
+    G.shops.drawHover(ctx, G.S);
     G.fx.draw(ctx, G.S);
     G.villages.dangerEdge(ctx, G.S);
     G.director.draw(ctx, G.S);
