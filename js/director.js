@@ -41,7 +41,7 @@ G.director = (() => {
     }
     if (ev.extra) G.requests.spawn(S, ev.extra);
     if (ev.rush) S.scoreMult = C.FINAL_RUSH_MULT;
-    if (ev.banner) banner(S, ev.banner, ev.sub);
+    if (ev.banner) { banner(S, ev.banner, ev.sub); G.audio.play('banner'); }
     if (ev.hook && hooks[ev.hook]) hooks[ev.hook](S);
   }
   function update(S, dt) {

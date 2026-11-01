@@ -42,8 +42,9 @@ G.levelup = (() => {
     while (pick.length < 3) pick.push(BONUS);
     return pick;
   }
-  function open(S) { S.offer = makeOffer(S); S.offerT = 0; G.screen = 'levelup'; }
+  function open(S) { S.offer = makeOffer(S); S.offerT = 0; G.screen = 'levelup'; G.audio.play('levelup'); }
   function choose(S, card) {
+    G.audio.play('click');
     card.apply(S);
     S.taken[card.id] = (S.taken[card.id] || 0) + 1;
     (S.stats.cards = S.stats.cards || []).push(card.id);

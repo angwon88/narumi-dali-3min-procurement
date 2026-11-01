@@ -27,7 +27,7 @@ G.gifts = (() => {
     G.score.trust(S, C.GIFT_TRUST); S.score += C.GIFT_SCORE;
     G.director.banner(S, '아낀 세금으로 ' + v.name + '에 ' + kind.name + G.U.josa(kind.name, '이', '가') + ' 생겼어요!', '국민 세금이 다시 마을로 · 신뢰 +' + C.GIFT_TRUST);
     G.fx.add(S, v.yard.x + v.yard.w / 2, v.yard.y + 6, '+' + C.GIFT_SCORE, '#ffe48a', 16);
-    if (G.audio) G.audio.play('gift');
+    G.audio.play('gift');
   }
   function update(S, dt) { for (const g of S.gifts) g.t += dt; }
 

@@ -24,6 +24,7 @@ G.score = (() => {
     G.gifts.add(S, saving);                                   // 아낀 만큼 저금통 +, 비싸게 산 만큼 -
     trust(S, frac >= 0.5 ? C.TRUST_FAST : C.TRUST_ON_TIME);
     G.villages.onSuccess(S, r.vid);
+    G.audio.play('deliver', S.combo);
     const v = r.vill.yard;
     G.fx.add(S, v.x + v.w / 2, v.y + 16, '+' + pts + (S.combo >= 2 ? '  콤보 ' + S.combo + '!' : ''), '#ffe48a', 16);
     if (saving > 0) G.fx.add(S, v.x + v.w / 2, v.y + 16, '세금 +' + saving + '만원', '#9be37a');

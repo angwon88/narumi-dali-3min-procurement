@@ -107,7 +107,8 @@ G.shops = (() => {
   }
   function buy(S, sh, item) {
     const p = price(sh, item);
-    G.dali.bag.push({ item, paid: p, shop: sh.idx, fake: sh.fake });   // 수상한 물건도 겉보기는 같다
+    G.dali.bag.push({ item, paid: p, shop: sh.idx, fake: sh.fake });
+    G.audio.play('buy');   // 수상한 물건도 겉보기는 같다
     S.stats.bought = (S.stats.bought || 0) + 1;
     const d = sh.w.door;
     G.fx.add(S, d.x + d.w / 2, d.y - 6, G.ITEM[item].name + ' 구매 ' + p + '만원', '#fff');
@@ -192,6 +193,7 @@ G.shops = (() => {
     const why = whyNot(S, sh), b = sh.w.body;
     if (why) { G.fx.add(S, b.x + b.w / 2, b.y + 12, why, '#ffd6a0'); return false; }
     G.narmi.send(S, sh);
+    G.audio.play('whoosh');
     S.stats.inspected = (S.stats.inspected || 0) + 1;
     return true;
   }
@@ -204,10 +206,12 @@ G.shops = (() => {
       S.score += C.CATCH_SCORE; G.score.trust(S, C.TRUST_CATCH);
       S.stats.caught = (S.stats.caught || 0) + 1;
       G.fx.add(S, b.x + b.w / 2, b.y + 8, '적발! 실체 없는 공방 +' + C.CATCH_SCORE, '#ffe48a', 16);
+      G.audio.play('catch');
       G.fx.add(S, b.x + b.w / 2, b.y + 8, '마을 신뢰 +' + C.TRUST_CATCH, '#9be37a');
     } else {
       sh.verified = true; sh.stampT = 0;
       G.fx.add(S, b.x + b.w / 2, b.y + 8, '✔ 거래 기록 정상', '#9be37a');
+      G.audio.play('ok');
     }
   }
   function handleInspectInput(S) {
