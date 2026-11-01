@@ -10,8 +10,9 @@ G.levelup = (() => {
   const CARDS = [
     { id: 'shoes', name: '달이의 운동화', icon: 'shoes', col: '#e2433b', max: 3, desc: () => '이동 속도 +12%',
       apply: S => { S.speedMult *= 1.12; } },
-    { id: 'bag', name: '큰 도토리 가방', icon: 'bag', col: '#b9824f', max: 2, desc: () => '가방 +1칸',
-      ok: S => S.bagCap < C.BAG_MAX, apply: S => { S.bagCap = Math.min(C.BAG_MAX, S.bagCap + 1); } },
+    // 가방은 강해서 1회만, Lv.4부터 등장 (4칸째는 가구 혁신 카드로만)
+    { id: 'bag', name: '큰 도토리 가방', icon: 'bag', col: '#b9824f', max: 1, desc: () => '가방 +1칸',
+      ok: S => S.level - S.pendingLevels + 1 >= 4 && S.bagCap < C.BAG_MAX, apply: S => { S.bagCap = Math.min(C.BAG_MAX, S.bagCap + 1); } },
     { id: 'wings', name: '나르미의 날개', icon: 'wing', col: '#5b8fb9', max: 2, desc: () => '검증 쉬는 시간 -30%',
       apply: S => { S.inspectCDMult *= 0.7; } },
     { id: 'eye', name: '나르미의 눈썰미', icon: 'eye', col: '#7a5ab8', max: 1, desc: () => '수상한 공방 간판에 "?" 표시',
