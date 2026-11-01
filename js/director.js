@@ -3,19 +3,22 @@
 'use strict';
 G.director = (() => {
   const C = G.C;
+  // 2026-11-01 가로 배치로 이동 거리가 짧아져 전체적으로 빠르게 조정 [초기값]
   const SEGMENTS = [
-    { from: 0,   name: '첫 주문',      interval: 6.0, limit: 35 },
-    { from: 15,  name: '마을이 깨어남', interval: 5.0, limit: 32 },
-    { from: 45,  name: '거리 완성',    interval: 4.5, limit: 30 },
-    { from: 60,  name: '수상한 손님',  interval: 4.0, limit: 28 },
-    { from: 90,  name: '폭우·태풍',    interval: 4.0, limit: 28 },   // 10번 작업에서 긴급 요청(18초)으로 바뀜
-    { from: 110, name: '바쁜 장터',    interval: 3.5, limit: 25 },
-    { from: 150, name: '연말 막바지',  interval: 3.0, limit: 22 },
+    { from: 0,   name: '첫 주문',      interval: 5.0, limit: 24 },
+    { from: 10,  name: '마을이 깨어남', interval: 4.6, limit: 22 },
+    { from: 30,  name: '거리 완성',    interval: 4.3, limit: 21 },
+    { from: 45,  name: '모두 영업',    interval: 4.0, limit: 20 },
+    { from: 60,  name: '수상한 손님',  interval: 3.9, limit: 20 },
+    { from: 90,  name: '폭우·태풍',    interval: 3.9, limit: 20 },   // 10번 작업에서 긴급 요청으로 바뀜
+    { from: 110, name: '바쁜 장터',    interval: 3.6, limit: 18 },
+    { from: 150, name: '연말 막바지',  interval: 3.2, limit: 16 },
   ];
   const EVENTS = [
-    { at: 15, open: { village: 'clinic', cat: 'health' }, banner: '보건소가 문을 열었어요!', sub: '보건 공방도 영업 시작' },
-    { at: 45, open: { village: 'fire', cat: 'safety' }, banner: '소방서가 문을 열었어요!', sub: '안전 공방도 영업 시작' },
-    { at: 60, open: { village: 'library' }, banner: '도서관이 문을 열었어요!', sub: '공방 거리가 바빠져요' },
+    { at: 4, extra: { vid: 'school', item: 'chair' } },        // 시작하자마자 두 번째 요청
+    { at: 10, open: { village: 'clinic', cat: 'health' }, banner: '보건소가 문을 열었어요!', sub: '보건 공방도 영업 시작' },
+    { at: 30, open: { village: 'fire', cat: 'safety' }, banner: '소방서가 문을 열었어요!', sub: '안전 공방도 영업 시작' },
+    { at: 45, open: { village: 'library' }, banner: '도서관이 문을 열었어요!', sub: '공방 거리가 바빠져요' },
     { at: 60, hook: 'firstFake' },                 // 6번 작업: 첫 수상한 공방 확정 등장
     { at: 88, hook: 'stormWarn' },                 // 10번 작업: 태풍 경보
     { at: C.FINAL_RUSH_AT, rush: true, banner: '막바지! 점수 1.5배', sub: '조금만 더 힘내요' },
@@ -36,6 +39,7 @@ G.director = (() => {
       if (ev.open.village) S.openVillages.add(ev.open.village);
       if (ev.open.cat) { S.openCats.add(ev.open.cat); G.shops.opened(S, ev.open.cat); }
     }
+    if (ev.extra) G.requests.spawn(S, ev.extra);
     if (ev.rush) S.scoreMult = C.FINAL_RUSH_MULT;
     if (ev.banner) banner(S, ev.banner, ev.sub);
     if (ev.hook && hooks[ev.hook]) hooks[ev.hook](S);
