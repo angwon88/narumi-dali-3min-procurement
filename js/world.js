@@ -110,5 +110,5 @@ G.world = (() => {
     villages.forEach(v => drawVillage(ctx, v));
     drawOffice(ctx);
   }
-  return { CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, roofPerch: { x: 480, y: 242 } };
+  return { shade, CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, roofPerch: { x: 480, y: 242 } };
 })();

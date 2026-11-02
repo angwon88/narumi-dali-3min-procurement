@@ -81,7 +81,7 @@ G.events = (() => {
   G.director.on('surgeEnd', surgeEnd);
   // 공방 가격에 곱할 값 (shops.price가 부른다)
   function priceMult(sh) {
-    const S = G.S; if (!S || !S.surge || sh.fake) return 1;
+    const S = G.S; if (!S || !S.surge || sh.fake || sh.tier >= 2) return 1;   // 공장은 폭등 영향 없음
     return S.stabilized.has(sh.cat) ? 1 : S.surgeMult;
   }
 

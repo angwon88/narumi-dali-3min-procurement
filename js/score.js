@@ -18,14 +18,14 @@ G.score = (() => {
     S.combo++; S.maxCombo = Math.max(S.maxCombo, S.combo); S.comboT = 0;
     const cm = comboMult(S);
     const sh = bagItem.innov ? S.shops[bagItem.shop] : null;
-    pts = Math.round(pts * (S.scoreMult || 1) * cm * (sh ? (sh.mature ? C.INNOV_MATURE_MULT : C.INNOV_SCORE_MULT) : 1) * (r.urgent ? C.STORM.mult : 1));
+    pts = Math.round(pts * (S.scoreMult || 1) * cm * (sh ? (sh.mature ? C.INNOV_MATURE_MULT : C.INNOV_SCORE_MULT) : 1) * (r.urgent ? C.STORM.mult : 1) * (S.vstate[r.vid] && S.vstate[r.vid].tier >= 2 ? C.VILLAGE_T2_SCORE : 1));
     if (r.urgent) S.stats.urgentDone = (S.stats.urgentDone || 0) + 1;
     if (bagItem.innov) { trust(S, C.INNOV_TRUST_BONUS); S.stats.innovDelivered = (S.stats.innovDelivered || 0) + 1; }
     S.score += pts; S.delivered++; S.onTime++;
     G.levelup.gain(S);
     if (saving > 0) S.saved = r1(S.saved + saving); else if (saving < 0) S.wasted = r1(S.wasted - saving);
     G.gifts.add(S, saving);                                   // 아낀 만큼 저금통 +, 비싸게 산 만큼 -
-    trust(S, frac >= 0.5 ? C.TRUST_FAST : C.TRUST_ON_TIME);
+    trust(S, (frac >= 0.5 ? C.TRUST_FAST : C.TRUST_ON_TIME) + (S.vstate[r.vid] && S.vstate[r.vid].tier >= 2 ? C.VILLAGE_T2_TRUST : 0));
     G.villages.onSuccess(S, r.vid);
     if (bagItem.prep && (S.dust || S.storm)) {                     // 예보 보고 미리 준비한 물건을 사건 중 납품
       S.score += C.PREP_BONUS; trust(S, C.PREP_TRUST); S.stats.prepared = (S.stats.prepared || 0) + 1;

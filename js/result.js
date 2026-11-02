@@ -53,6 +53,11 @@ G.result = (() => {
       me: (S, s) => '태풍 때 긴급 계약 ' + n(s.urgentDone) + '건을 해결했어요' + (n(s.urgentMade) > n(s.urgentDone) ? ' (' + s.urgentMade + '건 중)' : ''),
       facts: ['폭우·폭염·한파 같은 재난 때 필요한 긴급 물자는 절차를 줄여 더 빨리 살 수 있게 했어요(다수공급자계약 2단계 경쟁 예외).',
               '위기 때일수록 소방서·보건소 같은 곳에 필요한 물건이 제때 가야 해요. 미리 대비하면 더 빨리 보낼 수 있어요.'] },
+    { key: 'growth', tag: '함께 성장', col: '#b08800', when: (S, s) => n(s.shopGrow) + n(s.villageUp) > 0,
+      weight: (S, s) => (n(s.shopGrow) + n(s.villageUp) * 1.2) / 6,
+      me: (S, s) => '공방 ' + n(s.shopGrow) + '번 성장' + (s.shopFactory ? '(공장 ' + s.shopFactory + '곳)' : '') + ', 마을 ' + n(s.villageUp) + '번 단장했어요',
+      facts: ['공공조달 규모는 한 해 225조 원(2024년 계약 기준)으로 역대 가장 커요. 이 돈이 성실한 업체의 매출과 일자리가 돼요.',
+              '조달청은 혁신제품 공공구매를 2030년까지 3조 원 수준으로 늘려, 기술 있는 기업이 공공시장에서 자라도록 도와요.'] },
     { key: 'stock', tag: '원자재 비축', col: '#2e9b3a', when: (S, s) => n(s.stocked) > 0,
       weight: (S, s) => n(s.stocked) * 0.45 + (n(s.released) ? 0.4 : 0),
       me: (S, s) => '원자재를 ' + s.stocked + '상자 비축했어요' + (s.released ? ' · 가격 폭등 때 풀었어요' : ''),
@@ -96,6 +101,7 @@ G.result = (() => {
     { name: '번개 배달부', sub: '끊김 없는 연속 납품', score: S => n0(S.maxCombo) >= 12 ? S.maxCombo / 18 : 0 },
     { name: '페이퍼컴퍼니 탐정', sub: '수상한 새 공방을 척척', score: (S, s) => n0(s.caught) >= 4 ? n0(s.caught) / 6 : 0 },
     { name: '비축 전략가', sub: '가격 폭등에 미리 대비', score: (S, s) => n0(s.stocked) >= 2 ? 0.7 + n0(s.released) * 0.1 : 0 },
+    { name: '동네 성장 도우미', sub: '공방은 자라고 마을은 새 단장', score: (S, s) => n0(s.shopGrow) + n0(s.villageUp) >= 5 ? (n0(s.shopGrow) + n0(s.villageUp)) / 7 : 0 },
     { name: '위기 해결사', sub: '태풍 속 긴급 계약을 척척', score: (S, s) => n0(s.urgentDone) >= 3 ? n0(s.urgentDone) / 5 : 0 },
     { name: '마을 수호천사', sub: '마을 신뢰를 끝까지 지켰어요', score: (S, s) => S.trust >= 95 && n0(s.reqExpired) <= 1 ? 1.0 : 0 },
   ];
@@ -177,7 +183,7 @@ G.result = (() => {
     card(ctx, cx0 + (cw + gap), cy, cw, ch, '아낀 국민 세금', '+' + S.saved + '만원', '#2e9b3a', S.wasted > 0 ? '낭비한 세금 ' + S.wasted + '만원' : '낭비 없음!');
     card(ctx, cx0 + (cw + gap) * 2, cy, cw, ch, '가성비 최고 선택', (s.valueBest || 0) + '번', '#2f6fb0', s.valueMiss ? '더 싼 적합 업체 놓침 ' + s.valueMiss + '번' : '늘 최고의 선택!');
     const stop = (s.brokerBlocked || 0) + (s.brokerCaught || 0);
-    card(ctx, cx0 + (cw + gap) * 4, cy, cw, ch, '키운 새싹 공방', '혁신 ' + (s.innov || 0) + '곳', s.innov ? '#b08800' : '#9a9080', '새싹 실적 ' + (s.sproutBuy || 0) + '건');
+    card(ctx, cx0 + (cw + gap) * 4, cy, cw, ch, '함께 성장', '공방 ' + (s.shopGrow || 0) + ' · 마을 ' + (s.villageUp || 0), (s.shopGrow || 0) + (s.villageUp || 0) ? '#b08800' : '#9a9080', '혁신제품 ' + (s.innov || 0) + '곳 · 새싹 실적 ' + (s.sproutBuy || 0));
     card(ctx, cx0 + (cw + gap) * 3, cy, cw, ch, '꼼수 브로커', '막음 ' + stop + '번', '#d9342b', s.brokerWon ? '뺏긴 계약 ' + s.brokerWon + '건' : cheat ? '속은 횟수 ' + cheat + '번' : '한 번도 안 뺏김!');
 
     // 3. 오늘 한 일, 실제로는?

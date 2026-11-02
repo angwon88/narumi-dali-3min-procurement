@@ -52,7 +52,7 @@ G.requests = (() => {
     const slot = [0, 1].find(i => !ofVillage(S, vid).some(r => r.slot === i));
     const r = {
       id: nextId++, vid, item, price: G.ITEM[item].price, slot: slot == null ? 0 : slot, minQ: force && force.minQ ? force.minQ : pickMinQ(S, item),
-      limit: (S.reqLimit || C.REQ_LIMIT) * (S.limitMult || 1), left: (S.reqLimit || C.REQ_LIMIT) * (S.limitMult || 1), urgent: false,
+      limit: (S.reqLimit || C.REQ_LIMIT) * (S.limitMult || 1) * G.villages.limitMult(S, vid), left: (S.reqLimit || C.REQ_LIMIT) * (S.limitMult || 1) * G.villages.limitMult(S, vid), urgent: false,
       state: 'open', t: 0, endT: 0, vill,
     };
     S.requests.push(r); S.stats.reqMade++;
