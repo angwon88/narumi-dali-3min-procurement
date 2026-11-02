@@ -1,5 +1,6 @@
 # 게임 페이지 배포: main 판은 사이트 첫 화면, redesign(개편안) 판은 /redesign/ 에.
 # 어느 브랜치에 push해도 두 판을 함께 다시 빌드해서 올린다. 둘 다 제출판 빌드(tools/build.py, 개발용 스크립트 제외).
+# 테스트용 원본(개발 기능 포함)은 /dev/ 와 /redesign/dev/ 에.
 name: 게임 페이지 배포
 on:
   push:
@@ -29,6 +30,10 @@ jobs:
           mkdir -p site/redesign
           python3 main/tools/build.py && cp main/dist/index.html site/index.html
           if [ -f redesign/tools/build.py ]; then python3 redesign/tools/build.py && cp redesign/dist/index.html site/redesign/index.html; fi
+          # 테스트용(개발 기능 포함: 시간 건너뛰기 +5초·+10초) — 원본 파일 그대로 /dev/, /redesign/dev/ 에
+          mkdir -p site/dev site/redesign/dev
+          cp -r main/index.html main/css main/js main/assets site/dev/
+          if [ -f redesign/index.html ]; then cp -r redesign/index.html redesign/css redesign/js redesign/assets site/redesign/dev/; fi
           touch site/.nojekyll
           ls -la site site/redesign
       - uses: actions/configure-pages@v5
