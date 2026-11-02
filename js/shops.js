@@ -39,7 +39,7 @@ G.shops = (() => {
     }
   }
   // 인증: 남은 시간 t초. verified는 그리기·안내용 표시값
-  function certify(sh, t) { sh.certT = t; sh.verified = t > 0; }
+  function certify(sh, t, stamp) { sh.certT = t; sh.verified = t > 0; sh.stampT = stamp ? 0 : 1; }   // 도장은 나르미 검증 때만
   const certified = sh => sh.innov || sh.certT > 0;
   const isOpen = (S, sh) => sh.status === 'open' && S.openCats.has(sh.cat);
   const itemsOf = sh => G.ITEMS.filter(i => i.cat === sh.cat);
@@ -265,7 +265,7 @@ G.shops = (() => {
       G.fx.add(S, b.x + b.w / 2, b.y + 8, '마을 신뢰 +' + C.TRUST_CATCH, '#9be37a');
     } else {
       const renew = sh.certExpired || sh.certT > 0;
-      certify(sh, S.certSec); sh.certExpired = false; sh.stampT = 0;
+      certify(sh, S.certSec, true); sh.certExpired = false;
       S.stats[renew ? 'renewed' : 'certified'] = (S.stats[renew ? 'renewed' : 'certified'] || 0) + 1;
       G.fx.add(S, b.x + b.w / 2, b.y + 110, renew ? '✔ 재검증 완료 · 인증 ' + S.certSec + '초' : '✔ 거래 기록 정상 · 인증 ' + S.certSec + '초', '#9be37a');
       G.audio.play('ok');
@@ -341,7 +341,7 @@ G.shops = (() => {
     ctx.fillStyle = '#3a3a3a'; ctx.fillRect(tx, b.y + 41, TAG_W, 1);
     itemsOf(sh).forEach((it, i) => {
       const y = b.y + 33 + i * 17;
-      G.icons.draw(ctx, it.id, tx + 9, y, 14);
+      G.icons.draw(ctx, it.id, tx + 9, y, 17);
       T(ctx, price(sh, it.id) + '만', tx + 32, y + 1, 12, sh.monopoly ? '#d9342b' : '#2a2416');
       const dir = sh.fx && sh.fx.dirs[it.id];
       if (dir) T(ctx, dir > 0 ? '▲' : '▼', tx + 57, y + 1, 12, dir > 0 ? '#d9342b' : '#2e9b3a');
@@ -455,6 +455,24 @@ G.shops = (() => {
       certLook(ctx, S, sh);
     }
   }
+  // 문 앞 안내 풍선 (2026-11-02 가시성): 달이가 공방 문 앞에 서면 물건 이름·가격·인증 상태를 크게
+  function drawDoorInfo(ctx, S) {
+    const sh = S.buy && S.buy.shop; if (!sh || sh.status !== 'open') return;
+    const d = sh.w.door, items = itemsOf(sh), w = 132, h = 22 + items.length * 22;
+    const x = Math.max(4, Math.min(C.VIEW.w - w - 4, d.x + d.w / 2 - w / 2)), y = d.y + d.h + 6;
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x + 2, y + 3, w, h);
+    ctx.fillStyle = '#fffdf6'; ctx.fillRect(x, y, w, h);
+    const ok = certified(sh);
+    ctx.fillStyle = ok ? '#2e9b3a' : sh.certExpired ? '#c0392b' : '#4a4f57'; ctx.fillRect(x, y, w, 18);
+    T(ctx, sh.innov ? '★ 혁신 공방' : ok ? '✔ 인증 ' + Math.ceil(sh.certT) + '초' : sh.certExpired ? '인증 만료 · 재검증' : '미인증 · 검증 필요', x + w / 2, y + 9, 12, '#fff');
+    items.forEach((it, i) => {
+      const ry = y + 31 + i * 22, p = price(sh, it.id), up = p > it.price;
+      G.icons.draw(ctx, it.id, x + 16, ry, 20);
+      ctx.font = '12px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = '#2a2416'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(it.name, x + 30, ry + 1);
+      T(ctx, p + '만', x + w - 8, ry + 1, 12, up ? '#d9342b' : '#2e6b2e', 'right');
+    });
+    ctx.strokeStyle = '#3a3a3a'; ctx.lineWidth = 2; ctx.strokeRect(x + 1, y + 1, w - 2, h - 2); ctx.lineWidth = 1;
+  }
   function drawHover(ctx, S) {
     const m = G.input.mouse; if (m.x < 0) { G.canvas.style.cursor = ''; return; }
     const sh = shopAt(S, m);
@@ -464,5 +482,5 @@ G.shops = (() => {
     ctx.strokeStyle = ok ? '#ffd84a' : 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
     ctx.strokeRect(b.x - 3, b.y - 3, b.w + 6, b.h + 6); ctx.setLineDash([]); ctx.lineWidth = 1;
   }
-  return { certified, request, whyNot, makeInnov, init, update, draw, drawHover, price, isOpen, rollRow, opened, inspected, handleInspectInput, shopAt, spawnFake, newShop };
+  return { drawDoorInfo, certified, request, whyNot, makeInnov, init, update, draw, drawHover, price, isOpen, rollRow, opened, inspected, handleInspectInput, shopAt, spawnFake, newShop };
 })();

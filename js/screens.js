@@ -91,6 +91,7 @@ G.screens = (() => {
     G.dali.draw(ctx);
     ui.bubbles(ctx, G.S);
     G.dali.drawOver(ctx, G.S);
+    G.shops.drawDoorInfo(ctx, G.S);
     G.shops.drawHover(ctx, G.S);
     G.fx.draw(ctx, G.S);
     G.events.drawOverlay(ctx, G.S);

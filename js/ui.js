@@ -68,8 +68,8 @@ G.ui = (() => {
   }
 
   // 마을 요청 말풍선: 마을 앞마당 위, 마을당 최대 2개(왼쪽·오른쪽 칸)
-  const BW = 62, BH = 46;
-  function bubbleRect(r) { const v = r.vill; return { x: v.yard.x + v.yard.w / 2 - BW - 4 + r.slot * (BW + 8), y: v.yard.y - BH - 10, w: BW, h: BH }; }
+  const BW = 72, BH = 64;   // 2026-11-02 가시성: 62×46 → 72×64, 물건 이름 표시
+  function bubbleRect(r) { const v = r.vill; return { x: v.yard.x + v.yard.w / 2 - BW - 3 + r.slot * (BW + 6), y: v.yard.y - BH - 8, w: BW, h: BH }; }
   function ringColor(f) { return f > 0.5 ? '#46b04a' : f > 0.25 ? '#f2b632' : '#e5533d'; }
   function bubble(ctx, r) {
     const b = bubbleRect(r), f = r.left / r.limit;
@@ -84,12 +84,13 @@ G.ui = (() => {
     ctx.fillStyle = danger ? '#e5533d' : r.urgent ? '#e5533d' : '#3a3a3a';           // 테두리
     ctx.fillRect(0, 0, b.w, 2); ctx.fillRect(0, b.h - 2, b.w, 2); ctx.fillRect(0, 0, 2, b.h); ctx.fillRect(b.w - 2, 0, 2, b.h);
     ctx.fillStyle = r.state === 'expired' ? '#ffd6d0' : '#fffdf6'; ctx.beginPath(); ctx.moveTo(b.w / 2 - 6, b.h - 2); ctx.lineTo(b.w / 2, b.h + 7); ctx.lineTo(b.w / 2 + 6, b.h - 2); ctx.fill();   // 꼬리(아래 마을 쪽)
-    const cx = b.w / 2, cy = 17;
-    ctx.lineWidth = 3; ctx.strokeStyle = '#ddd6c4'; ctx.beginPath(); ctx.arc(cx, cy, 13, 0, Math.PI * 2); ctx.stroke();
-    if (r.state === 'open') { ctx.strokeStyle = ringColor(f); ctx.beginPath(); ctx.arc(cx, cy, 13, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f); ctx.stroke(); }
+    const cx = b.w / 2, cy = 20;
+    ctx.lineWidth = 4; ctx.strokeStyle = '#ddd6c4'; ctx.beginPath(); ctx.arc(cx, cy, 16, 0, Math.PI * 2); ctx.stroke();
+    if (r.state === 'open') { ctx.strokeStyle = ringColor(f); ctx.beginPath(); ctx.arc(cx, cy, 16, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f); ctx.stroke(); }
     ctx.lineWidth = 1;
-    if (!r.fraud) G.icons.draw(ctx, r.item, cx, cy, 18);
-    T(ctx, '예정 ' + r.price + '만', cx, 38, 12, '#4a3f2a');
+    if (!r.fraud) G.icons.draw(ctx, r.item, cx, cy, 26);
+    ctx.font = '12px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = '#2a2416'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(G.ITEM[r.item].name, cx, 44);
+    T(ctx, '예정 ' + r.price + '만', cx, 56, 12, '#6a5a3a');
     ctx.fillStyle = '#2f4f8a'; ctx.fillRect(0, -11, 44, 11);                       // '나라장터' 탭 (전자조달 주문)
     ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('나라장터', 22, -5);
     if (r.fraud) {                                                   // 미납: 빈 상자 / 불량: 부서진 상자

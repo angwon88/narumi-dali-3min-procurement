@@ -90,13 +90,13 @@ G.dali = {
   },
   // 머리 위: 가방 칸 + 구매 게이지 (캐릭터 위에 그려야 해서 따로)
   drawOver(ctx, S) {
-    const cap = S.bagCap, sz = 16, gap = 2, w = cap * sz + (cap - 1) * gap;
-    const x0 = Math.round(this.x - w / 2), y0 = Math.round(this.y - 66);
+    const cap = S.bagCap, sz = 22, gap = 2, w = cap * sz + (cap - 1) * gap;
+    const x0 = Math.round(this.x - w / 2), y0 = Math.round(this.y - 72);
     for (let i = 0; i < cap; i++) {
       const x = x0 + i * (sz + gap);
       ctx.fillStyle = this.bag[i] && this.bag[i].innov ? '#e0a800' : '#3a3a3a'; ctx.fillRect(x - 1, y0 - 1, sz + 2, sz + 2);
       ctx.fillStyle = this.bag[i] ? '#fffdf6' : 'rgba(255,253,246,.45)'; ctx.fillRect(x, y0, sz, sz);
-      const b = this.bag[i]; if (b) G.icons.draw(ctx, b.item, x + sz / 2, y0 + sz / 2, 14);
+      const b = this.bag[i]; if (b) G.icons.draw(ctx, b.item, x + sz / 2, y0 + sz / 2, 20);
     }
     const B = S.buy;
     if (B && B.shop && B.dwell > 0) {

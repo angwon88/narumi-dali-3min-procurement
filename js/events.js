@@ -9,7 +9,7 @@
 G.events = (() => {
   const C = G.C, T = (...a) => G.world.text(...a), r1 = v => Math.round(v * 10) / 10;
   const OB = G.world.office.body;
-  const ZONE = { x: OB.x + 10, y: OB.y + OB.h + 4, w: OB.w - 20, h: 26 };
+  const ZONE = { x: OB.x + 40, y: OB.y + OB.h + 4, w: 76, h: 26 };   // 마을 말풍선과 겹치지 않게
 
   function init(S) {
     S.stock = 0; S.stockDwell = 0; S.stockWarned = false;
@@ -116,7 +116,7 @@ G.events = (() => {
     const z = ZONE, can = !S.surge && !S.surgeDone && S.stock < C.STOCK_MAX && S.bank >= C.STOCK_COST;
     ctx.fillStyle = can ? 'rgba(155,227,122,.35)' : 'rgba(0,0,0,.08)'; ctx.fillRect(z.x, z.y, z.w, z.h);
     ctx.strokeStyle = can ? '#2e9b3a' : 'rgba(80,60,30,.5)'; ctx.setLineDash([3, 3]); ctx.strokeRect(z.x + .5, z.y + .5, z.w - 1, z.h - 1); ctx.setLineDash([]);
-    T(ctx, '원자재 비축 ' + C.STOCK_COST + '만원', z.x + z.w / 2, z.y + z.h / 2 + 1, 12, can ? '#1f5a1f' : '#6a5a3a');
+    T(ctx, '비축 ' + C.STOCK_COST + '만원', z.x + z.w / 2, z.y + z.h / 2 + 1, 12, can ? '#1f5a1f' : '#6a5a3a');
     if (S.stockDwell > 0) { ctx.fillStyle = '#2e9b3a'; ctx.fillRect(z.x, z.y + z.h - 3, Math.round(z.w * S.stockDwell / C.STOCK_DWELL), 3); }
     // 비축 창고 (조달청 오른쪽 옆): 상자 더미
     const sx = OB.x + OB.w + 6, sy = OB.y + OB.h - 14;

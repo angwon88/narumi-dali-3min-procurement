@@ -21,7 +21,7 @@ G.C = {
   REQ_FIRST_AT: 2, REQ_INTERVAL: 6.0, REQ_LIMIT: 35, REQ_EMPTY_FILL: 1,   // 기본값. 실제 구간별 값은 director.js
   COMBO_STEP: 0.1, COMBO_MAX_MULT: 2.0,   // 제때 연속 납품마다 점수 +10%, 최대 ×2
   // 인증제 (2026-11-02): 인증된 공방에서만 구매. 인증은 CERT_SEC초 뒤 만료, 남은 시간이 CERT_RENEW_AT초 이하면 재검증 가능
-  CERT_SEC: 40, CERT_START: [20, 40], CERT_RENEW_AT: 20,
+  CERT_SEC: 55, CERT_START: [30, 55], CERT_RENEW_AT: 25,   // 2026-11-02 바쁨 완화: 40 → 55초
   FAKE_BID_SEC: 20,                 // 수상한 공방을 이 시간 안에 적발 못 하면 '부정 낙찰' (요청 하나 미납)
   DATA_LV: [3, 6, 10],              // 나르미 데이터 성장: 검증 누적 횟수
   STOCK_COST: 3, STOCK_MAX: 3, STOCK_DWELL: 0.5,   // 원자재 비축: 저금통 3만원 → 1상자
