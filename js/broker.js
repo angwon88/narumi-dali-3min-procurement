@@ -32,8 +32,8 @@ G.broker = (() => {
     const reqs = G.requests.active(S).filter(r => !r.broker && r.left > 8).sort((a, b) => b.price - a.price);
     for (const r of reqs) {
       const yx = r.vill.yard.x + r.vill.yard.w / 2;
-      Object.assign(bk, { state: 'run', timer: 0, req: r, shop: null, item: r.item, x: yx < 480 ? -24 : C.VIEW.w + 24, y: ROAD_Y, stun: false });
-      bk.path = pathTo(bk, r.vill);
+      // 2026-11-03: 가장자리 마을(학교·도서관)은 달릴 거리가 짧아 알아챌 틈이 없었음 → 먼저 화면 끝에 나타나 BROKER_GRAB초 두리번(이때도 잡을 수 있음)
+      Object.assign(bk, { state: 'grab', timer: 0, req: r, shop: null, item: r.item, x: yx < 480 ? 34 : C.VIEW.w - 34, y: ROAD_Y, face: yx < 480 ? 1 : -1, stun: false, path: [] });
       r.broker = true;
       if (!bk.shown) {
         bk.shown = true;
@@ -73,8 +73,9 @@ G.broker = (() => {
     if ((bk.state === 'grab' || bk.state === 'run') && bk.shop && (bk.shop.status !== 'open' || !bk.shop.fake)) {
       S.stats.brokerBlocked++; flee(S, '들켰다! 꼼수 도망', '#9be37a'); return;
     }
-    if (bk.state === 'grab') {
-      if ((bk.timer += dt) >= C.BROKER_GRAB) { bk.state = 'run'; bk.path = pathTo(bk, bk.req.vill); }
+    if (bk.state === 'grab') {                                         // 두리번 (등장 예고)
+      if (bk.req.state !== 'open') { flee(S, '쳇, 벌써 납품했네…', '#ffd6a0'); return; }
+      if ((bk.timer += dt) >= C.BROKER_GRAB) { bk.state = 'run'; bk.face = bk.req.vill.yard.x + 110 > bk.x ? 1 : -1; bk.path = pathTo(bk, bk.req.vill); }
       return;
     }
     if (bk.state === 'run') {
@@ -170,7 +171,7 @@ G.broker = (() => {
     // 중절모
     px(ctx, '#3a3a44', -12, -42, 24, 3); px(ctx, '#3a3a44', -7, -50, 14, 8); px(ctx, '#d9342b', -7, -44, 14, 2);
     if (bk.state === 'caught') { T(ctx, '@', -4, -34, 12, '#fff'); }
-    if (bk.freeze > 0 && bk.state === 'run') { ctx.scale(bk.face, 1); T(ctx, '!', 0, -60, 16, '#ffd84a'); }
+    if ((bk.freeze > 0 && bk.state === 'run') || (bk.state === 'grab' && Math.floor(bk.t * 6) % 2 === 0)) { ctx.scale(bk.face, 1); T(ctx, '!', 0, -60, 16, '#ffd84a'); }
     ctx.restore();
     // 불량품 보따리 (머리 위): 물건 아이콘 + 금 간 표시
     if (bk.item && (bk.state === 'run' || bk.state === 'grab')) {
@@ -191,9 +192,11 @@ G.broker = (() => {
       ctx.save(); ctx.globalAlpha = 0.55; ctx.strokeStyle = '#e5533d'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.lineDashOffset = -bk.t * 30;
       ctx.beginPath(); ctx.moveTo(bk.x, bk.y - 20); ctx.lineTo(b.x + b.w / 2, b.y + b.h); ctx.stroke(); ctx.restore();
     }
-    if (bk.state === 'grab') {                                        // 페이퍼컴퍼니에서 불량품 챙기는 중: 상자 쌓이는 막대
-      const f = bk.timer / C.BROKER_GRAB;
+    if (bk.state === 'grab') {                                        // 두리번: 좌우로 고개 돌림 + 출발까지 남은 막대 + 노리는 계약 점선
+      bk.face = Math.floor(bk.timer * 3) % 2 ? 1 : -1;
+      const f = 1 - bk.timer / C.BROKER_GRAB;
       px(ctx, 'rgba(20,24,30,.8)', bk.x - 20, bk.y + 6, 40, 6); px(ctx, '#e5533d', bk.x - 19, bk.y + 7, Math.round(38 * f), 4);
+      if (bk.req) { const b = G.ui.bubbleRect(bk.req); ctx.save(); ctx.globalAlpha = 0.35; ctx.strokeStyle = '#e5533d'; ctx.lineWidth = 2; ctx.setLineDash([3, 6]); ctx.beginPath(); ctx.moveTo(bk.x, bk.y - 20); ctx.lineTo(b.x + b.w / 2, b.y + b.h); ctx.stroke(); ctx.restore(); }
     }
     raccoon(ctx, bk, S);
   }
