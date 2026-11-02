@@ -14,9 +14,11 @@ G.result = (() => {
 
   // "오늘 한 일, 실제로는?" — 이번 판에서 실제로 일어난 일만, 우선순위 순서로 최대 3줄
   const FACTS = [
-    { key: 'caught', tag: '페이퍼컴퍼니 적발', col: '#d9342b', when: (S, s) => s.caught > 0 && !((s.scammed || 0) + (s.stolen || 0)),   // 피해가 있었으면 그쪽 한 줄만
+    { key: 'broker', tag: '브로커 · 페이퍼컴퍼니', col: '#d9342b', when: (S, s) => (s.brokerWon || 0) + (s.brokerBlocked || 0) + (s.brokerCaught || 0) > 0,
+      text: '실제로 조달청은 낙찰만 노리는 페이퍼컴퍼니와 브로커를 막으려고, 데이터로 의심 업체를 골라 입찰보증금을 물려요. 계약과 다른 물건을 납품한 업체는 계약 해지와 입찰참가자격 제한을 받아요.' },
+    { key: 'caught', tag: '페이퍼컴퍼니 적발', col: '#d9342b', when: (S, s) => s.caught > 0 && !((s.scammed || 0) + (s.stolen || 0)) && !((s.brokerWon || 0) + (s.brokerBlocked || 0) + (s.brokerCaught || 0)),   // 피해가 있었으면 그쪽 한 줄만
       text: "수상한 공방의 실제 이름은 '페이퍼컴퍼니'. 만들 능력 없이 낙찰만 노리는 업체예요. 조달청은 현장 조사와 데이터 분석으로 이런 업체를 걸러내요." },
-    { key: 'scammed', tag: '페이퍼컴퍼니 피해', col: '#d9342b', when: (S, s) => (s.scammed || 0) + (s.stolen || 0) > 0,
+    { key: 'scammed', tag: '페이퍼컴퍼니 피해', col: '#d9342b', when: (S, s) => (s.scammed || 0) + (s.stolen || 0) > 0 && !((s.brokerWon || 0) + (s.brokerBlocked || 0) + (s.brokerCaught || 0)),
       text: '표시와 다른 불량품은 검수에서 걸러도, 세금과 시간은 이미 쓴 뒤예요. 페이퍼컴퍼니 때문에 성실한 업체가 기회를 잃기도 해요. 그래서 계약 전 실사가 중요해요.' },
     { key: 'contract', tag: '계약 조건 · 검수', col: '#2f4f8a', when: (S, s) => (s.passed || 0) + (s.qFail || 0) > 0,
       text: '공공기관은 물건을 살 때 품질·규격 같은 계약 조건을 정하고, 납품되면 조건대로 왔는지 검수해요. 조건에 못 미치면 받지 않아요.' },
@@ -93,7 +95,8 @@ G.result = (() => {
     card(ctx, cx0, cy, cw, ch, '검수 합격 납품', S.delivered + '건', '#2a2416', qf || late ? '불합격 ' + qf + '건 · 늦음 ' + late + '건' : '불합격·늦음 없음!');
     card(ctx, cx0 + (cw + gap), cy, cw, ch, '아낀 국민 세금', '+' + S.saved + '만원', '#2e9b3a', S.wasted > 0 ? '낭비한 세금 ' + S.wasted + '만원' : '낭비 없음!');
     card(ctx, cx0 + (cw + gap) * 2, cy, cw, ch, '가성비 최고 선택', (s.valueBest || 0) + '번', '#2f6fb0', s.valueMiss ? '더 싼 적합 업체 놓침 ' + s.valueMiss + '번' : '늘 최고의 선택!');
-    card(ctx, cx0 + (cw + gap) * 3, cy, cw, ch, '수상한 공방', '적발 ' + (s.caught || 0) + '곳', '#d9342b', cheat ? '속은 횟수 ' + cheat + '번' : '한 번도 안 속음!');
+    const stop = (s.brokerBlocked || 0) + (s.brokerCaught || 0);
+    card(ctx, cx0 + (cw + gap) * 3, cy, cw, ch, '꼼수 브로커', '막음 ' + stop + '번', '#d9342b', s.brokerWon ? '뺏긴 계약 ' + s.brokerWon + '건' : cheat ? '속은 횟수 ' + cheat + '번' : '한 번도 안 뺏김!');
 
     // 3. 오늘 한 일, 실제로는?
     const bx = cx0, by = 234, bw = W - cx0 * 2, bh = 178;

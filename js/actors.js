@@ -112,7 +112,7 @@ G.narmi = {
   x: 0, y: 0, face: 's', t: 0, state: 'perch', target: null, timer: 0, talk: null,
   reset() { const p = G.world.roofPerch; Object.assign(this, { x: p.x, y: p.y, face: 's', t: 0, state: 'perch', target: null, timer: 0, talk: null }); },
   say(text, sec) { this.talk = { text, left: sec }; },
-  spot(sh) { const b = sh.w.body; return { x: b.x + b.w / 2, y: b.y + 62 }; },        // 공방 앞에 내려앉는 곳 (HUD에 가리지 않게)
+  spot(sh) { if (sh.isBroker) return { x: sh.x, y: sh.y - 10 }; const b = sh.w.body; return { x: b.x + b.w / 2, y: b.y + 62 }; },   // 공방 앞(HUD에 가리지 않게) / 꼼수 브로커 위치
   send(S, sh) { this.target = sh; this.state = 'fly'; S.inspectCD = G.C.INSPECT_COOLDOWN * (S.inspectCDMult || 1); S.inspectCDMax = S.inspectCD; },
   moveTo(p, dt) {
     const dx = p.x - this.x, dy = p.y - this.y, d = Math.hypot(dx, dy), step = G.C.NARMI_SPEED * dt;
@@ -123,8 +123,13 @@ G.narmi = {
     this.t += dt;
     if (this.talk && (this.talk.left -= dt) <= 0) this.talk = null;
     if (S) S.inspectCD = Math.max(0, (S.inspectCD || 0) - dt);
-    if (this.state === 'fly' && this.moveTo(this.spot(this.target), dt)) { this.state = 'inspect'; this.timer = 0; this.face = 's'; }
-    else if (this.state === 'inspect' && (this.timer += dt) >= G.C.INSPECT_TIME) { G.shops.inspected(S, this.target); this.state = 'back'; }
+    const tg = this.target;
+    if (tg && tg.isBroker && (this.state === 'fly' || this.state === 'inspect') && tg.state !== 'grab' && tg.state !== 'run') { tg.stun = false; this.state = 'back'; }   // 놓침
+    else if (this.state === 'fly' && this.moveTo(this.spot(tg), dt)) { this.state = 'inspect'; this.timer = 0; this.face = 's'; if (tg.isBroker) tg.stun = true; }
+    else if (this.state === 'inspect' && (this.timer += dt) >= (tg.isBroker ? G.C.BROKER_CATCH_TIME : G.C.INSPECT_TIME)) {
+      if (tg.isBroker) G.broker.caught(S); else G.shops.inspected(S, tg);
+      this.state = 'back';
+    }
     else if (this.state === 'back' && this.moveTo(G.world.roofPerch, dt)) { this.state = 'perch'; this.target = null; this.face = 's'; }
   },
   busy() { return this.state !== 'perch'; },

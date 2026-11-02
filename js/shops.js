@@ -88,10 +88,11 @@ G.shops = (() => {
   const fakeCount = S => S.shops.filter(sh => sh.fake && (sh.status === 'open' || sh.status === 'closing')).length;
   const fakeMax = S => (S.elapsed >= 90 ? 2 : 1);
   // 수상한 공방 등장: 수상한 공방이 없는 열린 행에서, 빈 칸이 있으면 거기, 없으면 공방 하나를 교체
-  function spawnFake(S) {
-    if (fakeCount(S) >= fakeMax(S)) return false;
+  // cat: 그 업종 행에만 (꼼수 브로커용), force: 동시 개수 상한 무시. 성공하면 그 공방을 돌려줌
+  function spawnFake(S, cat, force) {
+    if (!force && fakeCount(S) >= fakeMax(S)) return false;
     const d = G.dali;
-    const rows = [0, 1, 2, 3].filter(r => S.openCats.has(S.shops[r * 2].cat) && !S.shops[r * 2].fake && !S.shops[r * 2 + 1].fake);
+    const rows = [0, 1, 2, 3].filter(r => (!cat || S.shops[r * 2].cat === cat) && S.openCats.has(S.shops[r * 2].cat) && !S.shops[r * 2].fake && !S.shops[r * 2 + 1].fake);
     if (!rows.length) return false;
     const r = rows[Math.floor(Math.random() * rows.length)];
     const pair = [S.shops[r * 2], S.shops[r * 2 + 1]];
@@ -102,7 +103,7 @@ G.shops = (() => {
       sh = cand[Math.floor(Math.random() * cand.length)];
     }
     newShop(S, sh, true);
-    return true;
+    return sh;
   }
   G.director.on('firstFake', S => { S.firstFakeDone = true; spawnFake(S); S.fakeClock = 18; });
   function fakeTimer(S, dt) {
@@ -257,7 +258,7 @@ G.shops = (() => {
     if (sh.fake) {
       sh.status = 'caught'; sh.revealT = 0; sh.closeT = 0;
       S.catchStreak = (S.catchStreak || 0) + 1;
-      const bonus = C.CATCH_SCORE + C.CATCH_STREAK_BONUS * (S.catchStreak - 1);
+      const bonus = C.CATCH_SCORE + C.CATCH_STREAK_BONUS * Math.min(3, S.catchStreak - 1);   // 연속 적발 보너스는 최대 3단계
       S.score += bonus; G.score.trust(S, C.TRUST_CATCH);
       S.stats.caught = (S.stats.caught || 0) + 1;
       const fy = b.y + 110;                                             // 문구는 공방 아래 길에서 (HUD에 가리지 않게)
@@ -291,7 +292,10 @@ G.shops = (() => {
     L[2](); G.director.banner(S, L[0] + '!', '검증 ' + S.data + '회 · ' + L[1]); G.narmi.say('데이터가 쌓였어요!', 1.6); G.audio.play('levelup');
   }
   function handleInspectInput(S) {
-    for (const p of G.input.taps) { const sh = shopAt(S, p); if (sh) { request(S, sh); return; } }
+    for (const p of G.input.taps) {
+      if (G.broker.hit(S, p)) { G.broker.request(S); return; }           // 꼼수 브로커를 누르면 나르미가 쫓아감
+      const sh = shopAt(S, p); if (sh) { request(S, sh); return; }
+    }
     if (G.input.hit(' ')) {
       const d = G.dali; let best = null, bd = 1e9;
       for (const sh of S.shops) {
@@ -487,7 +491,7 @@ G.shops = (() => {
   function drawHover(ctx, S) {
     const m = G.input.mouse; if (m.x < 0) { G.canvas.style.cursor = ''; return; }
     const sh = shopAt(S, m);
-    G.canvas.style.cursor = sh ? 'pointer' : '';
+    G.canvas.style.cursor = sh || G.broker.hit(S, m) ? 'pointer' : '';
     if (!sh) return;
     const b = sh.w.body, ok = !whyNot(S, sh);
     ctx.strokeStyle = ok ? '#ffd84a' : 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);

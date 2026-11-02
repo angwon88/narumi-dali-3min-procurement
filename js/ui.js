@@ -104,6 +104,7 @@ G.ui = (() => {
       if (r.fraud === 'empty') { ctx.fillStyle = '#5a4630'; ctx.fillRect(cx - 7, cy, 14, 7); ctx.fillStyle = '#c9a26b'; ctx.fillRect(cx - 12, cy - 8, 8, 3); ctx.fillRect(cx + 4, cy - 8, 8, 3); }
       else { ctx.fillStyle = '#5a4630'; ctx.fillRect(cx - 2, cy - 2, 2, 11); ctx.fillRect(cx + 2, cy + 3, 5, 2); ctx.fillStyle = '#7d7d7d'; ctx.fillRect(cx - 12, cy + 6, 4, 3); ctx.fillRect(cx + 9, cy + 5, 3, 3); }
     } else if (r.state === 'expired') { ctx.strokeStyle = '#e5533d'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx - 9, cy - 9); ctx.lineTo(cx + 9, cy + 9); ctx.moveTo(cx + 9, cy - 9); ctx.lineTo(cx - 9, cy + 9); ctx.stroke(); ctx.lineWidth = 1; }
+    G.broker.bubbleMark(ctx, r, b);
     ctx.restore();
   }
   function bubbles(ctx, S) { for (const r of S.requests) bubble(ctx, r); }

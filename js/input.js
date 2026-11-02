@@ -23,7 +23,7 @@ G.input = (() => {
   function bind(cv) {
     cv.addEventListener('pointerdown', e => {
       const p = toGame(e);
-      const onShop = G.S && G.world.shops.some(sh => G.U.inRect(p.x, p.y, sh.body));   // 공방 건물을 누르면 검증(탭)
+      const onShop = G.S && (G.world.shops.some(sh => G.U.inRect(p.x, p.y, sh.body)) || (G.broker && G.broker.hit(G.S, p)));   // 공방·꼼수 브로커를 누르면 나르미(탭)
       const useJoy = e.pointerType !== 'mouse' && G.screen === 'play' && p.y > G.C.HUD_H && !joy.active && !onShop;   // HUD·공방 말고는 어디서나 조이스틱
       if (useJoy) { Object.assign(joy, { active: true, id: e.pointerId, ox: p.x, oy: p.y, x: p.x, y: p.y }); try { cv.setPointerCapture(e.pointerId); } catch (_) {} }
       else taps.push(p);

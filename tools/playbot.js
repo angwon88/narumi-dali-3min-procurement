@@ -5,7 +5,7 @@
 'use strict';
 window.PlayBot = {
   run(opt = {}) {
-    const { avoidFake = true, speed = 1, inspect = false, until = 999, quality = true } = opt;   // until: 이 시간(초)까지만 진행
+    const { avoidFake = true, speed = 1, inspect = false, until = 999, quality = true, chase = true } = opt;   // until: 이 시간(초)까지만 진행
     G.screens.newGame(); const S = G.S, d = G.dali, DT = 1 / 60; G.screen = 'pause';
     let mode = 'buy', target = null;
     const suspicious = sh => Object.keys(sh.mults).some(id => sh.q[id] === 3 && sh.mults[id] < 0.6);   // 개편: ★3인데 ★1 값이면 수상
@@ -19,7 +19,9 @@ window.PlayBot = {
       if (mode === 'deliver' && !d.bag.length) mode = 'buy';
       target = null;
       // 나르미 실사 (개편): 실사할 수 있는 새 공방 중 수상해 보이는 곳 → 요청 있는 업종 순
-      if (inspect && inspect !== 'never' && S.inspectCD <= 0 && !G.narmi.busy()) {
+      // 꼼수 브로커가 계약을 노리고 달리면 나르미로 적발 (chase:false면 안 쫓음)
+      if (chase && S.bk && S.bk.state === 'run' && S.inspectCD <= 0 && !G.narmi.busy()) G.broker.request(S);
+      else if (inspect && inspect !== 'never' && S.inspectCD <= 0 && !G.narmi.busy()) {
         const need = new Set(act.map(r => G.ITEM[r.item].cat));
         const ok = S.shops.filter(s => !G.shops.whyNot(S, s));
         const pick = ok.sort((a, b) => (suspicious(b) - suspicious(a)) || (need.has(b.cat) - need.has(a.cat)))[0];
@@ -45,7 +47,7 @@ window.PlayBot = {
       while (S.pendingLevels > 0) { G.levelup.open(S); G.levelup.choose(S, S.offer[0]); G.screen = 'pause'; }
     }
     const st = S.stats;
-    return { 배달: S.delivered, 불합격: st.qFail || 0, 가성비: st.valueBest || 0, 가성비놓침: st.valueMiss || 0, 놓침: st.reqExpired, 속음: (st.scammed || 0) + (st.stolen || 0), 적발: st.caught || 0, 검증: S.data, 데이터단계: S.dataLv, 만료: st.certExpired || 0, 요청: st.reqMade, 점수: S.score, 신뢰: Math.round(S.trust), 아낀세금: S.saved, 낭비: S.wasted, 레벨: S.level, 선물: (S.gifts || []).length, 최대콤보: S.maxCombo || 0 };
+    return { 배달: S.delivered, 불합격: st.qFail || 0, 가성비: st.valueBest || 0, 가성비놓침: st.valueMiss || 0, 놓침: st.reqExpired, 속음: (st.scammed || 0) + (st.stolen || 0), 적발: st.caught || 0, 검증: S.data, 데이터단계: S.dataLv, 만료: st.certExpired || 0, 요청: st.reqMade, 점수: S.score, 신뢰: Math.round(S.trust), 아낀세금: S.saved, 낭비: S.wasted, 레벨: S.level, 선물: (S.gifts || []).length, 최대콤보: S.maxCombo || 0, 브로커승: st.brokerWon || 0, 브로커막음: st.brokerBlocked || 0, 브로커적발: st.brokerCaught || 0 };
   },
   avg(opt, n = 5) {
     const rs = []; for (let i = 0; i < n; i++) rs.push(this.run(opt));
