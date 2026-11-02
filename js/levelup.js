@@ -57,7 +57,7 @@ G.levelup = (() => {
   function available(S) { return CARDS.filter(c => (S.taken[c.id] || 0) < c.max && (!c.ok || c.ok(S))); }
   function makeOffer(S) {
     const pool = available(S).slice(), pick = [];
-    const inv = innovCard(S); if (inv) pick.push(inv);                    // 혁신 카드 1장 보장 (가운데 자리)
+    const inv = null;                                                      // 개편: 혁신은 새싹 공방을 키워서 (레벨업 혁신 카드 없음)
     while (pick.length < 3 && pool.length) pick.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
     while (pick.length < 3) pick.push(BONUS);
     if (inv) { pick.splice(0, 1); pick.splice(1, 0, inv); }               // 혁신 카드를 가운데로
@@ -142,5 +142,5 @@ G.levelup = (() => {
     });
     if (!ready) { ctx.fillStyle = 'rgba(10,14,20,.25)'; ctx.fillRect(X0, Y0, CW * 3 + GAP * 2, CH); }
   }
-  return { init, gain, open, choose, update, draw, CARDS, xpNeed, available };
+  return { INNOV, init, gain, open, choose, update, draw, CARDS, xpNeed, available };
 })();

@@ -15,17 +15,17 @@ G.result = (() => {
   // "오늘 한 일, 실제로는?" — 이번 판에서 실제로 일어난 일만, 우선순위 순서로 최대 3줄
   const FACTS = [
     { key: 'broker', tag: '브로커 · 페이퍼컴퍼니', col: '#d9342b', when: (S, s) => (s.brokerWon || 0) + (s.brokerBlocked || 0) + (s.brokerCaught || 0) > 0,
-      text: '실제로 조달청은 낙찰만 노리는 페이퍼컴퍼니와 브로커를 막으려고, 데이터로 의심 업체를 골라 입찰보증금을 물려요. 계약과 다른 물건을 납품한 업체는 계약 해지와 입찰참가자격 제한을 받아요.' },
+      text: '조달청은 낙찰만 노리는 페이퍼컴퍼니·브로커를 데이터로 골라 입찰보증금을 물리고, 계약과 다른 물건을 낸 업체는 계약 해지·입찰참가자격 제한을 해요.' },
     { key: 'caught', tag: '페이퍼컴퍼니 적발', col: '#d9342b', when: (S, s) => s.caught > 0 && !((s.scammed || 0) + (s.stolen || 0)) && !((s.brokerWon || 0) + (s.brokerBlocked || 0) + (s.brokerCaught || 0)),   // 피해가 있었으면 그쪽 한 줄만
       text: "수상한 공방의 실제 이름은 '페이퍼컴퍼니'. 만들 능력 없이 낙찰만 노리는 업체예요. 조달청은 현장 조사와 데이터 분석으로 이런 업체를 걸러내요." },
     { key: 'scammed', tag: '페이퍼컴퍼니 피해', col: '#d9342b', when: (S, s) => (s.scammed || 0) + (s.stolen || 0) > 0 && !((s.brokerWon || 0) + (s.brokerBlocked || 0) + (s.brokerCaught || 0)),
       text: '표시와 다른 불량품은 검수에서 걸러도, 세금과 시간은 이미 쓴 뒤예요. 페이퍼컴퍼니 때문에 성실한 업체가 기회를 잃기도 해요. 그래서 계약 전 실사가 중요해요.' },
     { key: 'contract', tag: '계약 조건 · 검수', col: '#2f4f8a', when: (S, s) => (s.passed || 0) + (s.qFail || 0) > 0,
-      text: '공공기관은 물건을 살 때 품질·규격 같은 계약 조건을 정하고, 납품되면 조건대로 왔는지 검수해요. 조건에 못 미치면 받지 않아요.' },
+      text: '공공기관은 품질·규격 같은 계약 조건을 정하고, 납품되면 조건대로 왔는지 검수해요. 조건에 못 미치면 받지 않아요.' },
     { key: 'value', tag: '가성비 따지기', col: '#2e9b3a', when: (S, s) => (s.valueBest || 0) + (s.valueMiss || 0) > 0,
-      text: '조달은 무조건 가장 싼 곳이 아니라, 조건을 맞추는 업체 중에서 가격을 따져 골라요. 필요 이상으로 좋은 걸 비싸게 사도 세금 낭비예요.' },
-    { key: 'innov', tag: '혁신제품 시범구매', col: '#e0a800', when: (S, s) => s.innov > 0,
-      text: '조달청이 새 기술 제품의 첫 구매자가 되어 공공기관이 써 보게 하고, 그 기업이 성장하도록 도와요. 시범 사용 중 문제는 구매면책으로 담당자가 책임지지 않아요.' },
+      text: '무조건 가장 싼 곳이 아니라, 조건을 맞추는 업체 중에서 가격을 따져 골라요. 필요 이상으로 좋은 걸 비싸게 사도 세금 낭비예요.' },
+    { key: 'innov', tag: '혁신제품 시범구매', col: '#e0a800', when: (S, s) => (s.innov || 0) + (s.sproutBuy || 0) > 0,
+      text: '조달청이 새 기술 제품의 첫 구매자가 되어 공공기관이 써 보게 하고 기업 성장을 도와요. 시범 사용 중 문제는 구매면책으로 담당자 책임이 없어요.' },
     { key: 'stock', tag: '원자재 비축', col: '#2e9b3a', when: (S, s) => s.stocked > 0,
       text: '조달청은 알루미늄·구리 같은 원자재를 미리 사서 비축해 두었다가, 값이 크게 오르면 기업에 풀어 가격을 안정시켜요.' },
     { key: 'compete', tag: '공정한 경쟁', col: '#7a5ab8', when: (S, s) => s.closedByStreak > 0,
@@ -35,7 +35,8 @@ G.result = (() => {
     { key: 'ontime', tag: '나라장터', col: '#2f4f8a', when: () => true,
       text: "마을 요청은 조달청의 전자조달 시스템 '나라장터'로 들어온 주문이에요. 학교·소방서 같은 공공기관에 필요한 물건을 제때 보내는 일, 그게 조달청의 일이에요." },
   ];
-  const facts = S => FACTS.filter(f => f.when(S, S.stats || {})).slice(0, 3);
+  const ORDER = ['broker', 'scammed', 'caught', 'contract', 'innov', 'value', 'stock', 'compete', 'saved', 'ontime'];
+  const facts = S => ORDER.map(k => FACTS.find(f => f.key === k)).filter(f => f && f.when(S, S.stats || {})).slice(0, 4);
 
   function wrap(ctx, s, maxW) {
     const out = []; let line = '';
@@ -64,8 +65,8 @@ G.result = (() => {
     ctx.fillStyle = '#fffdf6'; ctx.fillRect(x, y, w, h);
     ctx.fillStyle = '#2f4f8a'; ctx.fillRect(x, y, w, 22);
     T(ctx, title, x + w / 2, y + 11, 12, '#fff');
-    T(ctx, main, x + w / 2, y + 44, 20, mainCol);
-    if (sub) T(ctx, sub, x + w / 2, y + 68, 12, '#6a5a3a');
+    T(ctx, main, x + w / 2, y + 40, 20, mainCol);
+    if (sub) T(ctx, sub, x + w / 2, y + 60, 12, '#6a5a3a');
   }
 
   function draw(ctx, S) {
@@ -90,16 +91,17 @@ G.result = (() => {
     }
 
     // 2. 기록 카드 4장
-    const cw = 210, ch = 82, gap = 12, cx0 = (W - (cw * 4 + gap * 3)) / 2, cy = 134;
+    const cw = 168, ch = 72, gap = 10, cx0 = (W - (cw * 5 + gap * 4)) / 2, cy = 124;
     const late = s.reqExpired || 0, cheat = (s.scammed || 0) + (s.stolen || 0), qf = s.qFail || 0;
     card(ctx, cx0, cy, cw, ch, '검수 합격 납품', S.delivered + '건', '#2a2416', qf || late ? '불합격 ' + qf + '건 · 늦음 ' + late + '건' : '불합격·늦음 없음!');
     card(ctx, cx0 + (cw + gap), cy, cw, ch, '아낀 국민 세금', '+' + S.saved + '만원', '#2e9b3a', S.wasted > 0 ? '낭비한 세금 ' + S.wasted + '만원' : '낭비 없음!');
     card(ctx, cx0 + (cw + gap) * 2, cy, cw, ch, '가성비 최고 선택', (s.valueBest || 0) + '번', '#2f6fb0', s.valueMiss ? '더 싼 적합 업체 놓침 ' + s.valueMiss + '번' : '늘 최고의 선택!');
     const stop = (s.brokerBlocked || 0) + (s.brokerCaught || 0);
+    card(ctx, cx0 + (cw + gap) * 4, cy, cw, ch, '키운 새싹 공방', '혁신 ' + (s.innov || 0) + '곳', s.innov ? '#b08800' : '#9a9080', '새싹 실적 ' + (s.sproutBuy || 0) + '건');
     card(ctx, cx0 + (cw + gap) * 3, cy, cw, ch, '꼼수 브로커', '막음 ' + stop + '번', '#d9342b', s.brokerWon ? '뺏긴 계약 ' + s.brokerWon + '건' : cheat ? '속은 횟수 ' + cheat + '번' : '한 번도 안 뺏김!');
 
     // 3. 오늘 한 일, 실제로는?
-    const bx = cx0, by = 234, bw = W - cx0 * 2, bh = 178;
+    const bx = cx0, by = 214, bw = W - cx0 * 2, bh = 206;
     ctx.fillStyle = 'rgba(255,253,246,.96)'; ctx.fillRect(bx, by, bw, bh);
     ctx.strokeStyle = '#ffd84a'; ctx.lineWidth = 2; ctx.strokeRect(bx + 1, by + 1, bw - 2, bh - 2); ctx.lineWidth = 1;
     ctx.fillStyle = '#ffd84a'; ctx.fillRect(bx, by - 12, 186, 24);
@@ -107,12 +109,14 @@ G.result = (() => {
     let y = by + 30;
     ctx.font = '12px ' + G.FONT;
     facts(S).forEach(f => {
+      ctx.font = '16px ' + G.FONT;
+      if (y + (wrap(ctx, f.text, bw - 180).length - 1) * 20 + 10 > by + bh) return;   // 상자에 안 들어가면 생략
       ctx.fillStyle = f.col; ctx.fillRect(bx + 14, y - 10, 132, 20);
       T(ctx, f.tag, bx + 80, y + 1, 12, '#fff');
       ctx.font = '16px ' + G.FONT;
       const lines = wrap(ctx, f.text, bw - 180);
       lines.forEach((ln, i) => T(ctx, ln, bx + 160, y + 1 + i * 20, 16, '#2a2416', 'left'));
-      y += Math.max(1, lines.length) * 20 + 12;
+      y += Math.max(1, lines.length) * 20 + 8;
     });
 
     // 4. 고정 문구 + 버튼 + CI

@@ -19,7 +19,8 @@ G.director = (() => {
     { at: 10, open: { village: 'clinic', cat: 'health' }, banner: '보건소가 문을 열었어요!', sub: '보건 공방도 영업 시작' },
     { at: 30, open: { village: 'fire', cat: 'safety' }, banner: '소방서가 문을 열었어요!', sub: '안전 공방도 영업 시작' },
     { at: 45, open: { village: 'library' }, banner: '도서관이 문을 열었어요!', sub: '공방 거리가 바빠져요' },
-    { at: 50, hook: 'firstFake', flag: 'fake' },                 // 첫 수상한 공방 확정 등장 (적발 기회를 늘리려고 1:00 → 0:50)
+    { at: 50, hook: 'firstFake', flag: 'fake' },
+    ...C.SPROUT_AT.map(at => ({ at, hook: 'sprout' })),          // 개편: 새싹 공방(스타트업) 개업                 // 첫 수상한 공방 확정 등장 (적발 기회를 늘리려고 1:00 → 0:50)
     { at: C.FINAL_RUSH_AT, rush: true, banner: '막바지! 점수 1.5배', sub: '조금만 더 힘내요' },
   ];
   const hooks = {};                                // 다른 작업이 등록: G.director.on('firstFake', fn)

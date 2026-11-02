@@ -142,11 +142,18 @@ G.requests = (() => {
   // 혁신제품 시범 사용 (기획서 3.9): 혁신 공방이 된 뒤 첫 INNOV_TRIAL건은 시범 사용.
   // INNOV_TRIAL_FAIL 확률로 '보완 필요' → 그 물건은 못 쓰지만 구매면책으로 신뢰도·콤보 손해 없음(요청은 그대로).
   // 시범 사용을 마치면 '성공 판정' → 이후 점수 ×INNOV_MATURE_MULT. true를 돌려주면 이번 납품은 보완 필요.
+  // 개편 2단계: 새싹 공방(sh.sprout)도 같은 흐름. 실적은 '보완 필요'가 아닌 납품만 셈. 다 채우면 혁신제품 지정
   function trial(S, r, b) {
-    const sh = S.shops[b.shop]; if (!sh || !sh.innov || sh.mature) return false;
-    sh.trial = Math.max(0, sh.trial - 1);
+    const sh = S.shops[b.shop]; if (!sh || !(sh.innov || sh.sprout) || sh.mature || !(b.innov || b.sprout)) return false;
     const fail = Math.random() < C.INNOV_TRIAL_FAIL;
+    if (!fail) { sh.trial = Math.max(0, sh.trial - 1); if (sh.sprout) S.stats.sproutBuy = (S.stats.sproutBuy || 0) + 1; }
     const y = r.vill.yard;
+    if (!fail && sh.sprout && sh.trial > 0) {
+      G.score.trust(S, C.SPROUT_TRUST); S.score += C.SPROUT_SCORE;
+      G.fx.add(S, y.x + y.w / 2, y.y - 4, '새싹 공방 실적 ' + (C.SPROUT_GOAL - sh.trial) + '/' + C.SPROUT_GOAL + ' · +' + C.SPROUT_SCORE, '#9be37a', 16);
+      const bb = sh.w.body; G.fx.burst(S, bb.x + 12, bb.y + 10, true, 14);
+      sh.growT = 0;
+    }
     if (fail) {
       S.stats.trialFail = (S.stats.trialFail || 0) + 1;
       G.fx.add(S, y.x + y.w / 2, y.y + 16, '시범 사용: 보완 필요', '#ffd6a0', 16);
@@ -154,16 +161,21 @@ G.requests = (() => {
       if (!S.immunityShown) { S.immunityShown = true; G.director.banner(S, '혁신제품 구매면책!', '시범 사용 중 문제는 조달청이 책임져요 · 손해 없음'); }
       G.audio.play('ok');
     }
-    if (sh.trial === 0) {
-      sh.mature = true; sh.stampT = 0;
+    if (sh.trial === 0 && !fail) {
       const who = sh.w.cat.name + '공방 ' + sh.w.side;
-      G.director.banner(S, who + ' 혁신제품 성공 판정!', '시범 사용 통과 · 공공기관 판로 열림 · 이제 납품 점수 ×' + C.INNOV_MATURE_MULT);
+      if (sh.sprout) {
+        const I = G.shops.graduate(S, sh);
+        S.score += C.SPROUT_GRAD_SCORE; G.score.trust(S, C.SPROUT_GRAD_TRUST);
+        G.fx.add(S, y.x + y.w / 2, y.y - 4, '혁신 성장 보너스 +' + C.SPROUT_GRAD_SCORE + ' · 신뢰 +' + C.SPROUT_GRAD_TRUST, '#ffd84a', 16);
+        G.director.banner(S, '새싹 ' + who + ', 혁신제품 지정!', (I ? I.product + ': ' + I.effect + ' · ' : '') + '공공기관 첫 구매로 성장 · 납품 점수 ×' + C.INNOV_MATURE_MULT);
+      } else G.director.banner(S, who + ' 혁신제품 성공 판정!', '시범 사용 통과 · 공공기관 판로 열림 · 이제 납품 점수 ×' + C.INNOV_MATURE_MULT);
+      sh.mature = true; sh.stampT = 0;
       G.audio.play('gift'); setTimeout(() => G.audio.play('levelup'), 250);
       // 2026-11-02 하이리턴 연출: 금빛 번쩍임 + 공방·마을 양쪽에서 금빛 파편 + 큰 배율 글자
       const b = sh.w.body;
       S.flashT = 0.5; S.shakeT = Math.max(S.shakeT || 0, 0.25);
       G.fx.burst(S, b.x + b.w / 2, b.y + 40, true, 60); G.fx.burst(S, y.x + y.w / 2, y.y + 10, true, 40);
-      G.fx.add(S, b.x + b.w / 2, b.y + 96, '★ 성공 판정! 점수 ×' + C.INNOV_MATURE_MULT, '#ffd84a', 28);
+      G.fx.add(S, b.x + b.w / 2, b.y + 96, (sh.innov && S.stats.innov ? '★ 혁신제품 지정! ×' : '★ 성공 판정! 점수 ×') + C.INNOV_MATURE_MULT, '#ffd84a', 28);
       S.stats.innovMature = (S.stats.innovMature || 0) + 1;
     }
     return fail;
@@ -185,7 +197,7 @@ G.requests = (() => {
       S.checks.push({ x: r.vill.yard.x + r.vill.yard.w / 2, y: r.vill.yard.y - 128, minQ: r.minQ, q: b.q, realQ: b.realQ, ok, fake: b.fake, t: 0 });
       if (b.fake) { fraud(S, r, b); continue; }
       if (!ok) { qualityFail(S, r, b); continue; }
-      if (b.innov && trial(S, r, b)) continue;                    // 혁신제품 시범 사용: '보완 필요'면 요청은 그대로 남음
+      if ((b.innov || b.sprout) && trial(S, r, b)) continue;      // 혁신·새싹 시범 사용: '보완 필요'면 요청은 그대로 남음 (구매면책)
       r.state = 'done';
       S.stats.passed = (S.stats.passed || 0) + 1;
       G.score.delivered(S, r, b);

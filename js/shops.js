@@ -55,7 +55,7 @@ G.shops = (() => {
   }
   const isOpen = (S, sh) => sh.status === 'open' && S.openCats.has(sh.cat);
   const itemsOf = sh => G.ITEMS.filter(i => i.cat === sh.cat);
-  const price = (sh, itemId) => round1(G.ITEM[itemId].price * (sh.mults[itemId] || 1) * (sh.monopoly ? C.MONOPOLY_MULT : 1) * (sh.innov ? C.INNOV_PRICE_MULT : 1) * G.events.priceMult(sh));
+  const price = (sh, itemId) => round1(G.ITEM[itemId].price * (sh.mults[itemId] || 1) * (sh.monopoly ? C.MONOPOLY_MULT : 1) * (sh.innov ? C.INNOV_PRICE_MULT : 1) * (sh.sprout ? C.SPROUT_PRICE_MULT : 1) * G.events.priceMult(sh));
   const partner = (S, sh) => S.shops[sh.idx ^ 1];
 
   function opened(S, cat) { for (const sh of S.shops) if (sh.cat === cat) sh.openFx = 0; }
@@ -73,7 +73,7 @@ G.shops = (() => {
 
   // ---------- 새 공방 개업 (빈 칸 재개업 · 수상한 공방 교체) ----------
   function newShop(S, sh, fake) {
-    Object.assign(sh, { status: 'open', fake, verified: false, isNew: true, certT: 0, bidT: fake && C.FAKE_BID ? C.FAKE_BID_SEC : 0, fx: null, openFx: 0, stampT: 0, flagT: FLAG_SEC, closeT: 0, revealT: 0, reopenT: 0, lonely: false, monopoly: false, closeWhy: null });
+    Object.assign(sh, { status: 'open', fake, sprout: false, innov: false, mature: false, growT: null, verified: false, isNew: true, certT: 0, bidT: fake && C.FAKE_BID ? C.FAKE_BID_SEC : 0, fx: null, openFx: 0, stampT: 0, flagT: FLAG_SEC, closeT: 0, revealT: 0, reopenT: 0, lonely: false, monopoly: false, closeWhy: null });
     const p0 = partner(S, sh);
     if (p0.monopoly) { p0.monopoly = false; const b = p0.w.body; G.fx.add(S, b.x + b.w / 2, b.y + 8, '경쟁 공방이 생겨 독점이 풀렸어요', '#9be37a'); }
     S.streak[sh.idx >> 1] = { shop: -1, n: 0 };
@@ -98,7 +98,7 @@ G.shops = (() => {
     const pair = [S.shops[r * 2], S.shops[r * 2 + 1]];
     let sh = pair.find(x => x.status === 'empty');
     if (!sh) {
-      const cand = pair.filter(x => x.status === 'open' && !x.innov && !U.inRect(d.x, d.y, x.w.door));   // 달이가 서 있는 공방은 피함
+      const cand = pair.filter(x => x.status === 'open' && !x.innov && !x.sprout && !U.inRect(d.x, d.y, x.w.door));   // 달이가 서 있는 공방·혁신·새싹은 피함
       if (!cand.length) return false;
       sh = cand[Math.floor(Math.random() * cand.length)];
     }
@@ -106,6 +106,34 @@ G.shops = (() => {
     return sh;
   }
   G.director.on('firstFake', S => { S.firstFakeDone = true; spawnFake(S); S.fakeClock = 18; });
+  // ---------- 새싹 공방 (개편 2단계: 스타트업 성장) ----------
+  // 열린 행에서 빈 칸이 있으면 거기, 없으면 평범한 공방 하나를 새싹 공방으로 교체. 품질 ★2~3, 값은 조금 비쌈
+  function spawnSprout(S) {
+    const d = G.dali;
+    const rows = [0, 1, 2, 3].filter(r => S.openCats.has(S.shops[r * 2].cat) && ![0, 1].some(k => { const x = S.shops[r * 2 + k]; return x.sprout || x.innov || x.fake; }));
+    if (!rows.length) return false;
+    const r = rows[Math.floor(Math.random() * rows.length)], pair = [S.shops[r * 2], S.shops[r * 2 + 1]];
+    const sh = pair.find(x => x.status === 'empty') || pair.filter(x => x.status === 'open' && !U.inRect(d.x, d.y, x.w.door))[Math.floor(Math.random() * 2) % 2] || pair.find(x => x.status === 'open' && !U.inRect(d.x, d.y, x.w.door));
+    if (!sh) return false;
+    newShop(S, sh, false);
+    const p = partner(S, sh);
+    for (const it of itemsOf(sh)) { const pq = p.status === 'open' && !p.fake ? p.q[it.id] : 0; sh.q[it.id] = pq === 3 ? 2 : pq === 2 ? 3 : (Math.random() < 0.5 ? 2 : 3); sh.mults[it.id] = rollMult(sh, it.id); }
+    Object.assign(sh, { sprout: true, trial: C.SPROUT_GOAL, growT: 0 });
+    S.stats.sprouts = (S.stats.sprouts || 0) + 1;
+    const who = sh.w.cat.name + sh.w.side;
+    G.director.banner(S, '새싹 공방 개업! (' + who + ')', '실적 없는 스타트업 · 사 주면 자라서 혁신제품이 돼요 (실적 ' + C.SPROUT_GOAL + '건)');
+    G.audio.play('banner');
+    return sh;
+  }
+  G.director.on('sprout', S => { spawnSprout(S); });
+  // 실적을 다 채우면 혁신제품 지정: 혁신 공방(성공 판정 상태)으로, 품질 +1, 업종별 혁신제품 효과
+  function graduate(S, sh) {
+    sh.sprout = false; sh.innov = true; sh.mature = true; sh.growT = 0; sh.lonely = false; sh.isNew = false;
+    for (const it of itemsOf(sh)) { sh.q[it.id] = Math.min(3, sh.q[it.id] + 1); sh.mults[it.id] = rollMult(sh, it.id); }
+    const I = G.levelup.INNOV[sh.cat]; if (I && !S.innovCats.has(sh.cat)) { I.apply(S); S.innovCats.add(sh.cat); }
+    S.stats.innov = (S.stats.innov || 0) + 1;
+    return I;
+  }
   function fakeTimer(S, dt) {
     if (!S.firstFakeDone) return;
     S.fakeClock -= dt;
@@ -134,8 +162,8 @@ G.shops = (() => {
     const prep = !r;
     // 가성비 판정은 '산 순간' 기준: 이 요청 조건을 맞춘 공방 중 가장 싼 곳이었나 (조건 미달이면 null)
     const fits = r && sh.q[item] >= r.minQ;
-    const best = fits ? p <= bestPrice(S, item, r.minQ) + 0.05 : null;
-    G.dali.bag.push({ item, paid: p, shop: sh.idx, fake: sh.fake, innov: sh.innov, prep, q: sh.q[item], realQ: realQ(sh, item), best, forReq: r ? r.id : null });
+    const best = fits && !sh.sprout ? p <= bestPrice(S, item, r.minQ) + 0.05 : undefined;   // 새싹 공방 구매는 가성비 대신 '투자'
+    G.dali.bag.push({ item, paid: p, shop: sh.idx, fake: sh.fake, innov: sh.innov, sprout: sh.sprout, prep, q: sh.q[item], realQ: realQ(sh, item), best, forReq: r ? r.id : null });
     G.audio.play('buy');   // 수상한 물건도 겉보기는 같다
     S.stats.bought = (S.stats.bought || 0) + 1;
     const d = sh.w.door;
@@ -149,7 +177,7 @@ G.shops = (() => {
     const row = sh.idx >> 1, st = S.streak[row], p = partner(S, sh);
     if (st.shop === sh.idx) st.n++; else { st.shop = sh.idx; st.n = 1; }
     sh.lonely = false;
-    if (p.status !== 'open' || p.fake || p.innov) return;                // 비어 있거나 수상한·혁신 공방은 대상 아님
+    if (p.status !== 'open' || p.fake || p.innov || p.sprout) return;    // 비어 있거나 수상한·혁신·새싹 공방은 대상 아님
     if (st.n >= S.streakClose) {
       p.lonely = false; p.status = 'closing'; p.closeT = 0; p.closeWhy = 'comp';
       sh.monopoly = true;
@@ -237,7 +265,7 @@ G.shops = (() => {
     G.director.banner(S, who + G.U.josa(who, '이', '가') + ' 혁신 공방으로 성장했어요!', '혁신제품 시범구매 · 조달청이 첫 구매자가 되어 줬어요');
     G.audio.play('gift');
   }
-  function toEmpty(sh) { Object.assign(sh, { status: 'empty', fake: false, verified: false, isNew: false, certT: 0, bidT: 0, certExpired: false, reopenT: C.REOPEN_SEC, closeT: 0, revealT: 0, flagT: 0, lonely: false, monopoly: false }); }
+  function toEmpty(sh) { Object.assign(sh, { status: 'empty', fake: false, sprout: false, verified: false, isNew: false, certT: 0, bidT: 0, certExpired: false, reopenT: C.REOPEN_SEC, closeT: 0, revealT: 0, flagT: 0, lonely: false, monopoly: false }); }
 
   // ---------- 나르미 검증 (기획서 3.6) ----------
   const shopAt = (S, p) => S.shops.find(sh => U.inRect(p.x, p.y, sh.w.body)) || null;
@@ -385,13 +413,30 @@ G.shops = (() => {
     ctx.fillStyle = col; ctx.fillRect(-w / 2 + 3, -5, w - 6, 10);
     T(ctx, text, 0, 1, 12, '#fff'); ctx.restore();
   }
+  // 새싹 공방: 연두 지붕 + 자라는 새싹 + 공방 아래 '실적 n/3' 칸
+  function sproutLook(ctx, sh) {
+    const b = sh.w.body, done = C.SPROUT_GOAL - sh.trial, g = Math.min(1, (sh.growT || 0) / 0.6), pulse = g < 1 ? Math.sin(g * Math.PI) * 3 : 0;
+    ctx.fillStyle = '#7cc45a'; ctx.fillRect(b.x - 3 - pulse, b.y - pulse, b.w + 6 + pulse * 2, 22);
+    ctx.fillStyle = '#b8ec8e'; ctx.fillRect(b.x - 3, b.y, b.w + 6, 3);
+    T(ctx, '새싹 ' + sh.w.cat.name + sh.w.side, b.x + b.w / 2 + 6, b.y + 11, 12, '#1f4a17');
+    // 새싹 그림: 실적이 쌓일수록 줄기·잎이 커짐
+    const sx = b.x + 12, sy = b.y + 18, h = 4 + done * 3, sw = Math.sin(sh.t * 3) * 1;
+    ctx.fillStyle = '#6b4423'; ctx.fillRect(sx - 4, sy - 2, 9, 3);
+    ctx.fillStyle = '#2e8b2e'; ctx.fillRect(sx, sy - h, 2, h);
+    const lf = 2 + done; ctx.fillStyle = '#4cc04c';
+    ctx.fillRect(sx - lf + sw, sy - h - 1, lf, 3); ctx.fillRect(sx + 2 + sw, sy - h - 3, lf, 3);
+    // 실적 칸
+    const tx = b.x + b.w / 2 - 38; ctx.fillStyle = '#1f4a17'; ctx.fillRect(tx, b.y + 66, 76, 14);
+    T(ctx, '실적', tx + 15, b.y + 73, 12, '#fff');
+    for (let i = 0; i < C.SPROUT_GOAL; i++) { ctx.fillStyle = i < done ? '#9be37a' : '#4a6a40'; ctx.fillRect(tx + 32 + i * 14, b.y + 69, 11, 8); }
+  }
   function innovLook(ctx, sh) {
     const b = sh.w.body, g = Math.min(1, (sh.growT || 0) / 0.6), pulse = g < 1 ? Math.sin(g * Math.PI) * 4 : 0;
     ctx.fillStyle = '#f6c431'; ctx.fillRect(b.x - 3 - pulse, b.y - pulse, b.w + 6 + pulse * 2, 22);        // 금빛 지붕
     ctx.fillStyle = '#fff3b0'; ctx.fillRect(b.x - 3, b.y, b.w + 6, 3);
     T(ctx, '★혁신 ' + sh.w.cat.name + sh.w.side, b.x + b.w / 2, b.y + 11, 12, '#5a3a00');
     // 시범 사용 진행 / 성공 판정 표시 (공방 아래 길)
-    const tag = sh.mature ? '★ 성공 판정' : '시범 사용 ' + (C.INNOV_TRIAL - sh.trial) + '/' + C.INNOV_TRIAL;
+    const tag = sh.mature ? '★ 혁신제품' : '시범 사용 ' + (C.INNOV_TRIAL - sh.trial) + '/' + C.INNOV_TRIAL;
     ctx.fillStyle = sh.mature ? '#e0a800' : '#5a3a00'; ctx.fillRect(b.x + b.w / 2 - 34, b.y + 66, 68, 14);
     T(ctx, tag, b.x + b.w / 2, b.y + 73, 12, '#fff');
     for (let i = 0; i < 3; i++) {                                                                       // 반짝임
@@ -443,6 +488,7 @@ G.shops = (() => {
       if (sh.status === 'empty') { emptyLot(ctx, sh, S); continue; }
       if (sh.status === 'caught') { caughtView(ctx, sh); continue; }
       if (sh.innov) innovLook(ctx, sh);
+      if (sh.sprout) sproutLook(ctx, sh);
       chimney(ctx, sh);
       windowView(ctx, sh);
       priceTag(ctx, S, sh);
@@ -481,7 +527,7 @@ G.shops = (() => {
     const x = Math.max(4, Math.min(C.VIEW.w - w - 4, d.x + d.w / 2 - w / 2)), y = d.y + d.h + 6;
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x + 2, y + 3, w, h);
     ctx.fillStyle = '#fffdf6'; ctx.fillRect(x, y, w, h);
-    const head = sh.innov ? ['★ 혁신 공방', '#b08800'] : !sh.isNew ? ['거래 실적 있는 업체', '#2f4f8a'] : sh.verified ? ['✔ 실사 완료 · 새 공방', '#2e9b3a'] : ['새 공방 · 실사 전', '#6a5a3a'];
+    const head = sh.innov ? ['★ 혁신 공방', '#b08800'] : sh.sprout ? [sh.verified ? '새싹 공방 · 실적 ' + (C.SPROUT_GOAL - sh.trial) + '/' + C.SPROUT_GOAL : '새싹 공방 · 실사 전', '#3a8a3a'] : !sh.isNew ? ['거래 실적 있는 업체', '#2f4f8a'] : sh.verified ? ['✔ 실사 완료 · 새 공방', '#2e9b3a'] : ['새 공방 · 실사 전', '#6a5a3a'];
     ctx.fillStyle = head[1]; ctx.fillRect(x, y, w, 18);
     T(ctx, head[0], x + w / 2, y + 9, 12, '#fff');
     items.forEach((it, i) => {
@@ -509,5 +555,5 @@ G.shops = (() => {
     ctx.strokeStyle = ok ? '#ffd84a' : 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
     ctx.strokeRect(b.x - 3, b.y - 3, b.w + 6, b.h + 6); ctx.setLineDash([]); ctx.lineWidth = 1;
   }
-  return { bestPrice, bestFor, drawDoorInfo, certified, request, whyNot, makeInnov, init, update, draw, drawHover, price, isOpen, rollRow, opened, inspected, handleInspectInput, shopAt, spawnFake, newShop };
+  return { spawnSprout, graduate, bestPrice, bestFor, drawDoorInfo, certified, request, whyNot, makeInnov, init, update, draw, drawHover, price, isOpen, rollRow, opened, inspected, handleInspectInput, shopAt, spawnFake, newShop };
 })();

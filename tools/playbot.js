@@ -5,7 +5,7 @@
 'use strict';
 window.PlayBot = {
   run(opt = {}) {
-    const { avoidFake = true, speed = 1, inspect = false, until = 999, quality = true, chase = true } = opt;   // until: 이 시간(초)까지만 진행
+    const { avoidFake = true, speed = 1, inspect = false, until = 999, quality = true, chase = true, sprout = true } = opt;   // until: 이 시간(초)까지만 진행
     G.screens.newGame(); const S = G.S, d = G.dali, DT = 1 / 60; G.screen = 'pause';
     let mode = 'buy', target = null;
     const suspicious = sh => Object.keys(sh.mults).some(id => sh.q[id] === 3 && sh.mults[id] < 0.6);   // 개편: ★3인데 ★1 값이면 수상
@@ -31,7 +31,7 @@ window.PlayBot = {
         for (const r of uncovered) {
           // 개편: 계약 조건(★minQ)을 맞추는 공방 중 가장 싼 곳. quality:false면 조건을 안 보고 제일 싼 곳(옛 전략 비교용)
           const cand = S.shops.filter(s => G.shops.isOpen(S, s) && s.cat === G.ITEM[r.item].cat && !(avoidFake && suspicious(s)) && (quality === false || s.q[r.item] >= r.minQ));
-          const sh = cand.sort((a, b) => G.shops.price(a, r.item) - G.shops.price(b, r.item))[0];
+          const sh = (sprout && cand.find(s => s.sprout && s.verified)) || cand.sort((a, b) => G.shops.price(a, r.item) - G.shops.price(b, r.item))[0];   // sprout: 새싹 공방을 키움
           if (sh) { target = { x: sh.w.door.x + 20, y: sh.w.door.y + 16 }; break; }
         }
       } else {
@@ -47,7 +47,7 @@ window.PlayBot = {
       while (S.pendingLevels > 0) { G.levelup.open(S); G.levelup.choose(S, S.offer[0]); G.screen = 'pause'; }
     }
     const st = S.stats;
-    return { 배달: S.delivered, 불합격: st.qFail || 0, 가성비: st.valueBest || 0, 가성비놓침: st.valueMiss || 0, 놓침: st.reqExpired, 속음: (st.scammed || 0) + (st.stolen || 0), 적발: st.caught || 0, 검증: S.data, 데이터단계: S.dataLv, 만료: st.certExpired || 0, 요청: st.reqMade, 점수: S.score, 신뢰: Math.round(S.trust), 아낀세금: S.saved, 낭비: S.wasted, 레벨: S.level, 선물: (S.gifts || []).length, 최대콤보: S.maxCombo || 0, 브로커승: st.brokerWon || 0, 브로커막음: st.brokerBlocked || 0, 브로커적발: st.brokerCaught || 0 };
+    return { 배달: S.delivered, 불합격: st.qFail || 0, 가성비: st.valueBest || 0, 가성비놓침: st.valueMiss || 0, 놓침: st.reqExpired, 속음: (st.scammed || 0) + (st.stolen || 0), 적발: st.caught || 0, 검증: S.data, 데이터단계: S.dataLv, 만료: st.certExpired || 0, 요청: st.reqMade, 점수: S.score, 신뢰: Math.round(S.trust), 아낀세금: S.saved, 낭비: S.wasted, 레벨: S.level, 선물: (S.gifts || []).length, 최대콤보: S.maxCombo || 0, 브로커승: st.brokerWon || 0, 브로커막음: st.brokerBlocked || 0, 브로커적발: st.brokerCaught || 0, 새싹: st.sprouts || 0, 새싹실적: st.sproutBuy || 0, 혁신지정: st.innov || 0 };
   },
   avg(opt, n = 5) {
     const rs = []; for (let i = 0; i < n; i++) rs.push(this.run(opt));
