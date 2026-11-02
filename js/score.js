@@ -18,7 +18,8 @@ G.score = (() => {
     S.combo++; S.maxCombo = Math.max(S.maxCombo, S.combo); S.comboT = 0;
     const cm = comboMult(S);
     const sh = bagItem.innov ? S.shops[bagItem.shop] : null;
-    pts = Math.round(pts * (S.scoreMult || 1) * cm * (sh ? (sh.mature ? C.INNOV_MATURE_MULT : C.INNOV_SCORE_MULT) : 1));
+    pts = Math.round(pts * (S.scoreMult || 1) * cm * (sh ? (sh.mature ? C.INNOV_MATURE_MULT : C.INNOV_SCORE_MULT) : 1) * (r.urgent ? C.STORM.mult : 1));
+    if (r.urgent) S.stats.urgentDone = (S.stats.urgentDone || 0) + 1;
     if (bagItem.innov) { trust(S, C.INNOV_TRUST_BONUS); S.stats.innovDelivered = (S.stats.innovDelivered || 0) + 1; }
     S.score += pts; S.delivered++; S.onTime++;
     G.levelup.gain(S);
@@ -32,7 +33,7 @@ G.score = (() => {
     }
     G.audio.play('deliver', S.combo);
     const v = r.vill.yard;
-    const star = sh && sh.mature ? '  ★혁신 ×' + C.INNOV_MATURE_MULT : '';   // 성공 판정 뒤 혁신 납품은 금빛 파편과 함께
+    const star = (r.urgent ? '  긴급 ×' + C.STORM.mult : '') + (sh && sh.mature ? '  ★혁신 ×' + C.INNOV_MATURE_MULT : '');   // 성공 판정 뒤 혁신 납품은 금빛 파편과 함께
     G.fx.add(S, v.x + v.w / 2, v.y + 16, '+' + pts + star + (S.combo >= 2 ? '  콤보 ' + S.combo + '!' : ''), '#ffe48a', 16);
     if (star) G.fx.burst(S, v.x + v.w / 2, v.y + 10, true, 24);
     if (saving > 0) G.fx.add(S, v.x + v.w / 2, v.y + 16, '세금 +' + saving + '만원', '#9be37a');

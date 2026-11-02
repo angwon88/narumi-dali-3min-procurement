@@ -31,7 +31,7 @@ G.requests = (() => {
   // 요청 하나 만들기. 만들 수 없으면 null
   function spawn(S, force) {
     const open = active(S);
-    if (open.length >= C.MAX_REQ_TOTAL) return null;
+    if (open.length >= C.MAX_REQ_TOTAL + (force && force.urgent ? 3 : 0)) return null;   // 태풍 긴급 계약은 상한 +3
     let vid, item;
     if (force) ({ vid, item } = force);
     else {

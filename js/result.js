@@ -48,6 +48,11 @@ G.result = (() => {
               '혁신제품을 사다 문제가 생겨도 고의나 중대한 잘못이 없으면 담당자에게 책임을 묻지 않아요(구매면책).',
               '혁신제품으로 지정되면 공공기관이 경쟁 입찰 없이 수의계약으로 살 수 있어요.',
               '시범구매사업은 조달청 예산으로 혁신제품을 사서 공공기관이 직접 써 보게 해요.'] },
+    { key: 'storm', tag: '재난 · 긴급 조달', col: '#2f6fb5', when: (S, s) => n(s.urgentMade) > 0,
+      weight: (S, s) => 0.5 + n(s.urgentDone) * 0.15,
+      me: (S, s) => '태풍 때 긴급 계약 ' + n(s.urgentDone) + '건을 해결했어요' + (n(s.urgentMade) > n(s.urgentDone) ? ' (' + s.urgentMade + '건 중)' : ''),
+      facts: ['폭우·폭염·한파 같은 재난 때 필요한 긴급 물자는 절차를 줄여 더 빨리 살 수 있게 했어요(다수공급자계약 2단계 경쟁 예외).',
+              '위기 때일수록 소방서·보건소 같은 곳에 필요한 물건이 제때 가야 해요. 미리 대비하면 더 빨리 보낼 수 있어요.'] },
     { key: 'stock', tag: '원자재 비축', col: '#2e9b3a', when: (S, s) => n(s.stocked) > 0,
       weight: (S, s) => n(s.stocked) * 0.45 + (n(s.released) ? 0.4 : 0),
       me: (S, s) => '원자재를 ' + s.stocked + '상자 비축했어요' + (s.released ? ' · 가격 폭등 때 풀었어요' : ''),
@@ -91,6 +96,7 @@ G.result = (() => {
     { name: '번개 배달부', sub: '끊김 없는 연속 납품', score: S => n0(S.maxCombo) >= 12 ? S.maxCombo / 18 : 0 },
     { name: '페이퍼컴퍼니 탐정', sub: '수상한 새 공방을 척척', score: (S, s) => n0(s.caught) >= 4 ? n0(s.caught) / 6 : 0 },
     { name: '비축 전략가', sub: '가격 폭등에 미리 대비', score: (S, s) => n0(s.stocked) >= 2 ? 0.7 + n0(s.released) * 0.1 : 0 },
+    { name: '위기 해결사', sub: '태풍 속 긴급 계약을 척척', score: (S, s) => n0(s.urgentDone) >= 3 ? n0(s.urgentDone) / 5 : 0 },
     { name: '마을 수호천사', sub: '마을 신뢰를 끝까지 지켰어요', score: (S, s) => S.trust >= 95 && n0(s.reqExpired) <= 1 ? 1.0 : 0 },
   ];
   function pickTitle(S) {

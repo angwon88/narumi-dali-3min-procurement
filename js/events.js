@@ -14,7 +14,7 @@ G.events = (() => {
   function init(S) {
     S.stock = 0; S.stockDwell = 0; S.stockWarned = false;
     S.surge = null; S.surgeMult = 1; S.stabilized = new Set(); S.surgeDone = false;
-    S.dust = null; S.forecasts = []; S.prep = new Set();
+    S.dust = null; S.storm = null; S.forecasts = []; S.prep = new Set();
   }
 
   // ---------- ① 비축 ----------
@@ -96,6 +96,35 @@ G.events = (() => {
     }
   }
   function dustEnd(S) { endPrep(S, 'dust'); S.dust = null; G.director.banner(S, '미세먼지가 걷혔어요', ''); }
+  // ---------- ⑤ 폭우·태풍 위기 (기획서 4.2, 2026-11-03 구현) ----------
+  // 소방서(안전모)·보건소(구급상자)·학교(전등, 정전)에 긴급 계약. 빨간 '긴급 ×2' 탭, 점수 ×2. 태풍 중 STORM.every초마다 소방서·보건소에 긴급 계약.
+  // 마을 말풍선이 꽉 찼으면 그 마을의 가장 여유 있는 계약을 긴급으로 바꿈. 비 때문에 달이 이동 -10%(우산)
+  function makeUrgent(S, vid, item) {
+    if (!S.openVillages.has(vid) || !S.openCats.has(G.ITEM[item].cat)) return null;
+    const mine = G.requests.ofVillage(S, vid);
+    let r = mine.length < C.MAX_REQ_PER_VILLAGE ? G.requests.spawn(S, { vid, item, urgent: true }) : null;
+    if (!r) r = mine.filter(q => !q.urgent && !q.broker).sort((a, b) => b.left - a.left)[0];
+    if (!r) return null;
+    r.urgent = true; r.limit = r.left = C.STORM.limit; r.t = 0;
+    return r;
+  }
+  function stormStart(S) {
+    endForecast(S, 'storm');
+    S.storm = { t: 0, clock: C.STORM.every, drops: Array.from({ length: 110 }, () => ({ x: Math.random() * C.VIEW.w, y: C.HUD_H + Math.random() * (C.VIEW.h - C.HUD_H), v: 380 + Math.random() * 220 })) };
+    S.stats.urgentMade = 0; S.stats.urgentDone = S.stats.urgentDone || 0;
+    G.director.banner(S, '태풍 상륙! 긴급 계약', '소방서·보건소·학교가 급해요 · 긴급 계약 점수 ×' + C.STORM.mult + ' · 비 때문에 조금 느려요');
+    G.audio.play('warn'); S.shakeT = Math.max(S.shakeT || 0, 0.3);
+    for (const [vid, item] of [['fire', 'helmet'], ['clinic', 'kit'], ['school', 'lamp']]) if (makeUrgent(S, vid, item)) S.stats.urgentMade++;
+  }
+  function stormEnd(S) {
+    endPrep(S, 'storm'); S.storm = null;
+    for (const r of G.requests.active(S)) if (r.urgent) r.urgent = false;     // 남은 긴급 계약은 보통 계약으로
+    const done = S.stats.urgentDone || 0;
+    G.director.banner(S, '위기 극복!', '태풍 동안 긴급 계약 ' + done + '건을 해결했어요');
+    G.audio.play(done ? 'gift' : 'banner');
+  }
+  G.director.on('stormStart', stormStart);
+  G.director.on('stormEnd', stormEnd);
   G.director.on('dustStart', dustStart);
   G.director.on('dustEnd', dustEnd);
 
@@ -103,6 +132,15 @@ G.events = (() => {
     stockUpdate(S, dt);
     if (S.surge) S.surge.t += dt;
     if (S.dust) { S.dust.t += dt; for (const p of S.dust.specks) { p.x += (14 + p.s * 6) * dt; if (p.x > C.VIEW.w) p.x -= C.VIEW.w; } }
+    if (S.storm) {
+      S.storm.t += dt;
+      for (const d of S.storm.drops) { d.y += d.v * dt; d.x -= d.v * 0.25 * dt; if (d.y > C.VIEW.h) { d.y = C.HUD_H; d.x = Math.random() * (C.VIEW.w + 120); } }
+      if ((S.storm.clock -= dt) <= 0) {                                   // 태풍 중 소방서·보건소에 긴급 계약
+        S.storm.clock += C.STORM.every;
+        const pick = Math.random() < 0.5 ? ['fire', 'helmet'] : ['clinic', 'kit'];
+        if (makeUrgent(S, pick[0], pick[1])) S.stats.urgentMade++;
+      }
+    }
   }
 
   // ---------- 그리기 ----------
@@ -136,7 +174,15 @@ G.events = (() => {
       }
     }
   }
-  function drawOverlay(ctx, S) {                       // 미세먼지 (HUD 아래 전체)
+  function drawOverlay(ctx, S) {                       // 태풍 비 · 미세먼지 (HUD 아래 전체)
+    if (S.storm) {
+      const k = Math.min(1, S.storm.t / 0.8);
+      ctx.fillStyle = 'rgba(20,32,60,' + (0.28 * k).toFixed(2) + ')'; ctx.fillRect(0, C.HUD_H, C.VIEW.w, C.VIEW.h - C.HUD_H);
+      ctx.strokeStyle = 'rgba(190,215,255,' + (0.55 * k).toFixed(2) + ')'; ctx.lineWidth = 1; ctx.beginPath();
+      for (const d of S.storm.drops) { ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - 4, d.y + 14); }
+      ctx.stroke();
+      if (Math.floor(S.storm.t * 10) % 37 === 0) { ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(0, C.HUD_H, C.VIEW.w, C.VIEW.h - C.HUD_H); }   // 가끔 번개
+    }
     if (!S.dust) return;
     const t = S.dust.t, dur = 15, k = Math.min(1, t / 1.2, Math.max(0, (dur - t) / 1.2));
     const top = C.HUD_H, W = C.VIEW.w, H = C.VIEW.h;

@@ -6,7 +6,7 @@ G.dali = {
   bag: [],
   reset() { Object.assign(this, { x: G.world.START.x, y: G.world.START.y, face: 's', moving: false, t: 0, speed: G.C.DALI_SPEED, bag: [], path: null, goal: null }); },
   update(dt) {
-    let v = G.input.moveVec(); const sp = this.speed * dt;
+    let v = G.input.moveVec(); const sp = this.speed * dt * (G.S && G.S.storm ? G.C.STORM.speed : 1);   // 태풍: 비 때문에 -10%
     if (v.x || v.y) this.path = null;                                // 직접 조작하면 길 안내 취소
     else if (this.path && this.path.length) {                         // 터치·클릭 이동: 다음 지점으로
       const p = this.path[0], dx = p.x - this.x, dy = p.y - this.y, d = Math.hypot(dx, dy);
@@ -42,6 +42,12 @@ G.dali = {
     }
     if (S && S.scooter) { this.drawScooter(ctx); return; }
     G.spr.drawChar(ctx, 'dali', this.moving ? 'walk' : 'rot', this.face, this.t, this.x, this.y);
+    if (S && S.storm) {                                                // 태풍: 우산 (가방 칸 위)
+      const x = Math.round(this.x), y = Math.round(this.y) - 84;
+      ctx.fillStyle = '#2f6fb5'; ctx.beginPath(); ctx.arc(x, y + 6, 22, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#5ec8f2'; for (let i = -2; i <= 1; i += 2) { ctx.beginPath(); ctx.arc(x + i * 7 + 7, y + 6, 4, Math.PI, 0); ctx.fill(); }
+      ctx.fillStyle = '#3a3a3a'; ctx.fillRect(x - 1, y - 18, 2, 4); ctx.fillRect(x - 1, y + 6, 2, 8);
+    }
   },
   // 전동 킥보드 타기 (혁신제품 '전동 킥보드'). 방향별로 옆·정면·뒷모습을 따로 그린다
   drawScooter(ctx) {
