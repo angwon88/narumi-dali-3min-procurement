@@ -25,8 +25,11 @@ G.screens = (() => {
   const BTN_INTRO = { x: W / 2 - 70, y: 420, w: 140, h: 30 };          // 상황 소개 다시 보기
   const BTN_SOUND = { x: W - 118, y: 12, w: 106, h: 30 };              // 소리 켜기/끄기 (휴대폰용, 2026-11-03)
   const soundLabel = () => G.audio.isMuted() ? '소리 켜기' : '소리 끄기';
+  const BTN_MUSIC = { x: W - 118, y: 48, w: 106, h: 30 };
+  const musicLabel = () => G.music.isOff() ? '음악 켜기' : '음악 끄기';
   function titleUpdate() {
     if (ui.clicked(BTN_SOUND)) { G.audio.toggle(); return; }
+    if (ui.clicked(BTN_MUSIC)) { G.music.toggle(); return; }
     if (ui.clicked(BTN_INTRO)) { G.intro.start(() => { G.screen = 'title'; }); return; }
     if (ui.clicked(BTN_START) || G.input.hit('enter') || G.input.hit(' ')) { if (G.intro.seen()) newGame(); else G.intro.start(newGame); }
   }
@@ -68,6 +71,7 @@ G.screens = (() => {
     ui.button(ctx, BTN_START, '작전 시작', { size: 20 });
     ui.button(ctx, BTN_INTRO, '소개 다시 보기', { size: 12, fill: '#cfd8e3', hot: '#fff' });
     ui.button(ctx, BTN_SOUND, soundLabel(), { size: 12, fill: '#cfd8e3', hot: '#fff' });
+    ui.button(ctx, BTN_MUSIC, musicLabel(), { size: 12, fill: '#cfd8e3', hot: '#fff' });
     const best = G.store.get('best', 0);
     if (best) T(ctx, '최고 점수 ' + best + ' · 최고 등급 ' + G.store.get('bestGrade', '-'), W - 20, H - 20, 12, '#ffe48a', 'right');
     if (G.VERSION) T(ctx, G.VERSION, 16, H - 20, 12, '#8fa3b8', 'left');
@@ -146,12 +150,13 @@ G.screens = (() => {
   const BTN_RESUME = { x: W / 2 - 90, y: 220, w: 180, h: 44 };
   const BTN_RESTART = { x: W / 2 - 90, y: 276, w: 180, h: 44 };
   const BTN_TITLE = { x: W / 2 - 90, y: 332, w: 180, h: 44 };
-  const BTN_PSOUND = { x: W / 2 - 90, y: 388, w: 180, h: 36 };
+  const BTN_PSOUND = { x: W / 2 - 90, y: 388, w: 88, h: 36 }, BTN_PMUSIC = { x: W / 2 + 2, y: 388, w: 88, h: 36 };
   function pauseUpdate() {
     if (G.input.hit('escape') || G.input.hit('p') || ui.clicked(BTN_RESUME)) G.screen = 'play';
     else if (ui.clicked(BTN_RESTART)) newGame();
     else if (ui.clicked(BTN_TITLE)) G.screen = 'title';
     else if (ui.clicked(BTN_PSOUND)) G.audio.toggle();
+    else if (ui.clicked(BTN_PMUSIC)) G.music.toggle();
   }
   function pauseDraw(ctx) {
     playDraw(ctx);
@@ -159,6 +164,7 @@ G.screens = (() => {
     T(ctx, '잠깐 쉬는 중', W / 2, 170, 28, '#fff');
     ui.button(ctx, BTN_RESUME, '계속'); ui.button(ctx, BTN_RESTART, '처음부터'); ui.button(ctx, BTN_TITLE, '타이틀로');
     ui.button(ctx, BTN_PSOUND, soundLabel(), { size: 12, fill: '#cfd8e3', hot: '#fff' });
+    ui.button(ctx, BTN_PMUSIC, musicLabel(), { size: 12, fill: '#cfd8e3', hot: '#fff' });
   }
 
   // ---------- 작전 종료 → 결과 ----------

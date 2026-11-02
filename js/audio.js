@@ -48,5 +48,5 @@ G.audio = (() => {
     if (master) master.gain.value = muted ? 0 : 0.35;
     return muted;
   }
-  return { play, toggle, wake, isMuted: () => muted };
+  return { play, toggle, wake, isMuted: () => muted, raw: () => ({ ac, master }) };   // raw: 배경음악(music.js)용
 })();

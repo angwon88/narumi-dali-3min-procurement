@@ -19,6 +19,7 @@
     const dtReal = Math.min(0.25, (now - (last || now)) / 1000); last = now;
     acc += dtReal; let steps = 0;
     while (acc >= C.DT && steps < 5) { G.screens.update(C.DT); G.input.endFrame(); acc -= C.DT; steps++; clock += C.DT; }
+    G.music.update();                                                   // 배경음악: 화면에 따라 곡·음량
     if (steps === 5) acc = 0;
     ctx.imageSmoothingEnabled = false;
     G.screens.draw(ctx, clock);
