@@ -8,7 +8,7 @@ G.screens = (() => {
 
   function newGame() {
     G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, floats: [], bagCap: C.BAG_START, scoreMult: 1 };
-    G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S); G.gifts.init(G.S); G.events.init(G.S);
+    G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S); G.gifts.init(G.S); G.events.init(G.S); G.broker.init(G.S);
     G.dali.reset(); G.narmi.reset(); G.input.reset();
     G.screen = 'play';
   }
@@ -22,7 +22,12 @@ G.screens = (() => {
 
   // ---------- 타이틀 ----------
   const BTN_START = { x: W / 2 - 100, y: 360, w: 200, h: 48 };
+  const BTN_INTRO = { x: W / 2 - 70, y: 420, w: 140, h: 30 };          // 상황 소개 다시 보기
+  const BTN_SOUND = { x: W - 118, y: 12, w: 106, h: 30 };              // 소리 켜기/끄기 (휴대폰용, 2026-11-03)
+  const soundLabel = () => G.audio.isMuted() ? '소리 켜기' : '소리 끄기';
   function titleUpdate() {
+    if (ui.clicked(BTN_SOUND)) { G.audio.toggle(); return; }
+    if (ui.clicked(BTN_INTRO)) { G.intro.start(() => { G.screen = 'title'; }); return; }
     if (ui.clicked(BTN_START) || G.input.hit('enter') || G.input.hit(' ')) { if (G.intro.seen()) newGame(); else G.intro.start(newGame); }
   }
   function ciPlate(ctx, key, cx, y, h) {
@@ -32,7 +37,7 @@ G.screens = (() => {
     ctx.imageSmoothingEnabled = true; ctx.drawImage(im, cx - w / 2, y, w, h); ctx.imageSmoothingEnabled = false;
   }
   // 이 게임에 담긴 조달청 제도 (2026-11-02 주제 가시성): 결과 화면 '실제로는?' 태그와 같은 색
-  const BADGES = [['나라장터', '#2f4f8a'], ['페이퍼컴퍼니 검증', '#d9342b'], ['혁신제품 시범구매', '#e0a800'], ['원자재 비축', '#2e9b3a']];
+  const BADGES = [['계약 조건 · 검수', '#2f4f8a'], ['가성비 따지기', '#2e9b3a'], ['페이퍼컴퍼니 실사', '#d9342b'], ['혁신제품 시범구매', '#e0a800']];
   function titleBadges(ctx) {
     ctx.font = '12px ' + G.FONT;
     const pad = 12, gap = 8, ws = BADGES.map(([s]) => Math.ceil(ctx.measureText(s).width) + pad * 2);
@@ -61,9 +66,12 @@ G.screens = (() => {
     G.spr.drawChar(ctx, 'narmi', 'walk', 's', t, W / 2 - 60, 330, 1.25);
     G.spr.drawChar(ctx, 'dali', 'walk', 's', t, W / 2 + 60, 330, 1.25);
     ui.button(ctx, BTN_START, '작전 시작', { size: 20 });
+    ui.button(ctx, BTN_INTRO, '소개 다시 보기', { size: 12, fill: '#cfd8e3', hot: '#fff' });
+    ui.button(ctx, BTN_SOUND, soundLabel(), { size: 12, fill: '#cfd8e3', hot: '#fff' });
     const best = G.store.get('best', 0);
-    if (best) T(ctx, '최고 점수 ' + best, W - 20, H - 20, 12, '#ffe48a', 'right');
-    T(ctx, '방향키/WASD 이동 · Enter 시작 · M 소리 ' + (G.audio.isMuted() ? '켜기' : '끄기'), W / 2, H - 20, 12, '#cfd8e3');
+    if (best) T(ctx, '최고 점수 ' + best + ' · 최고 등급 ' + G.store.get('bestGrade', '-'), W - 20, H - 20, 12, '#ffe48a', 'right');
+    if (G.VERSION) T(ctx, G.VERSION, 16, H - 20, 12, '#8fa3b8', 'left');
+    T(ctx, '터치·클릭으로 이동 · 방향키+Space(나르미)도 가능 · Enter 시작 · M 소리 ' + (G.audio.isMuted() ? '켜기' : '끄기'), W / 2, H - 20, 12, '#cfd8e3');
     if (G.input.hit('m')) G.audio.toggle();
   }
 
@@ -74,7 +82,7 @@ G.screens = (() => {
     if (G.debug && G.debug.update()) return;
     if (G.S.hitStop > 0) { G.S.hitStop -= dt; return; }              // 적발 순간 한순간 멈춤
     G.dali.update(dt);
-    G.shops.handleInspectInput(G.S);
+    G.nav.handleTaps(G.S);
     step(G.S, dt);
     if (G.screen === 'play' && G.S.pendingLevels > 0) G.levelup.open(G.S);   // 레벨업: 시간 정지하고 카드 선택
   }
@@ -84,6 +92,7 @@ G.screens = (() => {
     G.director.update(S, dt);
     G.requests.update(S, dt);
     G.narmi.update(dt, S);
+    G.broker.update(S, dt);
     G.shops.update(S, dt);
     G.requests.deliver(S);
     G.villages.update(S, dt);
@@ -106,8 +115,11 @@ G.screens = (() => {
     G.gifts.draw(ctx, G.S);
     G.events.drawWorld(ctx, G.S);
     G.narmi.draw(ctx);
+    G.nav.draw(ctx);
     G.dali.draw(ctx);
     ui.bubbles(ctx, G.S);
+    ui.checks(ctx, G.S);
+    G.broker.draw(ctx, G.S);
     G.dali.drawOver(ctx, G.S);
     G.shops.drawDoorInfo(ctx, G.S);
     G.shops.drawHover(ctx, G.S);
@@ -134,16 +146,19 @@ G.screens = (() => {
   const BTN_RESUME = { x: W / 2 - 90, y: 220, w: 180, h: 44 };
   const BTN_RESTART = { x: W / 2 - 90, y: 276, w: 180, h: 44 };
   const BTN_TITLE = { x: W / 2 - 90, y: 332, w: 180, h: 44 };
+  const BTN_PSOUND = { x: W / 2 - 90, y: 388, w: 180, h: 36 };
   function pauseUpdate() {
     if (G.input.hit('escape') || G.input.hit('p') || ui.clicked(BTN_RESUME)) G.screen = 'play';
     else if (ui.clicked(BTN_RESTART)) newGame();
     else if (ui.clicked(BTN_TITLE)) G.screen = 'title';
+    else if (ui.clicked(BTN_PSOUND)) G.audio.toggle();
   }
   function pauseDraw(ctx) {
     playDraw(ctx);
     ctx.fillStyle = 'rgba(10,14,20,.7)'; ctx.fillRect(0, 0, W, H);
     T(ctx, '잠깐 쉬는 중', W / 2, 170, 28, '#fff');
     ui.button(ctx, BTN_RESUME, '계속'); ui.button(ctx, BTN_RESTART, '처음부터'); ui.button(ctx, BTN_TITLE, '타이틀로');
+    ui.button(ctx, BTN_PSOUND, soundLabel(), { size: 12, fill: '#cfd8e3', hot: '#fff' });
   }
 
   // ---------- 작전 종료 → 결과 ----------

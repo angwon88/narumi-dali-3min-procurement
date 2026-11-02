@@ -5,10 +5,10 @@
 'use strict';
 window.PlayBot = {
   run(opt = {}) {
-    const { avoidFake = true, speed = 1, inspect = false, until = 999 } = opt;   // until: 이 시간(초)까지만 진행
+    const { avoidFake = true, speed = 1, inspect = false, until = 999, quality = true, chase = true, sprout = true } = opt;   // until: 이 시간(초)까지만 진행
     G.screens.newGame(); const S = G.S, d = G.dali, DT = 1 / 60; G.screen = 'pause';
     let mode = 'buy', target = null;
-    const suspicious = sh => Object.keys(sh.mults).some(id => sh.mults[id] < 0.6);
+    const suspicious = sh => Object.keys(sh.mults).some(id => sh.q[id] === 3 && sh.mults[id] < 0.6);   // 개편: ★3인데 ★1 값이면 수상
     for (let i = 0; i < 180 * 60 && S.timeLeft > 0 && S.elapsed < until; i++) {
       const act = G.requests.active(S);
       const uncovered = act.filter(r => {
@@ -18,18 +18,20 @@ window.PlayBot = {
       if (mode === 'buy' && (d.bag.length >= S.bagCap || (!uncovered.length && d.bag.length))) mode = 'deliver';
       if (mode === 'deliver' && !d.bag.length) mode = 'buy';
       target = null;
-      // 나르미 검증 (인증제): 미인증 새 공방 → 요청 있는 업종의 만료 임박 공방 순
-      if (inspect !== 'never' && S.inspectCD <= 0 && !G.narmi.busy()) {
+      // 나르미 실사 (개편): 실사할 수 있는 새 공방 중 수상해 보이는 곳 → 요청 있는 업종 순
+      // 꼼수 브로커가 계약을 노리고 달리면 나르미로 적발 (chase:false면 안 쫓음)
+      if (chase && S.bk && (S.bk.state === 'run' || S.bk.state === 'grab') && S.inspectCD <= 0 && !G.narmi.busy()) G.broker.request(S);
+      else if (inspect && inspect !== 'never' && S.inspectCD <= 0 && !G.narmi.busy()) {
         const need = new Set(act.map(r => G.ITEM[r.item].cat));
         const ok = S.shops.filter(s => !G.shops.whyNot(S, s));
-        const pick = ok.filter(s => s.certT === 0).sort((a, b) => (need.has(b.cat) - need.has(a.cat)))[0] || ok.filter(s => need.has(s.cat)).sort((a, b) => a.certT - b.certT)[0];
+        const pick = ok.sort((a, b) => (suspicious(b) - suspicious(a)) || (need.has(b.cat) - need.has(a.cat)))[0];
         if (pick) G.shops.request(S, pick);
       }
       if (mode === 'buy') {
         for (const r of uncovered) {
-          const cand = S.shops.filter(s => G.shops.isOpen(S, s) && s.cat === G.ITEM[r.item].cat && !(avoidFake && suspicious(s)));
-          const cert = cand.filter(s => G.shops.certified(s));
-          const sh = (cert.length ? cert : cand).sort((a, b) => G.shops.price(a, r.item) - G.shops.price(b, r.item))[0];   // 인증된 곳이 없으면 미인증 문 앞에서 검증을 기다림
+          // 개편: 계약 조건(★minQ)을 맞추는 공방 중 가장 싼 곳. quality:false면 조건을 안 보고 제일 싼 곳(옛 전략 비교용)
+          const cand = S.shops.filter(s => G.shops.isOpen(S, s) && s.cat === G.ITEM[r.item].cat && !(avoidFake && suspicious(s)) && (quality === false || s.q[r.item] >= r.minQ));
+          const sh = (sprout && cand.find(s => s.sprout && s.verified)) || cand.sort((a, b) => G.shops.price(a, r.item) - G.shops.price(b, r.item))[0];   // sprout: 새싹 공방을 키움
           if (sh) { target = { x: sh.w.door.x + 20, y: sh.w.door.y + 16 }; break; }
         }
       } else {
@@ -45,7 +47,7 @@ window.PlayBot = {
       while (S.pendingLevels > 0) { G.levelup.open(S); G.levelup.choose(S, S.offer[0]); G.screen = 'pause'; }
     }
     const st = S.stats;
-    return { 배달: S.delivered, 놓침: st.reqExpired, 속음: (st.scammed || 0) + (st.stolen || 0), 적발: st.caught || 0, 검증: S.data, 데이터단계: S.dataLv, 만료: st.certExpired || 0, 요청: st.reqMade, 점수: S.score, 신뢰: Math.round(S.trust), 아낀세금: S.saved, 낭비: S.wasted, 레벨: S.level, 선물: (S.gifts || []).length, 최대콤보: S.maxCombo || 0 };
+    return { 배달: S.delivered, 불합격: st.qFail || 0, 가성비: st.valueBest || 0, 가성비놓침: st.valueMiss || 0, 놓침: st.reqExpired, 속음: (st.scammed || 0) + (st.stolen || 0), 적발: st.caught || 0, 검증: S.data, 데이터단계: S.dataLv, 만료: st.certExpired || 0, 요청: st.reqMade, 점수: S.score, 신뢰: Math.round(S.trust), 아낀세금: S.saved, 낭비: S.wasted, 레벨: S.level, 선물: (S.gifts || []).length, 최대콤보: S.maxCombo || 0, 브로커승: st.brokerWon || 0, 브로커막음: st.brokerBlocked || 0, 브로커적발: st.brokerCaught || 0, 새싹: st.sprouts || 0, 새싹실적: st.sproutBuy || 0, 혁신지정: st.innov || 0 };
   },
   avg(opt, n = 5) {
     const rs = []; for (let i = 0; i < n; i++) rs.push(this.run(opt));

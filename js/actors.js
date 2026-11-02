@@ -4,9 +4,16 @@ G.dali = {
   x: 0, y: 0, face: 's', moving: false, t: 0, speed: G.C.DALI_SPEED,
   box(x, y) { return { x: x - 9, y: y - 8, w: 18, h: 10 }; },        // 발 아래 충돌 상자
   bag: [],
-  reset() { Object.assign(this, { x: G.world.START.x, y: G.world.START.y, face: 's', moving: false, t: 0, speed: G.C.DALI_SPEED, bag: [] }); },
+  reset() { Object.assign(this, { x: G.world.START.x, y: G.world.START.y, face: 's', moving: false, t: 0, speed: G.C.DALI_SPEED, bag: [], path: null, goal: null }); },
   update(dt) {
-    const v = G.input.moveVec(), sp = this.speed * dt;
+    let v = G.input.moveVec(); const sp = this.speed * dt * (G.S && G.S.storm ? G.C.STORM.speed : 1);   // 태풍: 비 때문에 -10%
+    if (v.x || v.y) this.path = null;                                // 직접 조작하면 길 안내 취소
+    else if (this.path && this.path.length) {                         // 터치·클릭 이동: 다음 지점으로
+      const p = this.path[0], dx = p.x - this.x, dy = p.y - this.y, d = Math.hypot(dx, dy);
+      if (d <= sp) { this.x = p.x; this.y = p.y; this.path.shift(); if (!this.path.length) this.path = null; v = { x: 0, y: 0 }; }
+      else v = { x: dx / d, y: dy / d };
+      if (this.path && this.stuckCheck(dt)) this.path = null;
+    }
     this.moving = v.x !== 0 || v.y !== 0;
     if (this.moving) {
       const nx = this.x + v.x * sp, ny = this.y + v.y * sp;
@@ -15,6 +22,12 @@ G.dali = {
       this.face = G.spr.dir8(v.x, v.y);
     }
     this.t += dt * (this.speed / G.C.DALI_SPEED);                     // 빨라지면 걷는 동작도 빨라짐
+  },
+  // 길 안내 중 0.6초 넘게 거의 못 움직이면 멈춤 (벽에 걸림)
+  stuckCheck(dt) {
+    const m = Math.hypot(this.x - (this._lx || 0), this.y - (this._ly || 0)); this._lx = this.x; this._ly = this.y;
+    this._stuck = m < this.speed * dt * 0.2 ? (this._stuck || 0) + dt : 0;
+    return this._stuck > 0.6;
   },
   draw(ctx) {
     const S = G.S, fast = this.speed > G.C.DALI_SPEED * 1.12;
@@ -29,6 +42,12 @@ G.dali = {
     }
     if (S && S.scooter) { this.drawScooter(ctx); return; }
     G.spr.drawChar(ctx, 'dali', this.moving ? 'walk' : 'rot', this.face, this.t, this.x, this.y);
+    if (S && S.storm) {                                                // 태풍: 우산 (가방 칸 위)
+      const x = Math.round(this.x), y = Math.round(this.y) - 84;
+      ctx.fillStyle = '#2f6fb5'; ctx.beginPath(); ctx.arc(x, y + 6, 22, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#5ec8f2'; for (let i = -2; i <= 1; i += 2) { ctx.beginPath(); ctx.arc(x + i * 7 + 7, y + 6, 4, Math.PI, 0); ctx.fill(); }
+      ctx.fillStyle = '#3a3a3a'; ctx.fillRect(x - 1, y - 18, 2, 4); ctx.fillRect(x - 1, y + 6, 2, 8);
+    }
   },
   // 전동 킥보드 타기 (혁신제품 '전동 킥보드'). 방향별로 옆·정면·뒷모습을 따로 그린다
   drawScooter(ctx) {
@@ -112,7 +131,7 @@ G.narmi = {
   x: 0, y: 0, face: 's', t: 0, state: 'perch', target: null, timer: 0, talk: null,
   reset() { const p = G.world.roofPerch; Object.assign(this, { x: p.x, y: p.y, face: 's', t: 0, state: 'perch', target: null, timer: 0, talk: null }); },
   say(text, sec) { this.talk = { text, left: sec }; },
-  spot(sh) { const b = sh.w.body; return { x: b.x + b.w / 2, y: b.y + 62 }; },        // 공방 앞에 내려앉는 곳 (HUD에 가리지 않게)
+  spot(sh) { if (sh.isBroker) return { x: sh.x, y: sh.y - 10 }; const b = sh.w.body; return { x: b.x + b.w / 2, y: b.y + 62 }; },   // 공방 앞(HUD에 가리지 않게) / 꼼수 브로커 위치
   send(S, sh) { this.target = sh; this.state = 'fly'; S.inspectCD = G.C.INSPECT_COOLDOWN * (S.inspectCDMult || 1); S.inspectCDMax = S.inspectCD; },
   moveTo(p, dt) {
     const dx = p.x - this.x, dy = p.y - this.y, d = Math.hypot(dx, dy), step = G.C.NARMI_SPEED * dt;
@@ -123,8 +142,13 @@ G.narmi = {
     this.t += dt;
     if (this.talk && (this.talk.left -= dt) <= 0) this.talk = null;
     if (S) S.inspectCD = Math.max(0, (S.inspectCD || 0) - dt);
-    if (this.state === 'fly' && this.moveTo(this.spot(this.target), dt)) { this.state = 'inspect'; this.timer = 0; this.face = 's'; }
-    else if (this.state === 'inspect' && (this.timer += dt) >= G.C.INSPECT_TIME) { G.shops.inspected(S, this.target); this.state = 'back'; }
+    const tg = this.target;
+    if (tg && tg.isBroker && (this.state === 'fly' || this.state === 'inspect') && tg.state !== 'grab' && tg.state !== 'run') { tg.stun = false; this.state = 'back'; }   // 놓침
+    else if (this.state === 'fly' && this.moveTo(this.spot(tg), dt)) { this.state = 'inspect'; this.timer = 0; this.face = 's'; if (tg.isBroker) tg.stun = true; }
+    else if (this.state === 'inspect' && (this.timer += dt) >= (tg.isBroker ? G.C.BROKER_CATCH_TIME : G.C.INSPECT_TIME)) {
+      if (tg.isBroker) G.broker.caught(S); else G.shops.inspected(S, tg);
+      this.state = 'back';
+    }
     else if (this.state === 'back' && this.moveTo(G.world.roofPerch, dt)) { this.state = 'perch'; this.target = null; this.face = 's'; }
   },
   busy() { return this.state !== 'perch'; },

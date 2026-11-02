@@ -15,8 +15,8 @@ G.levelup = (() => {
       ok: S => S.level - S.pendingLevels + 1 >= 4 && S.bagCap < C.BAG_MAX, apply: S => { S.bagCap = Math.min(C.BAG_MAX, S.bagCap + 1); } },
     { id: 'wings', name: '나르미의 날개', icon: 'wing', col: '#5b8fb9', max: 2, desc: () => '검증 쉬는 시간 -30%',
       apply: S => { S.inspectCDMult *= 0.7; } },
-    { id: 'share', name: '조달 데이터 공유', icon: 'chart', col: '#7a5ab8', max: 1, desc: S => '공방 인증 기간 +15초 (' + S.certSec + '→' + (S.certSec + 15) + '초)',
-      apply: S => { S.certSec += 15; } },
+    { id: 'share', name: '가성비 계산기', icon: 'chart', col: '#7a5ab8', max: 1, desc: () => '급한 계약에 가장 알맞은 가격표에 초록 테두리',
+      apply: S => { S.valueHint = true; } },
     { id: 'talk', name: '마을과 소통', icon: 'talk', col: '#46b04a', max: 2, desc: () => '새 요청 제한 시간 +15%',
       apply: S => { S.limitMult *= 1.15; } },
     { id: 'ledger', name: '공정 거래 장부', icon: 'book', col: '#2f4f8a', max: 1, desc: S => '한 공방만 써도 버티는 횟수 +2 (폐업 ' + S.streakClose + '→' + (S.streakClose + 2) + '번)',
@@ -57,7 +57,7 @@ G.levelup = (() => {
   function available(S) { return CARDS.filter(c => (S.taken[c.id] || 0) < c.max && (!c.ok || c.ok(S))); }
   function makeOffer(S) {
     const pool = available(S).slice(), pick = [];
-    const inv = innovCard(S); if (inv) pick.push(inv);                    // 혁신 카드 1장 보장 (가운데 자리)
+    const inv = null;                                                      // 개편: 혁신은 새싹 공방을 키워서 (레벨업 혁신 카드 없음)
     while (pick.length < 3 && pool.length) pick.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
     while (pick.length < 3) pick.push(BONUS);
     if (inv) { pick.splice(0, 1); pick.splice(1, 0, inv); }               // 혁신 카드를 가운데로
@@ -142,5 +142,5 @@ G.levelup = (() => {
     });
     if (!ready) { ctx.fillStyle = 'rgba(10,14,20,.25)'; ctx.fillRect(X0, Y0, CW * 3 + GAP * 2, CH); }
   }
-  return { init, gain, open, choose, update, draw, CARDS, xpNeed, available };
+  return { INNOV, init, gain, open, choose, update, draw, CARDS, xpNeed, available };
 })();

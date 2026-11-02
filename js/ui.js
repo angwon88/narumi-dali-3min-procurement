@@ -68,7 +68,7 @@ G.ui = (() => {
   }
 
   // 마을 요청 말풍선: 마을 앞마당 위, 마을당 최대 2개(왼쪽·오른쪽 칸)
-  const BW = 72, BH = 64;   // 2026-11-02 가시성: 62×46 → 72×64, 물건 이름 표시
+  const BW = 76, BH = 86;   // 2026-11-02 가시성 72×64 → 개편 76×80: 계약 조건(품질 ★) 줄 추가
   function bubbleRect(r) { const v = r.vill; return { x: v.yard.x + v.yard.w / 2 - BW - 3 + r.slot * (BW + 6), y: v.yard.y - BH - 8, w: BW, h: BH }; }
   function ringColor(f) { return f > 0.5 ? '#46b04a' : f > 0.25 ? '#f2b632' : '#e5533d'; }
   function bubble(ctx, r) {
@@ -91,15 +91,40 @@ G.ui = (() => {
     if (!r.fraud) G.icons.draw(ctx, r.item, cx, cy, 26);
     ctx.font = '12px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = '#2a2416'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(G.ITEM[r.item].name, cx, 44);
     T(ctx, '예정 ' + r.price + '만', cx, 56, 12, '#6a5a3a');
-    ctx.fillStyle = '#2f4f8a'; ctx.fillRect(0, -11, 44, 11);                       // '나라장터' 탭 (전자조달 주문)
-    ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('나라장터', 22, -5);
+    // 계약 조건: 품질 ★ n 이상 (개편)
+    const fail = r.failT != null && r.failT < 1 && Math.floor(r.failT * 8) % 2 === 0;
+    ctx.fillStyle = fail ? '#e5533d' : '#2a2416'; ctx.fillRect(4, 64, b.w - 8, 18);
+    const sw = r.minQ * 16 - 2, tx = r.minQ < 3 ? 22 : 0, sx = Math.round(b.w / 2 - (sw + tx) / 2);
+    G.icons.stars(ctx, sx, 66, r.minQ, r.minQ, 2);
+    if (r.minQ < 3) T(ctx, '이상', sx + sw + 13, 73, 12, '#fff');
+    ctx.fillStyle = r.urgent ? '#d9342b' : '#2f4f8a'; ctx.fillRect(0, -11, 44, 11);   // '나라장터' 탭 (전자조달 주문) / 태풍 '긴급 ×2'
+    ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(r.urgent ? '긴급 ×2' : '나라장터', 22, -5);
     if (r.fraud) {                                                   // 미납: 빈 상자 / 불량: 부서진 상자
       ctx.fillStyle = '#c9a26b'; ctx.fillRect(cx - 9, cy - 2, 18, 11); ctx.fillStyle = '#a07f4f'; ctx.fillRect(cx - 9, cy - 2, 18, 2);
       if (r.fraud === 'empty') { ctx.fillStyle = '#5a4630'; ctx.fillRect(cx - 7, cy, 14, 7); ctx.fillStyle = '#c9a26b'; ctx.fillRect(cx - 12, cy - 8, 8, 3); ctx.fillRect(cx + 4, cy - 8, 8, 3); }
       else { ctx.fillStyle = '#5a4630'; ctx.fillRect(cx - 2, cy - 2, 2, 11); ctx.fillRect(cx + 2, cy + 3, 5, 2); ctx.fillStyle = '#7d7d7d'; ctx.fillRect(cx - 12, cy + 6, 4, 3); ctx.fillRect(cx + 9, cy + 5, 3, 3); }
     } else if (r.state === 'expired') { ctx.strokeStyle = '#e5533d'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx - 9, cy - 9); ctx.lineTo(cx + 9, cy + 9); ctx.moveTo(cx + 9, cy - 9); ctx.lineTo(cx - 9, cy + 9); ctx.stroke(); ctx.lineWidth = 1; }
+    G.broker.bubbleMark(ctx, r, b);
     ctx.restore();
   }
   function bubbles(ctx, S) { for (const r of S.requests) bubble(ctx, r); }
-  return { comboBadge, panel, button, clicked, hud, joystick, bubbles, bubbleRect, PAUSE_BTN };
+  // 검수표 (개편): 납품 순간 마을 위에 '계약 ★ / 납품 ★ → 합격·불합격' 도장
+  function checks(ctx, S) {
+    for (const c of S.checks || []) {
+      const k = Math.min(1, c.t / 0.15), sc = 1.6 - 0.6 * k, a = c.t > C.CHECK_SEC - 0.3 ? (C.CHECK_SEC - c.t) / 0.3 : 1;
+      const w = 188, h = 52;
+      ctx.save(); ctx.globalAlpha = Math.max(0, a); ctx.translate(Math.max(w / 2 + 4, Math.min(C.VIEW.w - w / 2 - 4, c.x)), c.y - c.t * 6); ctx.scale(sc, sc); ctx.rotate(-0.05);
+      ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-w / 2 + 3, -h / 2 + 4, w, h);
+      ctx.fillStyle = '#fffdf6'; ctx.fillRect(-w / 2, -h / 2, w, h);
+      const col = c.ok ? '#2e9b3a' : '#d9342b';
+      ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.strokeRect(-w / 2 + 1.5, -h / 2 + 1.5, w - 3, h - 3); ctx.lineWidth = 1;
+      T(ctx, '계약', -w / 2 + 18, -10, 12, '#6a5a3a'); G.icons.stars(ctx, -w / 2 + 32, -17, c.minQ, 3, 2);
+      T(ctx, '납품', 14, -10, 12, '#6a5a3a');
+      if (c.fake) T(ctx, '불량!', 54, -10, 12, '#d9342b'); else G.icons.stars(ctx, 28, -17, c.realQ, 3, 2);
+      ctx.fillStyle = col; ctx.fillRect(-w / 2 + 6, 5, w - 12, 18);
+      T(ctx, c.ok ? '검수 합격 ✔' : c.fake ? '검수 불합격 ✘ 표시와 달라요' : '검수 불합격 ✘ 품질 미달', 0, 14, 12, '#fff');
+      ctx.restore();
+    }
+  }
+  return { comboBadge, panel, button, clicked, hud, joystick, bubbles, checks, bubbleRect, PAUSE_BTN };
 })();

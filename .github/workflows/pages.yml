@@ -1,6 +1,6 @@
 # 게임 페이지 배포: main 판은 사이트 첫 화면, redesign(개편안) 판은 /redesign/ 에.
 # 어느 브랜치에 push해도 두 판을 함께 다시 빌드해서 올린다. 둘 다 제출판 빌드(tools/build.py, 개발용 스크립트 제외).
-# 테스트용 원본(개발 기능 포함)은 /dev/ 와 /redesign/dev/ 에.
+# 테스트용 원본(개발 기능 포함)은 /dev/ 와 /redesign/dev/ 에. 개편 전 예전 게임(태그 v1-tycoon)은 /v1/ 에.
 name: 게임 페이지 배포
 on:
   push:
@@ -25,6 +25,9 @@ jobs:
       - uses: actions/checkout@v4
         with: { ref: redesign, path: redesign }
         continue-on-error: true
+      - uses: actions/checkout@v4
+        with: { ref: v1-tycoon, path: v1 }
+        continue-on-error: true
       - name: 두 판 빌드
         run: |
           mkdir -p site/redesign
@@ -34,6 +37,8 @@ jobs:
           mkdir -p site/dev site/redesign/dev
           cp -r main/index.html main/css main/js main/assets site/dev/
           if [ -f redesign/index.html ]; then cp -r redesign/index.html redesign/css redesign/js redesign/assets site/redesign/dev/; fi
+          # 개편 전 예전 게임(태그 v1-tycoon)은 /v1/ 에 보관
+          if [ -f v1/tools/build.py ]; then mkdir -p site/v1 && python3 v1/tools/build.py && cp v1/dist/index.html site/v1/index.html; fi
           touch site/.nojekyll
           ls -la site site/redesign
       - uses: actions/configure-pages@v5
