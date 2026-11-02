@@ -178,7 +178,7 @@ G.shops = (() => {
       if (!B.warned && (press || !dali.moving)) {
         const d = sh.w.door;
         const under = !full && G.requests.active(S).find(r => itemsOf(sh).some(it => it.id === r.item) && sh.q[r.item] < r.minQ);
-        G.fx.add(S, d.x + d.w / 2, d.y - 6, full ? '가방이 가득 찼어요' : under ? G.ITEM[under.item].name + '은 조건 미달 (★' + under.minQ + ' 이상 필요)' : '필요한 물건이 아니에요', under ? '#ff8a7a' : '#ffd6a0');
+        G.fx.add(S, d.x + d.w / 2, d.y - 6, full ? '가방이 가득 찼어요' : under ? G.ITEM[under.item].name + G.U.josa(G.ITEM[under.item].name, '은', '는') + ' 조건 미달 (★' + under.minQ + ' 이상 필요)' : '필요한 물건이 아니에요', under ? '#ff8a7a' : '#ffd6a0');
         B.warned = true;
       }
       return;

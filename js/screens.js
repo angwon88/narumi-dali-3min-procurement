@@ -63,6 +63,7 @@ G.screens = (() => {
     ui.button(ctx, BTN_START, '작전 시작', { size: 20 });
     const best = G.store.get('best', 0);
     if (best) T(ctx, '최고 점수 ' + best, W - 20, H - 20, 12, '#ffe48a', 'right');
+    if (G.VERSION) T(ctx, G.VERSION, 16, H - 20, 12, '#8fa3b8', 'left');
     T(ctx, '터치·클릭으로 이동 (방향키도 가능) · Enter 시작 · M 소리 ' + (G.audio.isMuted() ? '켜기' : '끄기'), W / 2, H - 20, 12, '#cfd8e3');
     if (G.input.hit('m')) G.audio.toggle();
   }
