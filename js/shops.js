@@ -103,11 +103,14 @@ G.shops = (() => {
       const carried = G.dali.bag.filter(b => b.item === it.id).length;
       if (reqs.length > carried) { const r = reqs[carried]; if (!best || r.left < best.left) best = { item: it.id, left: r.left }; }
     }
-    return best && best.item;
+    if (best) return best.item;
+    const prep = itemsOf(sh).find(it => S.prep && S.prep.has(it.id));     // 예보 중: 대비 물건은 요청 없이도 삼
+    return prep ? prep.id : null;
   }
   function buy(S, sh, item) {
     const p = price(sh, item);
-    G.dali.bag.push({ item, paid: p, shop: sh.idx, fake: sh.fake, innov: sh.innov });
+    const prep = !G.requests.active(S).some(r => r.item === item) || G.dali.bag.filter(b => b.item === item).length >= G.requests.active(S).filter(r => r.item === item).length;
+    G.dali.bag.push({ item, paid: p, shop: sh.idx, fake: sh.fake, innov: sh.innov, prep });
     G.audio.play('buy');   // 수상한 물건도 겉보기는 같다
     S.stats.bought = (S.stats.bought || 0) + 1;
     const d = sh.w.door;

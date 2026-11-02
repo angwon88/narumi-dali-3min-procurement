@@ -23,7 +23,15 @@ G.C = {
   STOCK_COST: 3, STOCK_MAX: 3, STOCK_DWELL: 0.5,   // 원자재 비축: 저금통 3만원 → 1상자
   SURGE: { mult: 1.6 },
   // 사건 켜고 끄기 (false면 그 사건이 아예 일어나지 않음 — 빼고 싶을 때 여기 한 곳만 바꾸면 됨)
-  EVENTS: { fake: true, dust: true, storm: false, surge: true },                             // 원자재 가격 폭등 배율
+  EVENTS: { fake: true, dust: true, storm: false, surge: true },
+  // 사건 배치 (2026-11-02, 반쯤 랜덤): 모든 사건이 매 판 한 번씩, 아래 '자리'에 섞어서 배치. 자리 안에서 시작 시점도 흔듦
+  EVENT_SLOTS: [[60, 72], [94, 104], [126, 134]],   // 각 자리의 시작 시점 범위(초)
+  EVENT_DUR: { dust: 15, storm: 20, surge: 20 },     // 사건 길이(초)
+  EVENT_NOT_FIRST: ['surge'],                        // 첫 자리(1:00 무렵)에 오면 안 되는 사건 (비축할 시간이 필요)
+  EVENT_FIXED: false,                                // true면 고정 순서 (시연 영상 촬영용)
+  EVENT_FIXED_AT: { dust: 65, storm: 97, surge: 125 },
+  FORECAST_SEC: 15,                                  // 사건 예보: 시작 15초 전
+  PREP_BONUS: 100, PREP_TRUST: 2,                    // 예보 보고 미리 준비한 물건을 사건 중 납품하면 보너스                             // 원자재 가격 폭등 배율
   GIFT_STEP: 7, GIFT_TRUST: 3, GIFT_SCORE: 100,   // 세금 저금통: 7만원마다 마을 선물
   GRADE: { S: [9000, 80], A: [6000, 60], B: [3000, 0] },
 };

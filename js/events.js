@@ -2,7 +2,9 @@
    ① 원자재 비축: 조달청 건물 아래 '비축칸'에 0.5초 서 있으면 세금 저금통 STOCK_COST만원 → 원자재 1상자 (최대 STOCK_MAX)
    ② 원자재 가격 폭등(2:05~2:25): 공방 가격 ×SURGE.mult. 비축 상자가 있으면 요청이 많은 업종부터 1상자씩 방출 → 그 업종 가격 정상
       (실제: 조달청은 알루미늄·구리 등 비철금속을 비축했다가 가격 급등·수급 불안 때 중소기업에 방출·대여)
-   ③ 미세먼지 경보(1:05~1:20): 화면이 뿌옇고, 마을마다 마스크 요청이 몰림 */
+   ③ 미세먼지 경보: 화면이 뿌옇고, 마을마다 마스크 요청이 몰림
+   ④ 사건 예보(2026-11-02): 사건 15초 전 예보판. 예보~사건 끝까지 대비 물건은 요청 없이 미리 살 수 있고(S.prep),
+      미리 산 물건을 사건 중 납품하면 '미리 대비했어요!' 보너스. 시점은 director.js가 판마다 섞어서 정함 */
 'use strict';
 G.events = (() => {
   const C = G.C, T = (...a) => G.world.text(...a), r1 = v => Math.round(v * 10) / 10;
@@ -12,7 +14,7 @@ G.events = (() => {
   function init(S) {
     S.stock = 0; S.stockDwell = 0; S.stockWarned = false;
     S.surge = null; S.surgeMult = 1; S.stabilized = new Set(); S.surgeDone = false;
-    S.dust = null;
+    S.dust = null; S.forecasts = []; S.prep = new Set();
   }
 
   // ---------- ① 비축 ----------
@@ -33,11 +35,14 @@ G.events = (() => {
   // ---------- ② 원자재 가격 폭등 ----------
   const catNames = { furn: '가구', elec: '전자', health: '보건', safety: '안전' };
   function surgeStart(S) {
+    endForecast(S, 'surge');
     S.surge = { t: 0 }; S.surgeMult = C.SURGE.mult;
     const demand = cat => G.requests.active(S).filter(r => G.ITEM[r.item].cat === cat).length;
     const cats = G.world.CATS.map(c => c.id).sort((a, b) => demand(b) - demand(a));
     const n = Math.min(S.stock, cats.length), pick = cats.slice(0, n);
     S.stock -= n; S.stats.released = n;
+    if (n) { S.score += C.PREP_BONUS * n; G.score.trust(S, C.PREP_TRUST); S.stats.prepared = (S.stats.prepared || 0) + n;
+      G.fx.add(S, OB.x + OB.w / 2, OB.y + OB.h + 50, '미리 대비했어요! +' + C.PREP_BONUS * n, '#ffe48a', 16); }
     if (n) G.director.banner(S, '원자재 가격 폭등! 비축 원자재 방출', pick.map(c => catNames[c]).join('·') + ' 공방 가격을 지켰어요 · 나머지 ×' + C.SURGE.mult);
     else G.director.banner(S, '원자재 가격 폭등! 공방 가격 ×' + C.SURGE.mult, '비축해 둔 원자재가 없어요… (조달청 아래 비축칸)');
     G.audio.play(n ? 'gift' : 'warn');
@@ -51,10 +56,27 @@ G.events = (() => {
     });
   }
   function surgeEnd(S) {
+    endPrep(S, 'surge');
     S.surge = null; S.surgeMult = 1; S.stabilized.clear(); S.surgeDone = true;
     G.director.banner(S, '원자재 가격이 안정됐어요', '');
   }
-  G.director.on('surgeWarn', S => { G.director.banner(S, '곧 원자재 가격이 오른대요!', '조달청 아래 비축칸에서 미리 비축해요'); G.audio.play('warn'); });
+  // ---------- ④ 예보 ----------
+  const FORECAST = {
+    dust:  { name: '미세먼지 예보', need: '마스크를 미리 준비해요', items: ['mask'], icon: 'mask' },
+    storm: { name: '태풍 예보', need: '안전모·구급상자를 미리 준비해요', items: ['helmet', 'kit'], icon: 'helmet' },
+    surge: { name: '원자재 가격 폭등 예보', need: '조달청 아래 비축칸에 비축해요', items: [], icon: null },
+  };
+  G.director.on('forecast', (S, p) => {
+    const f = FORECAST[p.id]; if (!f) return;
+    S.forecasts.push({ id: p.id, at: p.at });
+    f.items.forEach(it => S.prep.add(it));
+    G.director.banner(S, f.name + ' · ' + C.FORECAST_SEC + '초 뒤', f.need);
+    G.audio.play('warn');
+  });
+  function endForecast(S, id) {
+    S.forecasts = S.forecasts.filter(f => f.id !== id);
+  }
+  function endPrep(S, id) { FORECAST[id].items.forEach(it => S.prep.delete(it)); }
   G.director.on('surgeStart', surgeStart);
   G.director.on('surgeEnd', surgeEnd);
   // 공방 가격에 곱할 값 (shops.price가 부른다)
@@ -65,6 +87,7 @@ G.events = (() => {
 
   // ---------- ③ 미세먼지 경보 ----------
   function dustStart(S) {
+    endForecast(S, 'dust');
     S.dust = { t: 0, specks: Array.from({ length: 70 }, () => ({ x: Math.random() * C.VIEW.w, y: C.HUD_H + Math.random() * (C.VIEW.h - C.HUD_H), s: 1 + Math.random() * 2 })) };
     G.director.banner(S, '미세먼지 경보!', '마을마다 마스크가 필요해요 · 보건 공방으로');
     G.audio.play('warn');
@@ -72,7 +95,7 @@ G.events = (() => {
       if (S.openVillages.has(v.id) && G.requests.ofVillage(S, v.id).length < C.MAX_REQ_PER_VILLAGE) G.requests.spawn(S, { vid: v.id, item: 'mask' });
     }
   }
-  function dustEnd(S) { S.dust = null; G.director.banner(S, '미세먼지가 걷혔어요', ''); }
+  function dustEnd(S) { endPrep(S, 'dust'); S.dust = null; G.director.banner(S, '미세먼지가 걷혔어요', ''); }
   G.director.on('dustStart', dustStart);
   G.director.on('dustEnd', dustEnd);
 
@@ -138,13 +161,27 @@ G.events = (() => {
       T(ctx, '콜록', v.yard.x + 40 + v.idx * 37 % 140, v.yard.y + 10 - ph * 24, 12, '#5a4630');
     }
     ctx.globalAlpha = 1;
-    // ⑤ 상태 표시: HUD 바로 아래 오른쪽
-    const bx = W - 196, by = top + 4;
-    ctx.fillStyle = 'rgba(90,70,40,' + (0.92 * k) + ')'; ctx.fillRect(bx, by, 184, 24);
-    ctx.fillStyle = 'rgba(255,216,74,' + k + ')'; ctx.fillRect(bx, by, 184, 2);
-    ctx.globalAlpha = k; G.icons.draw(ctx, 'mask', bx + 16, by + 13, 16);
-    T(ctx, '미세먼지 나쁨 · ' + Math.max(0, Math.ceil(dur - t)) + '초', bx + 100, by + 13, 12, '#fff');
     ctx.globalAlpha = 1;
   }
-  return { init, update, drawWorld, drawOverlay, priceMult, crate, ZONE };
+  // HUD 아래 오른쪽 상태판: 진행 중 사건 → 예보 순으로 쌓기
+  function drawBoards(ctx, S) {
+    const W = C.VIEW.w, boards = [];
+    if (S.dust) boards.push({ col: '90,70,40', line: '#ffd84a', icon: 'mask', text: '미세먼지 나쁨 · ' + Math.max(0, Math.ceil(C.EVENT_DUR.dust - S.dust.t)) + '초' });
+    if (S.surge) boards.push({ col: '140,40,30', line: '#ffd84a', icon: null, text: '원자재 가격 폭등 · ' + Math.max(0, Math.ceil(C.EVENT_DUR.surge - S.surge.t)) + '초' });
+    for (const f of S.forecasts) {
+      const F = FORECAST[f.id], left = Math.max(0, Math.ceil(f.at - S.elapsed));
+      boards.push({ col: '30,60,110', line: '#5ec8f2', icon: F.icon, text: F.name + ' · ' + left + '초 뒤', sub: F.need, blink: left <= 5 });
+    }
+    boards.forEach((b, i) => {
+      const h = b.sub ? 38 : 24, w = 236, x = W - w - 10, y = C.HUD_H + 4 + i * 42;
+      const on = !b.blink || Math.floor(S.elapsed * 3) % 2 === 0;
+      ctx.fillStyle = 'rgba(' + b.col + ',' + (on ? 0.94 : 0.75) + ')'; ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = b.line; ctx.fillRect(x, y, w, 2);
+      if (b.icon) G.icons.draw(ctx, b.icon, x + 16, y + 12, 16);
+      else G.events.crate(ctx, x + 9, y + 6);
+      T(ctx, b.text, x + 32, y + 12, 12, '#fff', 'left');
+      if (b.sub) T(ctx, b.sub, x + 32, y + 28, 12, '#cfe3f5', 'left');
+    });
+  }
+  return { init, update, drawWorld, drawOverlay, drawBoards, priceMult, crate, ZONE, FORECAST };
 })();

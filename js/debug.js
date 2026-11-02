@@ -24,6 +24,8 @@ G.debug = (() => {
     G.ui.button(ctx, BTN5, '+5초', { size: 12, fill: '#9fd3ff', hot: '#c9e7ff' });
     G.ui.button(ctx, BTN10, '+10초', { size: 12, fill: '#9fd3ff', hot: '#c9e7ff' });
     const e = G.S.elapsed;
+    const nx = (G.S.eventPlan || []).filter(p => p.at > e).map(p => ({ dust: '먼지', storm: '폭우', surge: '폭등' })[p.id] + ' ' + Math.floor(p.at / 60) + ':' + String(p.at % 60).padStart(2, '0')).join(' · ');
+    if (nx) G.world.text(ctx, 'DEV 다음 사건: ' + nx, W - 12, 388, 12, '#9fd3ff', 'right');
     G.world.text(ctx, 'DEV 경과 ' + Math.floor(e / 60) + ':' + String(Math.floor(e % 60)).padStart(2, '0'), W - 12, 404, 12, '#9fd3ff', 'right');
   }
   return { skip, update, draw };

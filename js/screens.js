@@ -99,6 +99,7 @@ G.screens = (() => {
     G.director.draw(ctx, G.S);
     ui.hud(ctx, G.S);
     ui.comboBadge(ctx, G.S);
+    G.events.drawBoards(ctx, G.S);
     G.fx.drawParts(ctx, G.S);                                         // 파편·동전은 HUD 위로 (저금통까지 날아가게)
     if (G.debug) G.debug.draw(ctx);
     ui.joystick(ctx);

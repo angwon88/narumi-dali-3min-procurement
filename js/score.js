@@ -26,6 +26,10 @@ G.score = (() => {
     G.gifts.add(S, saving);                                   // 아낀 만큼 저금통 +, 비싸게 산 만큼 -
     trust(S, frac >= 0.5 ? C.TRUST_FAST : C.TRUST_ON_TIME);
     G.villages.onSuccess(S, r.vid);
+    if (bagItem.prep && (S.dust || S.storm)) {                     // 예보 보고 미리 준비한 물건을 사건 중 납품
+      S.score += C.PREP_BONUS; trust(S, C.PREP_TRUST); S.stats.prepared = (S.stats.prepared || 0) + 1;
+      const yd = r.vill.yard; G.fx.add(S, yd.x + yd.w / 2, yd.y + 16, '미리 대비했어요! +' + C.PREP_BONUS, '#9be37a', 16);
+    }
     G.audio.play('deliver', S.combo);
     const v = r.vill.yard;
     G.fx.add(S, v.x + v.w / 2, v.y + 16, '+' + pts + (S.combo >= 2 ? '  콤보 ' + S.combo + '!' : ''), '#ffe48a', 16);
