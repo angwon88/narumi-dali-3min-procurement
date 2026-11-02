@@ -19,13 +19,13 @@ G.director = (() => {
     { at: 10, open: { village: 'clinic', cat: 'health' }, banner: '보건소가 문을 열었어요!', sub: '보건 공방도 영업 시작' },
     { at: 30, open: { village: 'fire', cat: 'safety' }, banner: '소방서가 문을 열었어요!', sub: '안전 공방도 영업 시작' },
     { at: 45, open: { village: 'library' }, banner: '도서관이 문을 열었어요!', sub: '공방 거리가 바빠져요' },
-    { at: 50, hook: 'firstFake' },                 // 첫 수상한 공방 확정 등장 (적발 기회를 늘리려고 1:00 → 0:50)
-    { at: 65, hook: 'dustStart' },                 // 미세먼지 경보 1:05~1:20
-    { at: 80, hook: 'dustEnd' },
-    { at: 88, hook: 'stormWarn' },                 // 10번 작업: 태풍 경보
-    { at: 117, hook: 'surgeWarn' },                // 원자재 가격 폭등 예고 → 2:05~2:25 폭등
-    { at: 125, hook: 'surgeStart' },
-    { at: 145, hook: 'surgeEnd' },
+    { at: 50, hook: 'firstFake', flag: 'fake' },                 // 첫 수상한 공방 확정 등장 (적발 기회를 늘리려고 1:00 → 0:50)
+    { at: 65, hook: 'dustStart', flag: 'dust' },                 // 미세먼지 경보 1:05~1:20
+    { at: 80, hook: 'dustEnd', flag: 'dust' },
+    { at: 88, hook: 'stormWarn', flag: 'storm' },                 // 10번 작업: 태풍 경보
+    { at: 117, hook: 'surgeWarn', flag: 'surge' },                // 원자재 가격 폭등 예고 → 2:05~2:25 폭등
+    { at: 125, hook: 'surgeStart', flag: 'surge' },
+    { at: 145, hook: 'surgeEnd', flag: 'surge' },
     { at: C.FINAL_RUSH_AT, rush: true, banner: '막바지! 점수 1.5배', sub: '조금만 더 힘내요' },
   ];
   const hooks = {};                                // 다른 작업이 등록: G.director.on('firstFake', fn)
@@ -40,6 +40,7 @@ G.director = (() => {
   }
   function banner(S, text, sub) { S.banner = { text, sub: sub || '', t: 0 }; }
   function fire(S, ev) {
+    if (ev.flag && C.EVENTS[ev.flag] === false) return;            // 꺼진 사건은 건너뜀
     if (ev.open) {
       if (ev.open.village) S.openVillages.add(ev.open.village);
       if (ev.open.cat) { S.openCats.add(ev.open.cat); G.shops.opened(S, ev.open.cat); }

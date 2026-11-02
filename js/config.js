@@ -21,7 +21,9 @@ G.C = {
   REQ_FIRST_AT: 2, REQ_INTERVAL: 6.0, REQ_LIMIT: 35, REQ_EMPTY_FILL: 1,   // 기본값. 실제 구간별 값은 director.js
   COMBO_STEP: 0.1, COMBO_MAX_MULT: 2.0,   // 제때 연속 납품마다 점수 +10%, 최대 ×2
   STOCK_COST: 3, STOCK_MAX: 3, STOCK_DWELL: 0.5,   // 원자재 비축: 저금통 3만원 → 1상자
-  SURGE: { mult: 1.6 },                             // 원자재 가격 폭등 배율
+  SURGE: { mult: 1.6 },
+  // 사건 켜고 끄기 (false면 그 사건이 아예 일어나지 않음 — 빼고 싶을 때 여기 한 곳만 바꾸면 됨)
+  EVENTS: { fake: true, dust: true, storm: false, surge: true },                             // 원자재 가격 폭등 배율
   GIFT_STEP: 7, GIFT_TRUST: 3, GIFT_SCORE: 100,   // 세금 저금통: 7만원마다 마을 선물
   GRADE: { S: [9000, 80], A: [6000, 60], B: [3000, 0] },
 };

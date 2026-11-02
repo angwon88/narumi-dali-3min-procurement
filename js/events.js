@@ -115,10 +115,36 @@ G.events = (() => {
   }
   function drawOverlay(ctx, S) {                       // 미세먼지 (HUD 아래 전체)
     if (!S.dust) return;
-    const k = Math.min(1, S.dust.t / 1.5);
-    ctx.fillStyle = 'rgba(196,176,128,' + (0.28 * k) + ')'; ctx.fillRect(0, C.HUD_H, C.VIEW.w, C.VIEW.h - C.HUD_H);
-    ctx.fillStyle = 'rgba(120,105,80,' + (0.5 * k) + ')';
-    for (const p of S.dust.specks) ctx.fillRect(Math.round(p.x), Math.round(p.y + Math.sin(p.x / 40) * 4), p.s, p.s);
+    const t = S.dust.t, dur = 15, k = Math.min(1, t / 1.2, Math.max(0, (dur - t) / 1.2));
+    const top = C.HUD_H, W = C.VIEW.w, H = C.VIEW.h;
+    // ① 누런 막 (위쪽이 더 짙게)
+    const g = ctx.createLinearGradient(0, top, 0, H);
+    g.addColorStop(0, 'rgba(170,140,80,' + (0.55 * k) + ')'); g.addColorStop(1, 'rgba(190,165,110,' + (0.35 * k) + ')');
+    ctx.fillStyle = g; ctx.fillRect(0, top, W, H - top);
+    // ② 흘러가는 큰 먼지 구름
+    for (let i = 0; i < 7; i++) {
+      const x = ((i * 173 + t * (18 + i * 4)) % (W + 240)) - 120, y = top + 40 + (i * 71) % (H - top - 60);
+      ctx.fillStyle = 'rgba(150,125,80,' + (0.18 * k) + ')';
+      for (let j = 0; j < 4; j++) { ctx.beginPath(); ctx.arc(x + j * 26, y + Math.sin(j + i) * 8, 30 - j * 3, 0, Math.PI * 2); ctx.fill(); }
+    }
+    // ③ 먼지 알갱이
+    ctx.fillStyle = 'rgba(100,85,60,' + (0.7 * k) + ')';
+    for (const p of S.dust.specks) ctx.fillRect(Math.round(p.x), Math.round(p.y + Math.sin(p.x / 40) * 4), p.s + 1, p.s + 1);
+    // ④ 마을에서 '콜록'
+    for (const v of G.world.villages) {
+      if (!S.openVillages.has(v.id)) continue;
+      const ph = (t * 0.9 + v.idx * 0.37) % 1;
+      ctx.globalAlpha = k * (1 - ph);
+      T(ctx, '콜록', v.yard.x + 40 + v.idx * 37 % 140, v.yard.y + 10 - ph * 24, 12, '#5a4630');
+    }
+    ctx.globalAlpha = 1;
+    // ⑤ 상태 표시: HUD 바로 아래 오른쪽
+    const bx = W - 196, by = top + 4;
+    ctx.fillStyle = 'rgba(90,70,40,' + (0.92 * k) + ')'; ctx.fillRect(bx, by, 184, 24);
+    ctx.fillStyle = 'rgba(255,216,74,' + k + ')'; ctx.fillRect(bx, by, 184, 2);
+    ctx.globalAlpha = k; G.icons.draw(ctx, 'mask', bx + 16, by + 13, 16);
+    T(ctx, '미세먼지 나쁨 · ' + Math.max(0, Math.ceil(dur - t)) + '초', bx + 100, by + 13, 12, '#fff');
+    ctx.globalAlpha = 1;
   }
   return { init, update, drawWorld, drawOverlay, priceMult, crate, ZONE };
 })();
