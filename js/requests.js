@@ -1,5 +1,7 @@
 /* 요청: 생성 · 시간 감소 · 만료 (기획서 3.4, 4.1)
-   구간별 간격(S.reqInterval)·제한 시간(S.reqLimit)은 director.js가 정한다. */
+   구간별 간격(S.reqInterval)·제한 시간(S.reqLimit)은 director.js가 정한다.
+   개편(2026-11-02): 요청 = 계약 카드. 물건 + 예정가격 + 조건(품질 ★minQ 이상).
+     납품 = 검수: 실제 품질(realQ)이 조건 이상이면 합격, 아니면 불합격(요청은 남고 쓴 돈은 낭비). */
 'use strict';
 G.requests = (() => {
   const C = G.C;
@@ -13,10 +15,19 @@ G.requests = (() => {
     S.openCats = new Set(['furn', 'elec']);
     S.firstReqDone = false;
     S.stats = { reqMade: 0, reqExpired: 0 };
+    S.checks = [];                        // 검수표 연출
   }
   const active = S => S.requests.filter(r => r.state === 'open');
   const ofVillage = (S, vid) => active(S).filter(r => r.vid === vid);
 
+  // 계약 조건: 그 물건을 맞출 수 있는 (정상) 공방의 최고 품질 이하에서 가중치로 뽑음
+  function pickMinQ(S, item) {
+    let top = 1;
+    for (const sh of S.shops) if (G.shops.isOpen(S, sh) && !sh.fake && sh.q[item]) top = Math.max(top, sh.q[item]);
+    const w = C.Q_REQ_W.slice(0, top), sum = w.reduce((a, b) => a + b, 0);
+    let x = Math.random() * sum; for (let q = 1; q <= w.length; q++) { x -= w[q - 1]; if (x < 0) return q; }
+    return 1;
+  }
   // 요청 하나 만들기. 만들 수 없으면 null
   function spawn(S, force) {
     const open = active(S);
@@ -40,7 +51,7 @@ G.requests = (() => {
     const vill = G.world.villages.find(v => v.id === vid);
     const slot = [0, 1].find(i => !ofVillage(S, vid).some(r => r.slot === i));
     const r = {
-      id: nextId++, vid, item, price: G.ITEM[item].price, slot: slot == null ? 0 : slot,
+      id: nextId++, vid, item, price: G.ITEM[item].price, slot: slot == null ? 0 : slot, minQ: force && force.minQ ? force.minQ : pickMinQ(S, item),
       limit: (S.reqLimit || C.REQ_LIMIT) * (S.limitMult || 1), left: (S.reqLimit || C.REQ_LIMIT) * (S.limitMult || 1), urgent: false,
       state: 'open', t: 0, endT: 0, vill,
     };
@@ -52,7 +63,13 @@ G.requests = (() => {
     // 첫 요청: 0:02 학교 책상 확정
     if (!S.firstReqDone) {
       S.reqClock -= dt;
-      if (S.reqClock <= 0) { spawn(S, { vid: 'school', item: 'desk' }); S.firstReqDone = true; S.reqClock = S.reqInterval || C.REQ_INTERVAL; }
+      if (S.reqClock <= 0) {
+        // 첫 계약: 학교 책상 ★★ 이상 (두 가구 공방 중 하나만 맞추도록 품질이 갈리면 ★★, 아니면 뽑기)
+        const qs = S.shops.filter(sh => sh.cat === 'furn').map(sh => sh.q.desk).sort();
+        spawn(S, { vid: 'school', item: 'desk', minQ: qs[0] < 2 && qs[1] >= 2 ? 2 : 0 });
+        S.firstReqDone = true; S.reqClock = S.reqInterval || C.REQ_INTERVAL;
+        G.narmi.say('계약 조건부터 확인! 품질 별을 봐요', 2.6);
+      }
     } else {
       S.reqClock -= dt;
       if (S.reqClock <= 0) { spawn(S); S.reqClock += S.reqInterval || C.REQ_INTERVAL; }
@@ -61,13 +78,15 @@ G.requests = (() => {
       else S.reqEmptyT = 0;
     }
     for (const r of S.requests) {
-      r.t += dt;
+      r.t += dt; if (r.failT != null) r.failT += dt;
       if (r.state === 'open') {
         r.left -= dt;
         if (r.left <= 0) { r.left = 0; r.state = 'expired'; S.stats.reqExpired++; onExpire(S, r); }
       } else r.endT += dt;
     }
     S.requests = S.requests.filter(r => r.state === 'open' || r.endT < 0.6);   // 끝난 요청은 0.6초 연출 뒤 제거
+    for (const c of S.checks) c.t += dt;
+    S.checks = S.checks.filter(c => c.t < C.CHECK_SEC);
   }
   // 시간 초과: 신뢰도 감소 + 마을 피해 8초
   function onExpire(S, r) {
@@ -79,9 +98,9 @@ G.requests = (() => {
     G.fx.add(S, b.x + b.w / 2, b.y - 4, '늦었어요… 신뢰 ' + C.TRUST_FAIL, '#ff8a7a');
   }
 
-  // 수상한 공방 물건 납품: 50% 미납(빈 상자) · 50% 불량 → 요청 실패, 신뢰도 -15, 마을 피해, 낸 돈은 낭비된 세금
+  // 수상한 공방 물건 납품 → 검수에서 불량이 드러남 (개편: 요청은 남아 다시 조달해야 함). 신뢰도 -15, 마을 피해, 낸 돈은 낭비된 세금
   function fraud(S, r, b) {
-    r.state = 'expired'; r.fraud = Math.random() < 0.5 ? 'empty' : 'broken';
+    r.failT = 0;
     G.score.trust(S, C.TRUST_FRAUD);
     G.score.breakCombo(S);
     G.audio.play('scam');
@@ -91,11 +110,23 @@ G.requests = (() => {
     S.stats.scammed = (S.stats.scammed || 0) + 1;
     S.catchStreak = 0;
     const y = r.vill.yard;
-    G.fx.add(S, y.x + y.w / 2, y.y + 16, r.fraud === 'empty' ? '빈 상자였어요…' : '불량품이에요!', '#ff8a7a', 16);
+    G.fx.add(S, y.x + y.w / 2, y.y + 16, '표시는 ★★★, 실제는 불량! 페이퍼컴퍼니', '#ff8a7a', 16);
     G.fx.add(S, y.x + y.w / 2, y.y + 16, '신뢰 ' + C.TRUST_FRAUD + ' · 세금 ' + b.paid + '만원 낭비', '#ff8a7a');
     if (!S.firstScam) { S.firstScam = true; G.narmi.say('연기도 안 나던 공방이었는데…', 2.5); }
   }
 
+  // 검수 불합격(품질 미달): 요청은 남고, 쓴 돈은 낭비, 신뢰도 -6, 콤보 끊김
+  function qualityFail(S, r, b) {
+    r.failT = 0;
+    G.score.trust(S, C.TRUST_QFAIL); G.score.breakCombo(S);
+    S.wasted = Math.round((S.wasted + b.paid) * 10) / 10; G.gifts.add(S, -b.paid);
+    S.stats.qFail = (S.stats.qFail || 0) + 1;
+    G.audio.play('fail');
+    const y = r.vill.yard;
+    G.fx.add(S, y.x + y.w / 2, y.y + 16, '품질 미달! ★' + r.minQ + ' 이상이 조건이에요', '#ff8a7a', 16);
+    G.fx.add(S, y.x + y.w / 2, y.y + 16, '신뢰 ' + C.TRUST_QFAIL + ' · 세금 ' + b.paid + '만원 낭비', '#ff8a7a');
+    if (!S.firstQFail) { S.firstQFail = true; G.narmi.say('계약서의 별 개수를 꼭 확인해요!', 2.6); }
+  }
   // 부정 낙찰 (기획서 3.7): 방치된 수상한 공방이 이 요청을 따내고 납품하지 않음 → 요청 실패·신뢰도 -15·마을 피해
   function stolen(S, r, sh) {
     r.state = 'expired'; r.fraud = 'empty';
@@ -145,12 +176,18 @@ G.requests = (() => {
     if (!v) return;
     for (let i = 0; i < d.bag.length; i++) {
       const b = d.bag[i];
-      const r = ofVillage(S, v.id).filter(q => q.item === b.item).sort((a, c) => a.left - c.left)[0];
+      // 어느 계약에 낼까: 표시 품질로 조건을 맞추는 것 중 가장 급한 것 → 없으면 가장 급한 것(불합격 위험)
+      const same = ofVillage(S, v.id).filter(q => q.item === b.item).sort((a, c) => a.left - c.left);
+      const r = same.find(q => b.q >= q.minQ) || same[0];
       if (!r) continue;
       d.bag.splice(i--, 1);
+      const ok = b.realQ >= r.minQ;
+      S.checks.push({ x: r.vill.yard.x + r.vill.yard.w / 2, y: r.vill.yard.y - 128, minQ: r.minQ, q: b.q, realQ: b.realQ, ok, fake: b.fake, t: 0 });
       if (b.fake) { fraud(S, r, b); continue; }
+      if (!ok) { qualityFail(S, r, b); continue; }
       if (b.innov && trial(S, r, b)) continue;                    // 혁신제품 시범 사용: '보완 필요'면 요청은 그대로 남음
       r.state = 'done';
+      S.stats.passed = (S.stats.passed || 0) + 1;
       G.score.delivered(S, r, b);
     }
   }

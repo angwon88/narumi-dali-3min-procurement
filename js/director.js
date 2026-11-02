@@ -53,7 +53,7 @@ G.director = (() => {
   }
   function apply(S) {
     let i = 0; while (i + 1 < SEGMENTS.length && S.elapsed >= SEGMENTS[i + 1].from) i++;
-    if (i !== S.segIdx) { S.segIdx = i; S.reqInterval = SEGMENTS[i].interval; S.reqLimit = SEGMENTS[i].limit; }
+    if (i !== S.segIdx) { S.segIdx = i; S.reqInterval = SEGMENTS[i].interval * C.REQ_INTERVAL_MULT; S.reqLimit = Math.round(SEGMENTS[i].limit * C.REQ_LIMIT_MULT); }
   }
   function banner(S, text, sub) { S.banner = { text, sub: sub || '', t: 0 }; }
   function fire(S, ev) {

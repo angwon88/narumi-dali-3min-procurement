@@ -52,10 +52,23 @@ G.icons = (() => {
     g.putImageData(new ImageData(out, N + 2, N + 2), 0, 0);
     return (cache[id] = c);
   }
+  // 품질 별 (개편): 7×7 픽셀 별을 u배로. (x, y) 왼쪽 위부터 max칸, n칸만 금색(나머지는 옅은 회색). 한 칸 = 7u + u 간격
+  const STAR = ['...#...', '..###..', '#######', '.#####.', '..###..', '.##.##.', '.#...#.'];
+  function stars(ctx, x, y, n, max, u) {
+    u = u || 1;
+    for (let i = 0; i < (max || 3); i++) {
+      const ox = Math.round(x + i * 8 * u), on = i < n;
+      for (let r = 0; r < 7; r++) for (let c = 0; c < 7; c++) {
+        if (STAR[r][c] !== '#') continue;
+        ctx.fillStyle = on ? (r < 3 ? '#ffc21a' : '#e09a00') : '#d6cdb6';
+        ctx.fillRect(ox + c * u, y + r * u, u, u);
+      }
+    }
+  }
   // 가운데 (cx, cy), 크기 size
   function draw(ctx, id, cx, cy, size) {
     const s = size || 24; ctx.imageSmoothingEnabled = false;
     ctx.drawImage(get(id), Math.round(cx - s / 2), Math.round(cy - s / 2), s, s);
   }
-  return { draw };
+  return { draw, stars };
 })();

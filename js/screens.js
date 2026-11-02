@@ -32,7 +32,7 @@ G.screens = (() => {
     ctx.imageSmoothingEnabled = true; ctx.drawImage(im, cx - w / 2, y, w, h); ctx.imageSmoothingEnabled = false;
   }
   // 이 게임에 담긴 조달청 제도 (2026-11-02 주제 가시성): 결과 화면 '실제로는?' 태그와 같은 색
-  const BADGES = [['나라장터', '#2f4f8a'], ['페이퍼컴퍼니 검증', '#d9342b'], ['혁신제품 시범구매', '#e0a800'], ['원자재 비축', '#2e9b3a']];
+  const BADGES = [['계약 조건 · 검수', '#2f4f8a'], ['가성비 따지기', '#2e9b3a'], ['페이퍼컴퍼니 실사', '#d9342b'], ['혁신제품 시범구매', '#e0a800']];
   function titleBadges(ctx) {
     ctx.font = '12px ' + G.FONT;
     const pad = 12, gap = 8, ws = BADGES.map(([s]) => Math.ceil(ctx.measureText(s).width) + pad * 2);
@@ -108,6 +108,7 @@ G.screens = (() => {
     G.narmi.draw(ctx);
     G.dali.draw(ctx);
     ui.bubbles(ctx, G.S);
+    ui.checks(ctx, G.S);
     G.dali.drawOver(ctx, G.S);
     G.shops.drawDoorInfo(ctx, G.S);
     G.shops.drawHover(ctx, G.S);

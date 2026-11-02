@@ -17,7 +17,11 @@ G.result = (() => {
     { key: 'caught', tag: '페이퍼컴퍼니 적발', col: '#d9342b', when: (S, s) => s.caught > 0 && !((s.scammed || 0) + (s.stolen || 0)),   // 피해가 있었으면 그쪽 한 줄만
       text: "수상한 공방의 실제 이름은 '페이퍼컴퍼니'. 만들 능력 없이 낙찰만 노리는 업체예요. 조달청은 현장 조사와 데이터 분석으로 이런 업체를 걸러내요." },
     { key: 'scammed', tag: '페이퍼컴퍼니 피해', col: '#d9342b', when: (S, s) => (s.scammed || 0) + (s.stolen || 0) > 0,
-      text: '진짜 조달에서도 페이퍼컴퍼니 때문에 성실한 업체가 기회를 잃고 물건이 제때 오지 않을 수 있어요. 그래서 검증이 중요해요.' },
+      text: '표시와 다른 불량품은 검수에서 걸러도, 세금과 시간은 이미 쓴 뒤예요. 페이퍼컴퍼니 때문에 성실한 업체가 기회를 잃기도 해요. 그래서 계약 전 실사가 중요해요.' },
+    { key: 'contract', tag: '계약 조건 · 검수', col: '#2f4f8a', when: (S, s) => (s.passed || 0) + (s.qFail || 0) > 0,
+      text: '공공기관은 물건을 살 때 품질·규격 같은 계약 조건을 정하고, 납품되면 조건대로 왔는지 검수해요. 조건에 못 미치면 받지 않아요.' },
+    { key: 'value', tag: '가성비 따지기', col: '#2e9b3a', when: (S, s) => (s.valueBest || 0) + (s.valueMiss || 0) > 0,
+      text: '조달은 무조건 가장 싼 곳이 아니라, 조건을 맞추는 업체 중에서 가격을 따져 골라요. 필요 이상으로 좋은 걸 비싸게 사도 세금 낭비예요.' },
     { key: 'innov', tag: '혁신제품 시범구매', col: '#e0a800', when: (S, s) => s.innov > 0,
       text: '조달청이 새 기술 제품의 첫 구매자가 되어 공공기관이 써 보게 하고, 그 기업이 성장하도록 도와요. 시범 사용 중 문제는 구매면책으로 담당자가 책임지지 않아요.' },
     { key: 'stock', tag: '원자재 비축', col: '#2e9b3a', when: (S, s) => s.stocked > 0,
@@ -85,12 +89,11 @@ G.result = (() => {
 
     // 2. 기록 카드 4장
     const cw = 210, ch = 82, gap = 12, cx0 = (W - (cw * 4 + gap * 3)) / 2, cy = 134;
-    const late = s.reqExpired || 0, cheat = (s.scammed || 0) + (s.stolen || 0);
-    card(ctx, cx0, cy, cw, ch, '제때 배달', S.delivered + '건', '#2a2416', late ? '놓친 요청 ' + late + '건' : '놓친 요청 없음!');
-    card(ctx, cx0 + (cw + gap), cy, cw, ch, '아낀 국민 세금', '+' + S.saved + '만원', '#2e9b3a', S.wasted > 0 ? '비싸게 산 돈 ' + S.wasted + '만원' : '낭비 없음!');
-    card(ctx, cx0 + (cw + gap) * 2, cy, cw, ch, '수상한 공방', '적발 ' + (s.caught || 0) + '곳', '#d9342b', cheat ? '속은 횟수 ' + cheat + '번' : '한 번도 안 속음!');
-    card(ctx, cx0 + (cw + gap) * 3, cy, cw, ch, '함께 키운 혁신 공방', (s.innov || 0) + '곳', s.innov ? '#b08800' : '#9a9080',
-      s.closedByStreak ? '몰아줘서 문 닫은 공방 ' + s.closedByStreak + '곳' : '혁신제품 납품 ' + (s.innovDelivered || 0) + '건');
+    const late = s.reqExpired || 0, cheat = (s.scammed || 0) + (s.stolen || 0), qf = s.qFail || 0;
+    card(ctx, cx0, cy, cw, ch, '검수 합격 납품', S.delivered + '건', '#2a2416', qf || late ? '불합격 ' + qf + '건 · 늦음 ' + late + '건' : '불합격·늦음 없음!');
+    card(ctx, cx0 + (cw + gap), cy, cw, ch, '아낀 국민 세금', '+' + S.saved + '만원', '#2e9b3a', S.wasted > 0 ? '낭비한 세금 ' + S.wasted + '만원' : '낭비 없음!');
+    card(ctx, cx0 + (cw + gap) * 2, cy, cw, ch, '가성비 최고 선택', (s.valueBest || 0) + '번', '#2f6fb0', s.valueMiss ? '더 싼 적합 업체 놓침 ' + s.valueMiss + '번' : '늘 최고의 선택!');
+    card(ctx, cx0 + (cw + gap) * 3, cy, cw, ch, '수상한 공방', '적발 ' + (s.caught || 0) + '곳', '#d9342b', cheat ? '속은 횟수 ' + cheat + '번' : '한 번도 안 속음!');
 
     // 3. 오늘 한 일, 실제로는?
     const bx = cx0, by = 234, bw = W - cx0 * 2, bh = 178;

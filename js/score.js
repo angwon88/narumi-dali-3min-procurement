@@ -36,6 +36,14 @@ G.score = (() => {
     G.fx.add(S, v.x + v.w / 2, v.y + 16, '+' + pts + star + (S.combo >= 2 ? '  콤보 ' + S.combo + '!' : ''), '#ffe48a', 16);
     if (star) G.fx.burst(S, v.x + v.w / 2, v.y + 10, true, 24);
     if (saving > 0) G.fx.add(S, v.x + v.w / 2, v.y + 16, '세금 +' + saving + '만원', '#9be37a');
+    // 개편: 가성비 판정 (산 순간 기준, 조건을 맞춘 곳 중 가장 쌌나)
+    if (bagItem.best === true) {
+      S.score += C.VALUE_BONUS; S.stats.valueBest = (S.stats.valueBest || 0) + 1;
+      G.fx.add(S, v.x + v.w / 2, v.y + 16, '가성비 최고! +' + C.VALUE_BONUS, '#7fe0ff', 16);
+    } else if (bagItem.best === false) {
+      S.stats.valueMiss = (S.stats.valueMiss || 0) + 1;
+      G.fx.add(S, v.x + v.w / 2, v.y + 16, bagItem.q > r.minQ ? '과잉 품질 · 조건 맞는 더 싼 곳이 있었어요' : '조건 맞는 더 싼 곳이 있었어요', '#ffd6a0');
+    }
   }
   return { init, trust, delivered, comboMult, breakCombo };
 })();
