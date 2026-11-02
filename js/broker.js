@@ -10,8 +10,9 @@ G.broker = (() => {
   const ROAD_Y = 192, LOW_Y = 378, OFFICE = [398, 562];
 
   function init(S) {
-    S.bk = { isBroker: true, state: 'off', x: -40, y: ROAD_Y, t: 0, wait: C.BROKER_FIRST_AT, req: null, shop: null, item: null,
-      path: [], face: 1, stun: false, timer: 0, shown: false };
+    S.bk = { isBroker: true, state: 'off', x: -40, y: ROAD_Y, t: 0, wait: 0,   // BROKER_FIRST_AT이 되자마자 등장 (2026-11-03 수정: 전에는 거기서 또 같은 시간을 기다려 2배 늦게 나왔음)
+      req: null, shop: null, item: null,
+      path: [], face: 1, stun: false, timer: 0, shown: false, freeze: 0, blockCD: 0 };
     Object.assign(S.stats, { brokerWon: 0, brokerBlocked: 0, brokerCaught: 0 });
   }
   const speed = S => U.clamp(C.BROKER_SPEED[0] + (C.BROKER_SPEED[1] - C.BROKER_SPEED[0]) * (S.elapsed - C.BROKER_FIRST_AT) / (C.GAME_SECONDS - C.BROKER_FIRST_AT), C.BROKER_SPEED[0], C.BROKER_SPEED[1]);
@@ -78,6 +79,18 @@ G.broker = (() => {
     }
     if (bk.state === 'run') {
       const r = bk.req;
+      // 달이가 길을 막으면 1초 멈칫 (검거는 나르미만). 같은 꼼수는 2.5초에 한 번만
+      bk.blockCD = Math.max(0, (bk.blockCD || 0) - dt);
+      if (bk.freeze > 0) { bk.freeze -= dt; return; }
+      const d = G.dali;
+      if (!bk.blockCD && Math.abs(d.x - bk.x) < 20 && Math.abs(d.y - bk.y) < 16) {
+        bk.freeze = C.BROKER_BLOCK_SEC; bk.blockCD = C.BROKER_BLOCK_CD;
+        S.stats.brokerBumped = (S.stats.brokerBumped || 0) + 1;
+        G.fx.add(S, bk.x, bk.y - 60, '멈칫! 달이가 길을 막았어요', '#ffe48a', 16);
+        G.audio.play('ok');
+        if (!S.bumpTip) { S.bumpTip = true; G.narmi.say('지금이에요! 꼼수를 눌러요 (Space)', 2.4); }
+        return;
+      }
       if (r.state !== 'open') {                                       // 달이가 먼저 납품했거나 시간 초과
         const next = G.requests.active(S).find(q => q.item === bk.item && !q.broker && q.left > 6);
         if (next) { bk.req.broker = false; bk.req = next; next.broker = true; bk.path = pathTo(bk, next.vill); }
@@ -139,6 +152,7 @@ G.broker = (() => {
     G.spr.shadow(ctx, bk.x, bk.y - 1, 11);
     ctx.save(); ctx.translate(Math.round(bk.x), Math.round(bk.y) - bob); ctx.scale(bk.face * 1.3, 1.3);   // 1.3배 (지도에서 잘 보이게)
     if (bk.state === 'caught') ctx.rotate(Math.sin(bk.t * 20) * 0.15);
+    else if (bk.freeze > 0) ctx.translate(Math.sin(bk.t * 40) * 1.5, 0);   // 멈칫: 부르르
     // 꼬리 (뒤쪽, 줄무늬)
     for (let i = 0; i < 4; i++) px(ctx, i % 2 ? '#2b2622' : '#8c7f70', -14 - i * 2, -16 + i * 2, 5, 5);
     // 다리
@@ -156,6 +170,7 @@ G.broker = (() => {
     // 중절모
     px(ctx, '#3a3a44', -12, -42, 24, 3); px(ctx, '#3a3a44', -7, -50, 14, 8); px(ctx, '#d9342b', -7, -44, 14, 2);
     if (bk.state === 'caught') { T(ctx, '@', -4, -34, 12, '#fff'); }
+    if (bk.freeze > 0 && bk.state === 'run') { ctx.scale(bk.face, 1); T(ctx, '!', 0, -60, 16, '#ffd84a'); }
     ctx.restore();
     // 불량품 보따리 (머리 위): 물건 아이콘 + 금 간 표시
     if (bk.item && (bk.state === 'run' || bk.state === 'grab')) {

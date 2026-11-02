@@ -31,7 +31,7 @@ G.C = {
   FAKE_BID: false,                  // 부정 낙찰 끔 (개편: 바쁨 완화) → 꼼수 브로커가 대신함
   // 꼼수 브로커 (개편): 계약을 가로채 불량품을 납품하려는 AI 라이벌
   BROKER: true, BROKER_FIRST_AT: 45, BROKER_SPEED: [115, 165], BROKER_GRAB: 1.0, BROKER_REST: 5,   // 2026-11-02 강화: 0:55→0:45, 100~145→115~165, 쉬는 시간 7→5
-  TRUST_BROKER: -12, BROKER_BLOCK_SCORE: 150, BROKER_CATCH_BONUS: 300, BROKER_CATCH_TIME: 0.5,
+  TRUST_BROKER: -12, BROKER_BLOCK_SCORE: 150, BROKER_CATCH_BONUS: 300, BROKER_CATCH_TIME: 0.5, BROKER_BLOCK_SEC: 1.0, BROKER_BLOCK_CD: 2.5,   // 달이가 닿으면 꼼수 1초 멈칫(검거 아님), 2.5초에 한 번
   REQ_FIRST_AT: 2, REQ_INTERVAL: 6.0, REQ_LIMIT: 35, REQ_EMPTY_FILL: 1,   // 기본값. 실제 구간별 값은 director.js
   COMBO_STEP: 0.1, COMBO_MAX_MULT: 2.0,   // 제때 연속 납품마다 점수 +10%, 최대 ×2
   // 인증제 (2026-11-02): 인증된 공방에서만 구매. 인증은 CERT_SEC초 뒤 만료, 남은 시간이 CERT_RENEW_AT초 이하면 재검증 가능
@@ -51,7 +51,7 @@ G.C = {
   FORECAST_SEC: 15,                                  // 사건 예보: 시작 15초 전
   PREP_BONUS: 100, PREP_TRUST: 2,                    // 예보 보고 미리 준비한 물건을 사건 중 납품하면 보너스                             // 원자재 가격 폭등 배율
   GIFT_STEP: 7, GIFT_TRUST: 3, GIFT_SCORE: 100,   // 세금 저금통: 7만원마다 마을 선물
-  GRADE: { S: [28000, 80], A: [18000, 60], B: [9000, 0] },   // 개편(2026-11-02): 가성비 보너스로 점수 규모가 커져 다시 맞춤 (브로커 추가 후 봇 0.7 쫓음 ≈ 23,800 · 안 쫓음 ≈ 21,400 · 0.45 ≈ 13,200)
+  GRADE: { S: [24000, 80], A: [16000, 60], B: [8000, 0] },   // 개편(2026-11-02): 가성비 보너스로 점수 규모가 커져 다시 맞춤 (브로커 추가 후 봇 0.7 쫓음 ≈ 23,800 · 안 쫓음 ≈ 21,400 · 0.45 ≈ 13,200)
 };
 G.FONT = 'Galmuri11';
-G.VERSION = '개편안 v2.0 · 새싹 공방';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)
+G.VERSION = '개편안 v2.1 · 꼼수 길막기';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)

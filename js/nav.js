@@ -47,7 +47,8 @@ G.nav = (() => {
       if (G.broker.hit(S, p)) { G.broker.request(S); return; }
       const t = targetOf(S, p); if (t) { go(S, t); return; }
     }
-    if (G.input.hit(' ')) {                                           // 키보드: 가장 가까운 새 공방 실사
+    if (G.input.hit(' ')) {                                           // 키보드: 꼼수가 달리면 나르미 출동, 아니면 가장 가까운 새 공방 실사
+      if (S.bk && (S.bk.state === 'run' || S.bk.state === 'grab')) { G.broker.request(S); return; }
       const d = G.dali; let best = null, bd = 1e9;
       for (const sh of S.shops) {
         if (G.shops.whyNot(S, sh)) continue;
