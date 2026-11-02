@@ -22,7 +22,9 @@ G.screens = (() => {
 
   // ---------- 타이틀 ----------
   const BTN_START = { x: W / 2 - 100, y: 360, w: 200, h: 48 };
+  const BTN_INTRO = { x: W / 2 - 70, y: 420, w: 140, h: 30 };          // 상황 소개 다시 보기
   function titleUpdate() {
+    if (ui.clicked(BTN_INTRO)) { G.intro.start(() => { G.screen = 'title'; }); return; }
     if (ui.clicked(BTN_START) || G.input.hit('enter') || G.input.hit(' ')) { if (G.intro.seen()) newGame(); else G.intro.start(newGame); }
   }
   function ciPlate(ctx, key, cx, y, h) {
@@ -61,6 +63,7 @@ G.screens = (() => {
     G.spr.drawChar(ctx, 'narmi', 'walk', 's', t, W / 2 - 60, 330, 1.25);
     G.spr.drawChar(ctx, 'dali', 'walk', 's', t, W / 2 + 60, 330, 1.25);
     ui.button(ctx, BTN_START, '작전 시작', { size: 20 });
+    ui.button(ctx, BTN_INTRO, '소개 다시 보기', { size: 12, fill: '#cfd8e3', hot: '#fff' });
     const best = G.store.get('best', 0);
     if (best) T(ctx, '최고 점수 ' + best, W - 20, H - 20, 12, '#ffe48a', 'right');
     if (G.VERSION) T(ctx, G.VERSION, 16, H - 20, 12, '#8fa3b8', 'left');

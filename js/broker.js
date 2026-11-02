@@ -205,5 +205,5 @@ G.broker = (() => {
     ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('꼼수!', b.w - 19, -5);
     ctx.strokeStyle = blink ? '#e5533d' : 'rgba(229,83,61,.5)'; ctx.lineWidth = 2; ctx.strokeRect(-2, -2, b.w + 4, b.h + 4); ctx.lineWidth = 1;
   }
-  return { init, update, draw, hit, request, caught, bubbleMark };
+  return { init, update, draw, hit, request, caught, bubbleMark, raccoon };
 })();
