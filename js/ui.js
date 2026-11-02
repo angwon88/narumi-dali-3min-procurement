@@ -45,7 +45,9 @@ G.ui = (() => {
     ctx.lineWidth = 1;
     ctx.save(); ctx.beginPath(); ctx.arc(nx, ny, 13, 0, Math.PI * 2); ctx.clip();
     G.spr.drawChar(ctx, 'narmi', 'rot', 's', 0, nx, ny + 30, 0.6); ctx.restore();
-    T(ctx, ready ? '검증 OK' : Math.ceil(cd) + '초', nx + 22, 22, 12, ready ? '#9be37a' : '#8fa3b8', 'left');
+    T(ctx, ready ? '검증 OK' : Math.ceil(cd) + '초', nx + 22, 14, 12, ready ? '#9be37a' : '#8fa3b8', 'left');
+    const nextLv = C.DATA_LV[S.dataLv || 0];                         // 나르미 데이터: 다음 단계까지
+    T(ctx, '데이터 ' + (S.data || 0) + (nextLv ? '/' + nextLv : ' MAX'), nx + 22, 31, 12, '#cfa8ff', 'left');
     T(ctx, '‖', C.VIEW.w - 22, 22, 18, '#fff');
   }
   // 콤보 배지 (HUD 바로 아래 왼쪽)

@@ -1,6 +1,8 @@
 /* 공방: 가격 · 영업 상태 · 구매 · 나르미 검증 · 수상한 공방 (기획서 3.3, 3.4, 3.6, 3.7)
    상태(status): open 영업 / closing 속인 뒤 사라지는 중 / caught 적발 연출 / empty 빈 칸(REOPEN_SEC 뒤 새 공방)
    경쟁 유지(기획서 3.8): 행마다 연속 구매 수 → 3이면 옆 공방 경고, 5면 옆 공방 폐업 + 남은 공방 독점(가격 ×1.3)
+   인증제(기획서 3.6, 2026-11-02): 인증된 공방(certT > 0)에서만 구매. 처음 문 연 공방은 인증 상태, 새로 개업한 공방은 미인증.
+     인증은 CERT_SEC초 뒤 만료 → 나르미로 재검증. 수상한 공방은 검증하면 적발, 방치하면 FAKE_BID_SEC초 뒤 부정 낙찰.
    혁신은 이후 작업에서 얹는다. */
 'use strict';
 G.shops = (() => {
@@ -12,13 +14,15 @@ G.shops = (() => {
     S.shops = G.world.shops.map(w => ({
       w, idx: w.idx, cat: w.cat.id, mults: {}, status: 'open', fake: false, verified: false,
       fx: null, openFx: null, stampT: 0, flagT: 0, t: Math.random() * 3, closeT: 0, revealT: 0, reopenT: 0,
-      lonely: false, monopoly: false, innov: false, growT: null,
+      lonely: false, monopoly: false, innov: false, growT: null, certT: 0, bidT: 0,
     }));
+    for (const sh of S.shops) if (S.openCats.has(sh.cat)) certify(sh, U.rand(C.CERT_START[0], C.CERT_START[1]));
     S.streak = [0, 1, 2, 3].map(() => ({ shop: -1, n: 0 }));
     S.streakWarn = C.STREAK_WARN; S.streakClose = C.STREAK_CLOSE;
     for (let r = 0; r < 4; r++) rollRow(S, r);
     S.priceClock = C.PRICE_REROLL_SEC;
-    S.inspectCD = 0; S.inspectCDMax = C.INSPECT_COOLDOWN;
+    S.inspectCD = 0; S.inspectCDMax = C.INSPECT_COOLDOWN; S.certSec = C.CERT_SEC;
+    S.data = 0; S.dataLv = 0; S.dualInspect = false;
     S.fakeClock = 0; S.firstFakeDone = false; S.firstScam = false;
     S.buy = { shop: null, dwell: 0, warned: false };
   }
@@ -34,12 +38,15 @@ G.shops = (() => {
       if (!b.fake) { let n = 0; do b.mults[it.id] = rollNormal(); while (!a.fake && Math.abs(a.mults[it.id] - b.mults[it.id]) < 0.05 && ++n < 50); }
     }
   }
+  // 인증: 남은 시간 t초. verified는 그리기·안내용 표시값
+  function certify(sh, t) { sh.certT = t; sh.verified = t > 0; }
+  const certified = sh => sh.innov || sh.certT > 0;
   const isOpen = (S, sh) => sh.status === 'open' && S.openCats.has(sh.cat);
   const itemsOf = sh => G.ITEMS.filter(i => i.cat === sh.cat);
   const price = (sh, itemId) => round1(G.ITEM[itemId].price * (sh.mults[itemId] || 1) * (sh.monopoly ? C.MONOPOLY_MULT : 1) * (sh.innov ? C.INNOV_PRICE_MULT : 1) * G.events.priceMult(sh));
   const partner = (S, sh) => S.shops[sh.idx ^ 1];
 
-  function opened(S, cat) { for (const sh of S.shops) if (sh.cat === cat) sh.openFx = 0; }
+  function opened(S, cat) { for (const sh of S.shops) if (sh.cat === cat) { sh.openFx = 0; certify(sh, U.rand(C.CERT_START[0], C.CERT_START[1])); } }
 
   // 20초마다 가격 다시 뽑기. 바뀐 공방 간판은 1.5초 반짝이며 ▲(비싸짐)·▼(싸짐) 표시
   function reroll(S) {
@@ -54,7 +61,7 @@ G.shops = (() => {
 
   // ---------- 새 공방 개업 (빈 칸 재개업 · 수상한 공방 교체) ----------
   function newShop(S, sh, fake) {
-    Object.assign(sh, { status: 'open', fake, verified: false, fx: null, openFx: 0, stampT: 0, flagT: FLAG_SEC, closeT: 0, revealT: 0, reopenT: 0, lonely: false, monopoly: false, closeWhy: null });
+    Object.assign(sh, { status: 'open', fake, verified: false, certT: 0, bidT: fake ? C.FAKE_BID_SEC : 0, fx: null, openFx: 0, stampT: 0, flagT: FLAG_SEC, closeT: 0, revealT: 0, reopenT: 0, lonely: false, monopoly: false, closeWhy: null });
     const p0 = partner(S, sh);
     if (p0.monopoly) { p0.monopoly = false; const b = p0.w.body; G.fx.add(S, b.x + b.w / 2, b.y + 8, '경쟁 공방이 생겨 독점이 풀렸어요', '#9be37a'); }
     S.streak[sh.idx >> 1] = { shop: -1, n: 0 };
@@ -139,6 +146,11 @@ G.shops = (() => {
     const sh = S.shops.find(s => isOpen(S, s) && U.inRect(dali.x, dali.y, s.w.door)) || null;
     if (sh !== B.shop) { B.shop = sh; B.dwell = 0; B.warned = false; }
     if (!sh) return;
+    if (!certified(sh)) {                                          // 인증제: 미인증 공방에서는 못 삼
+      B.dwell = 0;
+      if (!B.warned && !dali.moving) { const d = sh.w.door; G.fx.add(S, d.x + d.w / 2, d.y - 6, sh.certExpired ? '인증 만료 · 공방을 눌러 재검증' : '미인증 공방 · 공방을 눌러 나르미 검증', '#ffd6a0'); B.warned = true; }
+      return;
+    }
     const item = wanted(S, sh);
     const full = dali.bag.length >= S.bagCap;
     const press = G.input.hit('e') || G.input.hit('enter');
@@ -170,6 +182,12 @@ G.shops = (() => {
       if (sh.openFx != null && (sh.openFx += dt) > 0.8) sh.openFx = null;
       if (sh.growT != null) sh.growT += dt;
       if (sh.flagT > 0) sh.flagT = Math.max(0, sh.flagT - dt);
+      if (sh.status === 'open' && S.openCats.has(sh.cat) && !sh.innov && sh.certT > 0) {   // 인증 시간 감소 → 만료
+        sh.certT = Math.max(0, sh.certT - dt); sh.verified = sh.certT > 0;
+        if (sh.certT === 0) { sh.certExpired = true; S.stats.certExpired = (S.stats.certExpired || 0) + 1;
+          const b = sh.w.body; G.fx.add(S, b.x + b.w / 2, b.y + 110, '인증 만료 · 재검증 필요', '#ffd6a0'); }
+      }
+      if (sh.status === 'open' && sh.fake && sh.bidT > 0 && (sh.bidT -= dt) <= 0) bidRig(S, sh);
       if (sh.status === 'open' && sh.closeT > 0 && (sh.closeT += dt) >= C.FAKE_VANISH_SEC) {   // 속인 수상한 공방이 사라짐
         sh.status = 'closing'; sh.closeT = 0; sh.closeWhy = 'scam';
         const b = sh.w.body; G.fx.add(S, b.x + b.w / 2, b.y + 10, '앗, 공방이 문을 닫았어요?', '#ffd6a0');
@@ -182,6 +200,15 @@ G.shops = (() => {
     }
     updateBuy(S, dt);
   }
+  // 부정 낙찰: 방치된 수상한 공방이 그 업종 요청 하나를 따내고 납품하지 않은 채 사라짐 (요청이 없으면 생길 때까지 기다림)
+  function bidRig(S, sh) {
+    const r = G.requests.active(S).filter(q => G.ITEM[q.item].cat === sh.cat).sort((a, b) => a.left - b.left)[0];
+    if (!r) { sh.bidT = 0.5; return; }
+    G.requests.stolen(S, r, sh);
+    sh.status = 'closing'; sh.closeT = 0; sh.closeWhy = 'scam';
+    const b = sh.w.body; G.fx.add(S, b.x + b.w / 2, b.y + 110, '부정 낙찰! 납품 없이 사라졌어요', '#ff8a7a', 16);
+  }
+
   // 혁신 공방으로 성장 (레벨업 혁신제품 카드)
   function makeInnov(S, sh) {
     sh.innov = true; sh.growT = 0; sh.lonely = false; sh.trial = C.INNOV_TRIAL; sh.mature = false;
@@ -190,15 +217,15 @@ G.shops = (() => {
     G.director.banner(S, who + G.U.josa(who, '이', '가') + ' 혁신 공방으로 성장했어요!', '혁신제품 시범구매 · 조달청이 첫 구매자가 되어 줬어요');
     G.audio.play('gift');
   }
-  function toEmpty(sh) { Object.assign(sh, { status: 'empty', fake: false, verified: false, reopenT: C.REOPEN_SEC, closeT: 0, revealT: 0, flagT: 0, lonely: false, monopoly: false }); }
+  function toEmpty(sh) { Object.assign(sh, { status: 'empty', fake: false, verified: false, certT: 0, bidT: 0, certExpired: false, reopenT: C.REOPEN_SEC, closeT: 0, revealT: 0, flagT: 0, lonely: false, monopoly: false }); }
 
   // ---------- 나르미 검증 (기획서 3.6) ----------
   const shopAt = (S, p) => S.shops.find(sh => U.inRect(p.x, p.y, sh.w.body)) || null;
   function whyNot(S, sh) {
     if (sh.status === 'empty' || sh.status === 'closing' || sh.status === 'caught') return '빈 가게예요';
     if (!isOpen(S, sh)) return '아직 문을 안 열었어요';
-    if (sh.verified) return '이미 검증한 공방이에요';
-    if (sh.innov) return '혁신 공방은 이미 검증됐어요';
+    if (sh.innov) return '혁신 공방은 장기 인증이에요';
+    if (sh.certT > C.CERT_RENEW_AT) return '인증이 넉넉해요 (' + Math.ceil(sh.certT) + '초)';
     if (G.narmi.busy() || S.inspectCD > 0) return '나르미가 숨 고르는 중 (' + Math.ceil(S.inspectCD) + '초)';
     return null;
   }
@@ -214,6 +241,11 @@ G.shops = (() => {
   function inspected(S, sh) {
     const b = sh.w.body;
     if (sh.status !== 'open') return;                                   // 그사이 사라짐
+    addData(S);
+    if (S.dualInspect && !sh._dual) {                                   // 데이터 Lv3: 옆 공방도 함께 분석
+      const p = partner(S, sh);
+      if (p.status === 'open' && isOpen(S, p) && !p.innov && p.certT <= C.CERT_RENEW_AT) { p._dual = true; inspected(S, p); p._dual = false; }
+    }
     if (sh.fake) {
       sh.status = 'caught'; sh.revealT = 0; sh.closeT = 0;
       S.catchStreak = (S.catchStreak || 0) + 1;
@@ -232,17 +264,31 @@ G.shops = (() => {
       G.audio.play('catch');
       G.fx.add(S, b.x + b.w / 2, b.y + 8, '마을 신뢰 +' + C.TRUST_CATCH, '#9be37a');
     } else {
-      sh.verified = true; sh.stampT = 0;
-      G.fx.add(S, b.x + b.w / 2, b.y + 8, '✔ 거래 기록 정상', '#9be37a');
+      const renew = sh.certExpired || sh.certT > 0;
+      certify(sh, S.certSec); sh.certExpired = false; sh.stampT = 0;
+      S.stats[renew ? 'renewed' : 'certified'] = (S.stats[renew ? 'renewed' : 'certified'] || 0) + 1;
+      G.fx.add(S, b.x + b.w / 2, b.y + 110, renew ? '✔ 재검증 완료 · 인증 ' + S.certSec + '초' : '✔ 거래 기록 정상 · 인증 ' + S.certSec + '초', '#9be37a');
       G.audio.play('ok');
     }
+  }
+  // 나르미 데이터 성장: 검증할 때마다 +1, DATA_LV마다 단계 상승
+  function addData(S) {
+    S.data++;
+    const lv = C.DATA_LV.filter(n => S.data >= n).length;
+    if (lv <= S.dataLv) return;
+    S.dataLv = lv;
+    const L = [null,
+      ['나르미 데이터 분석 Lv1', '쉬는 시간이 짧아졌어요', () => { S.inspectCDMult *= 0.75; }],
+      ['나르미 데이터 분석 Lv2', '위험 감지: 수상한 공방에 ? 표시', () => { S.fakeHint = true; }],
+      ['나르미 데이터 분석 Lv3', '한 번에 같은 종류 두 공방을 분석', () => { S.dualInspect = true; }]][lv];
+    L[2](); G.director.banner(S, L[0] + '!', '검증 ' + S.data + '회 · ' + L[1]); G.narmi.say('데이터가 쌓였어요!', 1.6); G.audio.play('levelup');
   }
   function handleInspectInput(S) {
     for (const p of G.input.taps) { const sh = shopAt(S, p); if (sh) { request(S, sh); return; } }
     if (G.input.hit(' ')) {
       const d = G.dali; let best = null, bd = 1e9;
       for (const sh of S.shops) {
-        if (!isOpen(S, sh) || sh.verified) continue;
+        if (whyNot(S, sh)) continue;                                   // 검증할 수 있는 공방 중 가장 가까운 곳
         const c = sh.w.door, dist = Math.hypot(c.x + c.w / 2 - d.x, c.y + c.h / 2 - d.y);
         if (dist < bd) { bd = dist; best = sh; }
       }
@@ -329,6 +375,28 @@ G.shops = (() => {
       ctx.globalAlpha = 1 - k; ctx.fillStyle = '#fff6b0'; ctx.fillRect(x, y - 3, 1, 7); ctx.fillRect(x - 3, y, 7, 1); ctx.globalAlpha = 1;
     }
   }
+  // 인증 표시: 인증 중이면 건물 아래 남은 시간 막대, 미인증·만료면 가격표 위 회색 띠 + 자물쇠
+  function certLook(ctx, S, sh) {
+    if (sh.innov || sh.status !== 'open') return;
+    const b = sh.w.body, x = b.x + 6, w = b.w - 12, y = b.y + 64;   // 건물 바로 아래 길 위
+    if (sh.certT > 0) {
+      const f = sh.certT / S.certSec, low = sh.certT <= C.CERT_RENEW_AT;
+      const blink = sh.certT <= 8 && Math.floor(sh.t * 4) % 2 === 0;
+      ctx.fillStyle = 'rgba(20,24,30,.7)'; ctx.fillRect(x - 1, y - 1, w + 2, 7);
+      ctx.fillStyle = blink ? '#fff' : f > 0.5 ? '#46b04a' : low && f > 0.2 ? '#f2b632' : '#e5533d';
+      ctx.fillRect(x, y, Math.round(w * Math.min(1, f)), 5);
+      if (low) { ctx.fillStyle = '#fff'; ctx.fillRect(x + Math.round(w * C.CERT_RENEW_AT / S.certSec), y - 1, 1, 7); }   // 재검증 가능 표시선
+      if (sh.stampT < 1) stamp(ctx, sh, '✔ 인증', '#2e9b3a', sh.w.tagX + TAG_W / 2, b.y + 44);   // 인증 순간 도장
+      return;
+    }
+    // 미인증: 가격표를 어둡게 + 자물쇠 띠 (가격은 보여서 검증할 가치가 있는지 판단 가능)
+    const tx = sh.w.tagX, blink = Math.floor(sh.t * 2) % 2 === 0;
+    ctx.fillStyle = 'rgba(40,44,52,.45)'; ctx.fillRect(tx, b.y + 25, TAG_W, 34);
+    ctx.fillStyle = sh.certExpired ? (blink ? '#c0392b' : '#8a2a20') : '#4a4f57'; ctx.fillRect(tx - 2, b.y + 15, TAG_W + 4, 12);
+    ctx.fillStyle = '#ffd84a'; ctx.fillRect(tx + 3, b.y + 19, 7, 6); ctx.strokeStyle = '#ffd84a'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(tx + 6.5, b.y + 19, 2.5, Math.PI, 0); ctx.stroke(); ctx.lineWidth = 1;
+    T(ctx, sh.certExpired ? '인증 만료' : '미인증', tx + TAG_W / 2 + 5, b.y + 21, 12, '#fff');
+  }
   function emptyLot(ctx, sh, S) {
     const b = sh.w.body;
     ctx.fillStyle = '#6fae4a'; ctx.fillRect(b.x - 3, b.y - 2, b.w + 6, b.h + 2);
@@ -378,13 +446,13 @@ G.shops = (() => {
       }
       if (sh.openFx != null) shutter(ctx, b, 1 - sh.openFx / 0.8, '');
       if (sh.flagT > 0) flag(ctx, sh);
-      if (sh.fake && S.fakeHint) {                 // '나르미의 눈썰미' 카드: 수상한 공방 간판에 ?
+      if (sh.fake && S.fakeHint) {                 // 나르미 데이터 Lv2: 수상한 공방 간판에 ?
         const qx = sh.w.wndX + 11, qy = b.y + 8 + Math.sin(sh.t * 4) * 2;
         ctx.fillStyle = '#3a3a3a'; ctx.beginPath(); ctx.arc(qx, qy, 9, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.arc(qx, qy, 8, 0, Math.PI * 2); ctx.fill();
         T(ctx, '?', qx, qy + 1, 12, '#2a2416');
       }
-      if (sh.verified) stamp(ctx, sh, '✔ 검증', '#2e9b3a', sh.w.tagX + TAG_W / 2, b.y + 60);
+      certLook(ctx, S, sh);
     }
   }
   function drawHover(ctx, S) {
@@ -396,5 +464,5 @@ G.shops = (() => {
     ctx.strokeStyle = ok ? '#ffd84a' : 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
     ctx.strokeRect(b.x - 3, b.y - 3, b.w + 6, b.h + 6); ctx.setLineDash([]); ctx.lineWidth = 1;
   }
-  return { makeInnov, init, update, draw, drawHover, price, isOpen, rollRow, opened, inspected, handleInspectInput, shopAt, spawnFake, newShop };
+  return { certified, request, whyNot, makeInnov, init, update, draw, drawHover, price, isOpen, rollRow, opened, inspected, handleInspectInput, shopAt, spawnFake, newShop };
 })();

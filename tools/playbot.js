@@ -18,11 +18,18 @@ window.PlayBot = {
       if (mode === 'buy' && (d.bag.length >= S.bagCap || (!uncovered.length && d.bag.length))) mode = 'deliver';
       if (mode === 'deliver' && !d.bag.length) mode = 'buy';
       target = null;
+      // 나르미 검증 (인증제): 미인증 새 공방 → 요청 있는 업종의 만료 임박 공방 순
+      if (inspect !== 'never' && S.inspectCD <= 0 && !G.narmi.busy()) {
+        const need = new Set(act.map(r => G.ITEM[r.item].cat));
+        const ok = S.shops.filter(s => !G.shops.whyNot(S, s));
+        const pick = ok.filter(s => s.certT === 0).sort((a, b) => (need.has(b.cat) - need.has(a.cat)))[0] || ok.filter(s => need.has(s.cat)).sort((a, b) => a.certT - b.certT)[0];
+        if (pick) G.shops.request(S, pick);
+      }
       if (mode === 'buy') {
         for (const r of uncovered) {
           const cand = S.shops.filter(s => G.shops.isOpen(S, s) && s.cat === G.ITEM[r.item].cat && !(avoidFake && suspicious(s)));
-          if (inspect) for (const s of S.shops) if (G.shops.isOpen(S, s) && suspicious(s) && !s.verified && S.inspectCD <= 0 && !G.narmi.busy()) G.narmi.send(S, s);
-          const sh = cand.sort((a, b) => G.shops.price(a, r.item) - G.shops.price(b, r.item))[0];
+          const cert = cand.filter(s => G.shops.certified(s));
+          const sh = (cert.length ? cert : cand).sort((a, b) => G.shops.price(a, r.item) - G.shops.price(b, r.item))[0];   // 인증된 곳이 없으면 미인증 문 앞에서 검증을 기다림
           if (sh) { target = { x: sh.w.door.x + 20, y: sh.w.door.y + 16 }; break; }
         }
       } else {
@@ -38,7 +45,7 @@ window.PlayBot = {
       while (S.pendingLevels > 0) { G.levelup.open(S); G.levelup.choose(S, S.offer[0]); G.screen = 'pause'; }
     }
     const st = S.stats;
-    return { 배달: S.delivered, 놓침: st.reqExpired, 속음: st.scammed || 0, 적발: st.caught || 0, 요청: st.reqMade, 점수: S.score, 신뢰: Math.round(S.trust), 아낀세금: S.saved, 낭비: S.wasted, 레벨: S.level, 선물: (S.gifts || []).length, 최대콤보: S.maxCombo || 0 };
+    return { 배달: S.delivered, 놓침: st.reqExpired, 속음: (st.scammed || 0) + (st.stolen || 0), 적발: st.caught || 0, 검증: S.data, 데이터단계: S.dataLv, 만료: st.certExpired || 0, 요청: st.reqMade, 점수: S.score, 신뢰: Math.round(S.trust), 아낀세금: S.saved, 낭비: S.wasted, 레벨: S.level, 선물: (S.gifts || []).length, 최대콤보: S.maxCombo || 0 };
   },
   avg(opt, n = 5) {
     const rs = []; for (let i = 0; i < n; i++) rs.push(this.run(opt));

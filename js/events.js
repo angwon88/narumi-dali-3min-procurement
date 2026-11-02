@@ -130,7 +130,7 @@ G.events = (() => {
       for (const sh of S.shops) {
         if (!G.shops.isOpen(S, sh) || sh.fake) continue;
         const b = sh.w.body, ok = S.stabilized.has(sh.cat);
-        const ty = sh.innov ? b.y + 84 : b.y + 66;      // 혁신 공방은 '시범 사용' 표시 아래로
+        const ty = sh.innov ? b.y + 84 : b.y + 72;      // 혁신 공방은 '시범 사용' 표시 아래로
         ctx.fillStyle = ok ? '#2e9b3a' : '#d9342b'; ctx.fillRect(b.x + b.w / 2 - 30, ty, 60, 14);
         T(ctx, ok ? '비축 방출' : '재료값 ×' + S.surgeMult, b.x + b.w / 2, ty + 7, 12, '#fff');
       }

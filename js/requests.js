@@ -96,6 +96,18 @@ G.requests = (() => {
     if (!S.firstScam) { S.firstScam = true; G.narmi.say('연기도 안 나던 공방이었는데…', 2.5); }
   }
 
+  // 부정 낙찰 (기획서 3.7): 방치된 수상한 공방이 이 요청을 따내고 납품하지 않음 → 요청 실패·신뢰도 -15·마을 피해
+  function stolen(S, r, sh) {
+    r.state = 'expired'; r.fraud = 'empty';
+    G.score.trust(S, C.TRUST_FRAUD); G.score.breakCombo(S); G.villages.onFail(S, r.vid);
+    S.stats.stolen = (S.stats.stolen || 0) + 1; S.catchStreak = 0;
+    const y = r.vill.yard;
+    G.fx.add(S, y.x + y.w / 2, y.y + 16, '미납! 부정 낙찰 업체였어요', '#ff8a7a', 16);
+    G.fx.add(S, y.x + y.w / 2, y.y + 16, '신뢰 ' + C.TRUST_FRAUD, '#ff8a7a');
+    G.audio.play('scam');
+    if (!S.firstStolen) { S.firstStolen = true; G.narmi.say('연기도 안 나던 새 공방이었는데…', 2.6); }
+  }
+
   // 혁신제품 시범 사용 (기획서 3.9): 혁신 공방이 된 뒤 첫 INNOV_TRIAL건은 시범 사용.
   // INNOV_TRIAL_FAIL 확률로 '보완 필요' → 그 물건은 못 쓰지만 구매면책으로 신뢰도·콤보 손해 없음(요청은 그대로).
   // 시범 사용을 마치면 '성공 판정' → 이후 점수 ×INNOV_MATURE_MULT. true를 돌려주면 이번 납품은 보완 필요.
@@ -137,5 +149,5 @@ G.requests = (() => {
     }
   }
 
-  return { init, update, spawn, active, ofVillage, deliver };
+  return { init, update, spawn, active, ofVillage, deliver, stolen };
 })();

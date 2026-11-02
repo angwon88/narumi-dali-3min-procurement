@@ -5,7 +5,7 @@ G.C = {
   VIEW: { w: 960, h: 540 }, HUD_H: 44, DT: 1 / 60,
   GAME_SECONDS: 180, END_HOLD: 1.5,
   DALI_SPEED: 170, NARMI_SPEED: 420, CHAR_SCALE: 0.75,
-  INSPECT_TIME: 1.0, INSPECT_COOLDOWN: 6,
+  INSPECT_TIME: 1.0, INSPECT_COOLDOWN: 3.5,   // 인증제 도입으로 6 → 3.5
   BUY_DWELL: 0.4, BAG_START: 2, BAG_MAX: 4,
   TRUST_START: 50, TRUST_DANGER: 25,
   DELIVER_BASE: 100, TIME_BONUS: 50, SAVING_MULT: 20,
@@ -20,6 +20,10 @@ G.C = {
   MAX_REQ_PER_VILLAGE: 2, MAX_REQ_TOTAL: 6,
   REQ_FIRST_AT: 2, REQ_INTERVAL: 6.0, REQ_LIMIT: 35, REQ_EMPTY_FILL: 1,   // 기본값. 실제 구간별 값은 director.js
   COMBO_STEP: 0.1, COMBO_MAX_MULT: 2.0,   // 제때 연속 납품마다 점수 +10%, 최대 ×2
+  // 인증제 (2026-11-02): 인증된 공방에서만 구매. 인증은 CERT_SEC초 뒤 만료, 남은 시간이 CERT_RENEW_AT초 이하면 재검증 가능
+  CERT_SEC: 40, CERT_START: [20, 40], CERT_RENEW_AT: 20,
+  FAKE_BID_SEC: 20,                 // 수상한 공방을 이 시간 안에 적발 못 하면 '부정 낙찰' (요청 하나 미납)
+  DATA_LV: [3, 6, 10],              // 나르미 데이터 성장: 검증 누적 횟수
   STOCK_COST: 3, STOCK_MAX: 3, STOCK_DWELL: 0.5,   // 원자재 비축: 저금통 3만원 → 1상자
   SURGE: { mult: 1.6 },
   // 사건 켜고 끄기 (false면 그 사건이 아예 일어나지 않음 — 빼고 싶을 때 여기 한 곳만 바꾸면 됨)
