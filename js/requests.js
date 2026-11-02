@@ -126,8 +126,14 @@ G.requests = (() => {
     if (sh.trial === 0) {
       sh.mature = true; sh.stampT = 0;
       const who = sh.w.cat.name + '공방 ' + sh.w.side;
-      G.director.banner(S, who + ' 혁신제품 성공 판정!', '시범 사용 통과 · 이제 납품 점수 ×' + C.INNOV_MATURE_MULT);
-      G.audio.play('gift');
+      G.director.banner(S, who + ' 혁신제품 성공 판정!', '시범 사용 통과 · 공공기관 판로 열림 · 이제 납품 점수 ×' + C.INNOV_MATURE_MULT);
+      G.audio.play('gift'); setTimeout(() => G.audio.play('levelup'), 250);
+      // 2026-11-02 하이리턴 연출: 금빛 번쩍임 + 공방·마을 양쪽에서 금빛 파편 + 큰 배율 글자
+      const b = sh.w.body;
+      S.flashT = 0.5; S.shakeT = Math.max(S.shakeT || 0, 0.25);
+      G.fx.burst(S, b.x + b.w / 2, b.y + 40, true, 60); G.fx.burst(S, y.x + y.w / 2, y.y + 10, true, 40);
+      G.fx.add(S, b.x + b.w / 2, b.y + 96, '★ 성공 판정! 점수 ×' + C.INNOV_MATURE_MULT, '#ffd84a', 28);
+      S.stats.innovMature = (S.stats.innovMature || 0) + 1;
     }
     return fail;
   }

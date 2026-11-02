@@ -32,7 +32,9 @@ G.score = (() => {
     }
     G.audio.play('deliver', S.combo);
     const v = r.vill.yard;
-    G.fx.add(S, v.x + v.w / 2, v.y + 16, '+' + pts + (S.combo >= 2 ? '  콤보 ' + S.combo + '!' : ''), '#ffe48a', 16);
+    const star = sh && sh.mature ? '  ★혁신 ×' + C.INNOV_MATURE_MULT : '';   // 성공 판정 뒤 혁신 납품은 금빛 파편과 함께
+    G.fx.add(S, v.x + v.w / 2, v.y + 16, '+' + pts + star + (S.combo >= 2 ? '  콤보 ' + S.combo + '!' : ''), '#ffe48a', 16);
+    if (star) G.fx.burst(S, v.x + v.w / 2, v.y + 10, true, 24);
     if (saving > 0) G.fx.add(S, v.x + v.w / 2, v.y + 16, '세금 +' + saving + '만원', '#9be37a');
   }
   return { init, trust, delivered, comboMult, breakCombo };

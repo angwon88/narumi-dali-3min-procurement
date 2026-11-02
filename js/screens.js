@@ -16,6 +16,7 @@ G.screens = (() => {
     const best = G.store.get('best', 0);
     G.S.newBest = G.S.score > best;
     if (G.S.newBest) G.store.set('best', G.S.score);
+    G.result.start(G.S);
     G.screen = 'result';
   }
 
@@ -30,6 +31,21 @@ G.screens = (() => {
     ctx.fillStyle = '#fff'; ctx.fillRect(cx - w / 2 - 10, y - 6, w + 20, h + 12);
     ctx.imageSmoothingEnabled = true; ctx.drawImage(im, cx - w / 2, y, w, h); ctx.imageSmoothingEnabled = false;
   }
+  // 이 게임에 담긴 조달청 제도 (2026-11-02 주제 가시성): 결과 화면 '실제로는?' 태그와 같은 색
+  const BADGES = [['나라장터', '#2f4f8a'], ['페이퍼컴퍼니 검증', '#d9342b'], ['혁신제품 시범구매', '#e0a800'], ['원자재 비축', '#2e9b3a']];
+  function titleBadges(ctx) {
+    ctx.font = '12px ' + G.FONT;
+    const pad = 12, gap = 8, ws = BADGES.map(([s]) => Math.ceil(ctx.measureText(s).width) + pad * 2);
+    let x = W / 2 - (ws.reduce((a, b) => a + b, 0) + gap * (ws.length - 1)) / 2;
+    const y = 232;
+    BADGES.forEach(([s, col], i) => {
+      ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x + 2, y + 3, ws[i], 22);
+      ctx.fillStyle = col; ctx.fillRect(x, y, ws[i], 22);
+      ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(x, y, ws[i], 2);
+      T(ctx, s, x + ws[i] / 2, y + 12, 12, '#fff');
+      x += ws[i] + gap;
+    });
+  }
   function titleDraw(ctx, t) {
     G.world.draw(ctx);
     ctx.fillStyle = 'rgba(16,24,36,.62)'; ctx.fillRect(0, 0, W, H);
@@ -41,6 +57,7 @@ G.screens = (() => {
     ctx.font = '56px "Galmuri11 Bold", ' + G.FONT;
     ctx.fillStyle = '#2f4f8a'; ctx.fillText('3분 조달작전', W / 2 + 4, 186 + 4);
     ctx.fillStyle = '#ffd84a'; ctx.fillText('3분 조달작전', W / 2, 186);
+    titleBadges(ctx);
     G.spr.drawChar(ctx, 'narmi', 'walk', 's', t, W / 2 - 60, 330, 1.25);
     G.spr.drawChar(ctx, 'dali', 'walk', 's', t, W / 2 + 60, 330, 1.25);
     ui.button(ctx, BTN_START, '작전 시작', { size: 20 });
@@ -74,6 +91,7 @@ G.screens = (() => {
     G.events.update(S, dt);
     S.comboT += dt;
     if (S.shakeT > 0) S.shakeT -= dt;
+    if (S.flashT > 0) S.flashT -= dt;
     if (S.trust <= C.TRUST_DANGER) { S.warnT = (S.warnT || 0) - dt; if (S.warnT <= 0) { G.audio.play('warn'); S.warnT = 2; } } else S.warnT = 0;
     if (S.timeLeft <= 10 && Math.ceil(S.timeLeft) !== Math.ceil(S.timeLeft + dt)) G.audio.play('tick');
     G.fx.update(S, dt);
@@ -96,6 +114,7 @@ G.screens = (() => {
     G.fx.draw(ctx, G.S);
     G.events.drawOverlay(ctx, G.S);
     ctx.restore();
+    if (S0.flashT > 0) { ctx.fillStyle = 'rgba(255,216,74,' + (S0.flashT * 0.9).toFixed(2) + ')'; ctx.fillRect(0, 0, W, H); }   // 혁신 성공 판정 금빛 번쩍임
     G.villages.dangerEdge(ctx, G.S);
     G.director.draw(ctx, G.S);
     ui.hud(ctx, G.S);
@@ -134,21 +153,17 @@ G.screens = (() => {
     ctx.fillStyle = 'rgba(10,14,20,.5)'; ctx.fillRect(0, 0, W, H);
     T(ctx, '작전 종료!', W / 2 + 3, H / 2 + 3, 48, '#2f4f8a'); T(ctx, '작전 종료!', W / 2, H / 2, 48, '#ffd84a');
   }
-  const BTN_AGAIN = { x: W / 2 - 210, y: 400, w: 200, h: 46 };
-  const BTN_HOME = { x: W / 2 + 10, y: 400, w: 200, h: 46 };
-  function resultUpdate() {
+  const BTN_AGAIN = { x: W / 2 - 210, y: 454, w: 200, h: 40 };
+  const BTN_HOME = { x: W / 2 + 10, y: 454, w: 200, h: 40 };
+  function resultUpdate(dt) {
+    G.result.update(dt);
     if (ui.clicked(BTN_AGAIN) || G.input.hit('enter')) newGame();
     else if (ui.clicked(BTN_HOME) || G.input.hit('escape')) G.screen = 'title';
   }
   function resultDraw(ctx) {
-    ctx.fillStyle = '#1e2a3a'; ctx.fillRect(0, 0, W, H);
-    T(ctx, '작전 종료!', W / 2, 70, 36, '#ffd84a');
-    T(ctx, '점수 ' + G.S.score + (G.S.newBest ? '  (최고 기록!)' : ''), W / 2, 130, 20, '#fff');
-    T(ctx, '배달 ' + G.S.delivered + '건 · 아낀 세금 ' + G.S.saved + '만원 · 마을 신뢰 ' + Math.round(G.S.trust), W / 2, 180, 16, '#cfe3f5');
-    T(ctx, '(기록 카드와 조달 메시지는 11번 작업에서 채운다)', W / 2, 220, 12, '#8fa3b8');
-    T(ctx, '필요한 것을, 공정하게, 효율적으로, 필요한 곳에 제때 — 그게 조달입니다.', W / 2, 340, 16, '#fff');
+    G.result.draw(ctx, G.S);
     ui.button(ctx, BTN_AGAIN, '다시 하기'); ui.button(ctx, BTN_HOME, '타이틀로');
-    ciPlate(ctx, 'ci_h', W / 2, 482, 26);
+    ciPlate(ctx, 'ci_h', W / 2, 508, 22);
   }
 
   const table = {

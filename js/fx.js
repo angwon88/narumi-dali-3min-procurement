@@ -4,15 +4,18 @@ G.fx = (() => {
   const LIFE = 1.2;
   function add(S, x, y, text, col, size) {
     if (!S.floats) S.floats = [];
-    const near = S.floats.filter(f => f.age < 0.7 && Math.abs(f.ax - x) < 60 && Math.abs(f.ay - y) < 30).length;
-    S.floats.push({ ax: x, ay: y, x, y: y - near * 16, text, col: col || '#fff', size: size || 12, age: 0 });
+    const near = S.floats.filter(f => f.age < 0.7 && Math.abs(f.ax - x) < 60 && Math.abs(f.ay - y) < 30);
+    const up = near.reduce((a, f) => a + Math.max(16, f.size + 6), 0);   // 먼저 뜬 글자 크기만큼 위로 (큰 글자와도 안 겹치게)
+    S.floats.push({ ax: x, ay: y, x, y: y - up, text, col: col || '#fff', size: size || 12, age: 0 });
   }
   // 파편 (적발 때 별·불꽃이 사방으로)
-  function burst(S, x, y) {
+  const GOLD = ['#ffd84a', '#fff3a0', '#fff', '#e0a800'];
+  function burst(S, x, y, gold, n) {
     S.parts = S.parts || [];
-    for (let i = 0; i < 26; i++) {
-      const a = Math.random() * Math.PI * 2, v = 80 + Math.random() * 160;
-      S.parts.push({ kind: 'spark', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, age: 0, life: 0.6 + Math.random() * 0.4, col: ['#ffd84a', '#ff8a7a', '#fff', '#e2433b'][i % 4], sz: 2 + (i % 3) });
+    const pal = gold ? GOLD : ['#ffd84a', '#ff8a7a', '#fff', '#e2433b'];
+    for (let i = 0; i < (n || 26); i++) {
+      const a = Math.random() * Math.PI * 2, v = 80 + Math.random() * (gold ? 240 : 160);
+      S.parts.push({ kind: 'spark', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, age: 0, life: 0.6 + Math.random() * (gold ? 0.7 : 0.4), col: pal[i % 4], sz: 2 + (i % 3) + (gold && i % 5 === 0 ? 2 : 0) });
     }
   }
   // 동전: (x, y)에서 (tx, ty)로 날아감. 모두 도착하면 done()
@@ -53,8 +56,9 @@ G.fx = (() => {
       const k = f.age / LIFE, y = f.y - 22 * Math.min(1, k * 1.6);
       ctx.globalAlpha = k < 0.75 ? 1 : 1 - (k - 0.75) / 0.25;
       ctx.font = f.size + 'px ' + G.FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(20,24,30,.85)'; ctx.strokeText(f.text, f.x, y);
-      ctx.fillStyle = f.col; ctx.fillText(f.text, f.x, y);
+      const hw = ctx.measureText(f.text).width / 2 + 4, x = Math.max(hw, Math.min(G.C.VIEW.w - hw, f.x));   // 화면 밖으로 잘리지 않게
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(20,24,30,.85)'; ctx.strokeText(f.text, x, y);
+      ctx.fillStyle = f.col; ctx.fillText(f.text, x, y);
       ctx.lineWidth = 1; ctx.globalAlpha = 1;
     }
   }
