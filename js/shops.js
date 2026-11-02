@@ -119,8 +119,9 @@ G.shops = (() => {
   // 이 공방에서 살 물건과 그 물건이 향할 요청(가장 급한, 아직 가방으로 채우지 않은 것)
   function wanted(S, sh) {
     let best = null;
+    // 개편(터치 조작): 계약 조건(★)을 맞추는 물건만 산다. 조건 미달 물건은 자동으로 사지 않음
     for (const it of itemsOf(sh)) {
-      const reqs = G.requests.active(S).filter(r => r.item === it.id).sort((a, b) => a.left - b.left);
+      const reqs = G.requests.active(S).filter(r => r.item === it.id && sh.q[it.id] >= r.minQ).sort((a, b) => a.left - b.left);
       const carried = G.dali.bag.filter(b => b.item === it.id).length;
       if (reqs.length > carried) { const r = reqs[carried]; if (!best || r.left < best.r.left) best = { item: it.id, r }; }
     }
@@ -163,6 +164,12 @@ G.shops = (() => {
     const sh = S.shops.find(s => isOpen(S, s) && U.inRect(dali.x, dali.y, s.w.door)) || null;
     if (sh !== B.shop) { B.shop = sh; B.dwell = 0; B.warned = false; }
     if (!sh) return;
+    if (sh.isNew && !sh.verified && !sh.innov) {                    // 개편: 새 공방은 나르미 실사가 끝나야 계약(구매)
+      B.dwell = 0; S.wantInspect = sh;
+      const onIt = G.narmi.target === sh && G.narmi.busy();
+      if (!B.warned || onIt !== B.onIt) { const d = sh.w.door; G.fx.add(S, d.x + d.w / 2, d.y - 6, onIt ? '나르미 실사 중… 잠깐만요' : '새 공방 · 나르미 실사 기다리는 중', '#ffd6a0'); B.warned = true; B.onIt = onIt; }
+      return;
+    }
     const want = wanted(S, sh), item = want && want.item;
     const full = dali.bag.length >= S.bagCap;
     const press = G.input.hit('e') || G.input.hit('enter');
@@ -170,7 +177,8 @@ G.shops = (() => {
       B.dwell = 0;
       if (!B.warned && (press || !dali.moving)) {
         const d = sh.w.door;
-        G.fx.add(S, d.x + d.w / 2, d.y - 6, full ? '가방이 가득 찼어요' : '필요한 물건이 아니에요', '#ffd6a0');
+        const under = !full && G.requests.active(S).find(r => itemsOf(sh).some(it => it.id === r.item) && sh.q[r.item] < r.minQ);
+        G.fx.add(S, d.x + d.w / 2, d.y - 6, full ? '가방이 가득 찼어요' : under ? G.ITEM[under.item].name + '은 조건 미달 (★' + under.minQ + ' 이상 필요)' : '필요한 물건이 아니에요', under ? '#ff8a7a' : '#ffd6a0');
         B.warned = true;
       }
       return;
@@ -188,6 +196,10 @@ G.shops = (() => {
     S.priceClock -= dt;
     if (S.priceClock <= 0) { reroll(S); S.priceClock += C.PRICE_REROLL_SEC; }
     fakeTimer(S, dt);
+    // 실사 대기열: 달이가 가려는(또는 서 있는) 새 공방을 나르미가 쉬는 대로 실사
+    const w = S.wantInspect;
+    if (w && (w.status !== 'open' || w.verified || !w.isNew)) S.wantInspect = null;
+    else if (w && !G.narmi.busy() && S.inspectCD <= 0) { request(S, w); S.wantInspect = null; }
     for (const sh of S.shops) {
       sh.t += dt;
       if (sh.fx && (sh.fx.t += dt) > 1.5) sh.fx = null;

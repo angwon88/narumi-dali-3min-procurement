@@ -75,7 +75,7 @@ G.intro = (() => {
     T(ctx, cap, W / 2, 62, 24, '#ffd84a');
     T(ctx, sub, W / 2, 432, 16, '#fff');
     for (let i = 0; i < 3; i++) { ctx.fillStyle = i === idx ? '#ffd84a' : '#4a5a70'; ctx.fillRect(W / 2 - 30 + i * 22, 470, 14, 6); }
-    if (idx === 2) T(ctx, '이동: 방향키·WASD (모바일: 화면 드래그)  ·  실사: 새 공방 클릭·Space', W / 2, 496, 12, '#cfd8e3');
+    if (idx === 2) T(ctx, '공방·마을을 터치(클릭)하면 달이가 가요  ·  새 공방은 나르미가 자동 실사  ·  꼼수 터치 = 나르미 출동', W / 2, 496, 12, '#cfd8e3');
     T(ctx, '클릭·Enter 다음  ·  Esc 건너뛰기', W - 16, H - 16, 12, '#8fa3b8', 'right');
   }
   return { start, update, draw, seen: () => G.store.get('introSeen', false) };

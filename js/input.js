@@ -21,20 +21,25 @@ G.input = (() => {
   addEventListener('blur', () => { for (const k in keys) keys[k] = false; joy.active = false; });
 
   function bind(cv) {
+    // 개편(2026-11-02): 터치는 짧게 누르면 탭(누른 곳으로 이동), 14px 넘게 끌면 그때 조이스틱
+    let pend = null;
     cv.addEventListener('pointerdown', e => {
       const p = toGame(e);
-      const onShop = G.S && (G.world.shops.some(sh => G.U.inRect(p.x, p.y, sh.body)) || (G.broker && G.broker.hit(G.S, p)));   // 공방·꼼수 브로커를 누르면 나르미(탭)
-      const useJoy = e.pointerType !== 'mouse' && G.screen === 'play' && p.y > G.C.HUD_H && !joy.active && !onShop;   // HUD·공방 말고는 어디서나 조이스틱
-      if (useJoy) { Object.assign(joy, { active: true, id: e.pointerId, ox: p.x, oy: p.y, x: p.x, y: p.y }); try { cv.setPointerCapture(e.pointerId); } catch (_) {} }
-      else taps.push(p);
+      if (e.pointerType !== 'mouse' && G.screen === 'play' && p.y > G.C.HUD_H && !joy.active) {
+        pend = { id: e.pointerId, x: p.x, y: p.y }; try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      } else taps.push(p);
       e.preventDefault();
     });
     cv.addEventListener('pointermove', e => {
       const p = toGame(e);
       if (e.pointerType === 'mouse') { mouse.x = p.x; mouse.y = p.y; }
+      if (pend && e.pointerId === pend.id && Math.hypot(p.x - pend.x, p.y - pend.y) > 14) { Object.assign(joy, { active: true, id: pend.id, ox: pend.x, oy: pend.y, x: p.x, y: p.y }); pend = null; }
       if (joy.active && e.pointerId === joy.id) { joy.x = p.x; joy.y = p.y; }
     });
-    const up = e => { if (joy.active && e.pointerId === joy.id) { joy.active = false; joy.id = null; } };
+    const up = e => {
+      if (pend && e.pointerId === pend.id) { if (e.type === 'pointerup') taps.push({ x: pend.x, y: pend.y }); pend = null; }
+      if (joy.active && e.pointerId === joy.id) { joy.active = false; joy.id = null; }
+    };
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   }
   // 이동 벡터 (길이 0~1)

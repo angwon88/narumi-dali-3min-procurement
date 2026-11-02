@@ -4,9 +4,16 @@ G.dali = {
   x: 0, y: 0, face: 's', moving: false, t: 0, speed: G.C.DALI_SPEED,
   box(x, y) { return { x: x - 9, y: y - 8, w: 18, h: 10 }; },        // 발 아래 충돌 상자
   bag: [],
-  reset() { Object.assign(this, { x: G.world.START.x, y: G.world.START.y, face: 's', moving: false, t: 0, speed: G.C.DALI_SPEED, bag: [] }); },
+  reset() { Object.assign(this, { x: G.world.START.x, y: G.world.START.y, face: 's', moving: false, t: 0, speed: G.C.DALI_SPEED, bag: [], path: null, goal: null }); },
   update(dt) {
-    const v = G.input.moveVec(), sp = this.speed * dt;
+    let v = G.input.moveVec(); const sp = this.speed * dt;
+    if (v.x || v.y) this.path = null;                                // 직접 조작하면 길 안내 취소
+    else if (this.path && this.path.length) {                         // 터치·클릭 이동: 다음 지점으로
+      const p = this.path[0], dx = p.x - this.x, dy = p.y - this.y, d = Math.hypot(dx, dy);
+      if (d <= sp) { this.x = p.x; this.y = p.y; this.path.shift(); if (!this.path.length) this.path = null; v = { x: 0, y: 0 }; }
+      else v = { x: dx / d, y: dy / d };
+      if (this.path && this.stuckCheck(dt)) this.path = null;
+    }
     this.moving = v.x !== 0 || v.y !== 0;
     if (this.moving) {
       const nx = this.x + v.x * sp, ny = this.y + v.y * sp;
@@ -15,6 +22,12 @@ G.dali = {
       this.face = G.spr.dir8(v.x, v.y);
     }
     this.t += dt * (this.speed / G.C.DALI_SPEED);                     // 빨라지면 걷는 동작도 빨라짐
+  },
+  // 길 안내 중 0.6초 넘게 거의 못 움직이면 멈춤 (벽에 걸림)
+  stuckCheck(dt) {
+    const m = Math.hypot(this.x - (this._lx || 0), this.y - (this._ly || 0)); this._lx = this.x; this._ly = this.y;
+    this._stuck = m < this.speed * dt * 0.2 ? (this._stuck || 0) + dt : 0;
+    return this._stuck > 0.6;
   },
   draw(ctx) {
     const S = G.S, fast = this.speed > G.C.DALI_SPEED * 1.12;

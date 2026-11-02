@@ -63,7 +63,7 @@ G.screens = (() => {
     ui.button(ctx, BTN_START, '작전 시작', { size: 20 });
     const best = G.store.get('best', 0);
     if (best) T(ctx, '최고 점수 ' + best, W - 20, H - 20, 12, '#ffe48a', 'right');
-    T(ctx, '방향키/WASD 이동 · Enter 시작 · M 소리 ' + (G.audio.isMuted() ? '켜기' : '끄기'), W / 2, H - 20, 12, '#cfd8e3');
+    T(ctx, '터치·클릭으로 이동 (방향키도 가능) · Enter 시작 · M 소리 ' + (G.audio.isMuted() ? '켜기' : '끄기'), W / 2, H - 20, 12, '#cfd8e3');
     if (G.input.hit('m')) G.audio.toggle();
   }
 
@@ -74,7 +74,7 @@ G.screens = (() => {
     if (G.debug && G.debug.update()) return;
     if (G.S.hitStop > 0) { G.S.hitStop -= dt; return; }              // 적발 순간 한순간 멈춤
     G.dali.update(dt);
-    G.shops.handleInspectInput(G.S);
+    G.nav.handleTaps(G.S);
     step(G.S, dt);
     if (G.screen === 'play' && G.S.pendingLevels > 0) G.levelup.open(G.S);   // 레벨업: 시간 정지하고 카드 선택
   }
@@ -107,6 +107,7 @@ G.screens = (() => {
     G.gifts.draw(ctx, G.S);
     G.events.drawWorld(ctx, G.S);
     G.narmi.draw(ctx);
+    G.nav.draw(ctx);
     G.dali.draw(ctx);
     ui.bubbles(ctx, G.S);
     ui.checks(ctx, G.S);
