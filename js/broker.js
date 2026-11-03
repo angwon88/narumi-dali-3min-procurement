@@ -15,7 +15,7 @@ G.broker = (() => {
       path: [], face: 1, stun: false, timer: 0, shown: false, freeze: 0, blockCD: 0 };
     Object.assign(S.stats, { brokerWon: 0, brokerBlocked: 0, brokerCaught: 0 });
   }
-  const speed = S => U.clamp(C.BROKER_SPEED[0] + (C.BROKER_SPEED[1] - C.BROKER_SPEED[0]) * (S.elapsed - C.BROKER_FIRST_AT) / (C.GAME_SECONDS - C.BROKER_FIRST_AT), C.BROKER_SPEED[0], C.BROKER_SPEED[1]) * (S.hard ? C.HARD.brokerSpeed : 1);
+  const speed = S => U.clamp(C.BROKER_SPEED[0] + (C.BROKER_SPEED[1] - C.BROKER_SPEED[0]) * (S.elapsed - C.BROKER_FIRST_AT) / (C.GAME_SECONDS - C.BROKER_FIRST_AT), C.BROKER_SPEED[0], C.BROKER_SPEED[1]) * (S.hard ? C.HARD.brokerSpeed : 1) * (S.rush ? 1.15 : 1);
 
   // 문 앞 → 길 → (조달청 건물 피해서) 아래 길 → 마을 앞마당
   function pathTo(bk, v) {
@@ -45,7 +45,8 @@ G.broker = (() => {
     }
     return false;
   }
-  function rest(S, sec) { const bk = S.bk; if (bk.req) bk.req.broker = false; Object.assign(bk, { state: 'off', wait: sec, req: null, shop: null, item: null, path: [] }); }
+  function rest(S, sec) { const bk = S.bk; if (bk.req) bk.req.broker = false; Object.assign(bk, { state: 'off', wait: S.rush ? Math.min(sec, 1.0) : sec,   // 마지막 20초: 쉬지 않고 옴
+    req: null, shop: null, item: null, path: [] }); }
   function flee(S, msg, col) {
     const bk = S.bk; if (bk.req) bk.req.broker = false;
     bk.req = null; bk.state = 'flee'; bk.path = fleePath(bk);

@@ -30,7 +30,7 @@ G.ult = (() => {
     S.stats.ult = (S.stats.ult || 0) + 1;
     S.score += C.ULT_SCORE;
     G.audio.play('levelup'); G.audio.play('whoosh');
-    S.brokerPauseUntil = S.elapsed + C.ULT_BROKER_PAUSE + CUT;
+    S.brokerPauseUntil = S.elapsed + (S.rush ? 5 : C.ULT_BROKER_PAUSE) + CUT;   // 결전 중엔 5초만 쉼
   }
   function cutUpdate(S, dt) {                                          // 컷인 동안은 screens.js가 게임을 멈추고 이것만 돌림
     const c = S.ultCut; c.t += dt;

@@ -178,13 +178,32 @@ G.screens = (() => {
     G.villages.update(S, dt);
     G.gifts.update(S, dt);
     G.events.update(S, dt);
-    S.comboT += dt;
+    S.comboT += dt; if (S.rush) S.rushT = (S.rushT || 0) + dt;
     if (S.shakeT > 0) S.shakeT -= dt;
     if (S.flashT > 0) S.flashT -= dt;
     if (S.trust <= C.TRUST_DANGER) { S.warnT = (S.warnT || 0) - dt; if (S.warnT <= 0) { G.audio.play('warn'); S.warnT = 2; } } else S.warnT = 0;
     if (S.timeLeft <= 10 && Math.ceil(S.timeLeft) !== Math.ceil(S.timeLeft + dt)) G.audio.play('tick');
     G.fx.update(S, dt);
     if (S.timeLeft <= 0) { S.timeLeft = 0; G.screen = 'end'; endT = C.END_HOLD; G.audio.play('end'); }
+  }
+  // 2026-11-04 결전(마지막 20초): 화면 가장자리 붉은 맥박 + 'RUSH' 띠, 마지막 5초는 가운데 큰 숫자
+  function rushDraw(ctx, S) {
+    if (!S.rush || S.timeLeft <= 0) return;
+    const pulse = 0.5 + 0.5 * Math.sin(S.rushT * (S.timeLeft <= 5 ? 9 : 5)), a = 0.18 + 0.22 * pulse;
+    for (const [x, y, w, h, gx0, gy0, gx1, gy1] of [[0, C.HUD_H, W, 26, 0, C.HUD_H, 0, C.HUD_H + 26], [0, H - 26, W, 26, 0, H, 0, H - 26], [0, C.HUD_H, 26, H, 0, 0, 26, 0], [W - 26, C.HUD_H, 26, H, W, 0, W - 26, 0]]) {
+      const g = ctx.createLinearGradient(gx0, gy0, gx1, gy1); g.addColorStop(0, 'rgba(255,60,40,' + a.toFixed(2) + ')'); g.addColorStop(1, 'rgba(255,60,40,0)');
+      ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+    }
+    if (S.rushT < 2.2) {                                                 // 시작 순간: 'FINAL 20' 띠가 가로지름
+      const k = S.rushT / 2.2, x = W * 1.2 - k * W * 1.4;
+      ctx.save(); ctx.globalAlpha = Math.min(1, (1 - k) * 3); ctx.fillStyle = 'rgba(217,52,43,.85)'; ctx.fillRect(0, 118, W, 44);
+      softShadow(ctx, 6, 3, .4); J(ctx, '최후의 20초 · 브로커 조직 총출동!', x, 141, 28, '#fff', { stroke: [['#7a1a12', 6]] }); noShadow(ctx); ctx.restore();
+    }
+    if (S.timeLeft <= 5) {                                               // 5·4·3·2·1
+      const n = Math.ceil(S.timeLeft), f = n - S.timeLeft, sc = 1.6 - Math.min(1, f / 0.2) * 0.6;
+      ctx.save(); ctx.globalAlpha = 0.85 * (1 - f * 0.6); ctx.translate(W / 2, H / 2 + 10); ctx.scale(sc, sc);
+      J(ctx, String(n), 0, 0, 120, '#fff', { stroke: [['#d9342b', 14]] }); ctx.restore();
+    }
   }
   function playDraw(ctx) {
     const S0 = G.S, shake = S0.shakeT > 0 ? S0.shakeT * 14 : 0;
@@ -216,6 +235,7 @@ G.screens = (() => {
     G.director.draw(ctx, G.S);
     ui.hud(ctx, G.S);
     ui.comboBadge(ctx, G.S);
+    rushDraw(ctx, G.S);
     G.ult.drawCut(ctx, G.S);
     G.events.drawBoards(ctx, G.S);
     G.fx.drawParts(ctx, G.S);                                         // 파편·동전은 HUD 위로 (저금통까지 날아가게)

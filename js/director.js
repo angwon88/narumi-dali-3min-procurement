@@ -24,7 +24,7 @@ G.director = (() => {
     { at: 14, hook: 'tipStock' },                                  // 원자재 비축 안내                                     // 등록 업체 안내
     { at: 26, hook: 'firstFake', flag: 'fake' },   // 2분 기준 첫 수상한 공방
     ...C.SPROUT_AT.map(at => ({ at, hook: 'sprout' })),          // 개편: 새싹 공방(스타트업) 개업                 // 첫 수상한 공방 확정 등장 (적발 기회를 늘리려고 1:00 → 0:50)
-    { at: C.FINAL_RUSH_AT, rush: true, banner: '막바지 20초! 점수 1.5배', sub: '조금만 더 힘내요' },
+    { at: C.FINAL_RUSH_AT, rush: true, banner: '최후의 20초! 브로커 조직 총출동!', sub: '점수 1.5배 · 브로커가 쉬지 않고 와요 · AI 조사로 한 번에 싹!' },
   ];
   const hooks = {};                                // 다른 작업이 등록: G.director.on('firstFake', fn)
 
@@ -72,7 +72,12 @@ G.director = (() => {
       if (ev.open.cat) { S.openCats.add(ev.open.cat); G.shops.opened(S, ev.open.cat); }
     }
     if (ev.extra) G.requests.spawn(S, ev.extra);
-    if (ev.rush) S.scoreMult = C.FINAL_RUSH_MULT;
+    if (ev.rush) {                                                   // 2026-11-04 결전: 브로커 연속 출동 + AI 조사 1칸 지원 + 경보
+      S.scoreMult = C.FINAL_RUSH_MULT; S.rush = true; S.rushT = 0; S.shakeT = 0.5;
+      if (S.bk && S.bk.state === 'off') S.bk.wait = Math.min(S.bk.wait, 1);
+      if (!G.ult.ready(S)) { S.ultCharge++; G.fx.add(S, G.ult.BTN.x + 36, 62, '결전 지원: AI 조사 +1칸', '#5ec8f2', 16); }
+      G.audio.play('warn'); setTimeout(() => G.audio.play('warn'), 350);
+    }
     if (ev.banner) { banner(S, ev.banner, ev.sub); G.audio.play('banner'); }
     if (ev.hook && hooks[ev.hook]) hooks[ev.hook](S, ev.arg);
   }
