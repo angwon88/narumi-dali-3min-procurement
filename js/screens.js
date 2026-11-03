@@ -70,8 +70,8 @@ G.screens = (() => {
     ctx.fillStyle = '#2f4f8a'; ctx.fillText('나르미와 달이의', W / 2 + 3, 126 + 3);
     ctx.fillStyle = '#fff'; ctx.fillText('나르미와 달이의', W / 2, 126);
     ctx.font = '56px "Galmuri11 Bold", ' + G.FONT;
-    ctx.fillStyle = '#2f4f8a'; ctx.fillText('3분 조달작전', W / 2 + 4, 186 + 4);
-    ctx.fillStyle = '#ffd84a'; ctx.fillText('3분 조달작전', W / 2, 186);
+    ctx.fillStyle = '#2f4f8a'; ctx.fillText('2분 조달작전', W / 2 + 4, 186 + 4);
+    ctx.fillStyle = '#ffd84a'; ctx.fillText('2분 조달작전', W / 2, 186);
     titleBadges(ctx);
     G.spr.drawChar(ctx, 'narmi', 'walk', 's', t, W / 2 - 60, 330, 1.25);
     G.spr.drawChar(ctx, 'dali', 'walk', 's', t, W / 2 + 60, 330, 1.25);
