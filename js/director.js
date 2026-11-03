@@ -4,24 +4,27 @@
 G.director = (() => {
   const C = G.C;
   // 2026-11-01 가로 배치로 이동 거리가 짧아져 전체적으로 빠르게 조정 [초기값]
-  const SEGMENTS = [
+  const SEGMENTS = [   // 2026-11-03 2분으로 압축 (3분 때 0·10·30·45·60·90·110·150초)
     { from: 0,   name: '첫 주문',      interval: 5.0, limit: 24 },
-    { from: 10,  name: '마을이 깨어남', interval: 4.6, limit: 22 },
-    { from: 30,  name: '거리 완성',    interval: 4.3, limit: 21 },
-    { from: 45,  name: '모두 영업',    interval: 4.0, limit: 20 },
-    { from: 60,  name: '수상한 손님',  interval: 3.9, limit: 20 },
-    { from: 90,  name: '폭우·태풍',    interval: 3.9, limit: 20 },   // 10번 작업에서 긴급 요청으로 바뀜
-    { from: 110, name: '바쁜 장터',    interval: 3.6, limit: 18 },
-    { from: 150, name: '연말 막바지',  interval: 3.2, limit: 16 },
+    { from: 6,   name: '마을이 깨어남', interval: 4.6, limit: 22 },
+    { from: 16,  name: '거리 완성',    interval: 4.3, limit: 21 },
+    { from: 24,  name: '모두 영업',    interval: 4.0, limit: 20 },
+    { from: 36,  name: '수상한 손님',  interval: 3.9, limit: 20 },
+    { from: 58,  name: '사건 많은 장터', interval: 3.9, limit: 20 },
+    { from: 75,  name: '바쁜 장터',    interval: 3.6, limit: 18 },
+    { from: 100, name: '막바지',      interval: 3.2, limit: 16 },
   ];
+
   const EVENTS = [
     { at: 4, extra: { vid: 'school', item: 'chair' } },        // 시작하자마자 두 번째 요청
-    { at: 10, open: { village: 'clinic', cat: 'health' }, banner: '보건소가 문을 열었어요!', sub: '보건 공방도 영업 시작' },
-    { at: 30, open: { village: 'fire', cat: 'safety' }, banner: '소방서가 문을 열었어요!', sub: '안전 공방도 영업 시작' },
-    { at: 45, open: { village: 'library' }, banner: '도서관이 문을 열었어요!', sub: '공방 거리가 바빠져요' },
-    { at: 50, hook: 'firstFake', flag: 'fake' },
+    { at: 6, open: { village: 'clinic', cat: 'health' }, banner: '보건소가 문을 열었어요!', sub: '보건 공방도 영업 시작' },
+    { at: 15, open: { village: 'fire', cat: 'safety' }, banner: '소방서가 문을 열었어요!', sub: '안전 공방도 영업 시작' },
+    { at: 24, open: { village: 'library' }, banner: '도서관이 문을 열었어요!', sub: '공방 거리가 바빠져요' },
+    { at: 8, hook: 'tipReg' },
+    { at: 14, hook: 'tipStock' },                                  // 원자재 비축 안내                                     // 등록 업체 안내
+    { at: 26, hook: 'firstFake', flag: 'fake' },   // 2분 기준 첫 수상한 공방
     ...C.SPROUT_AT.map(at => ({ at, hook: 'sprout' })),          // 개편: 새싹 공방(스타트업) 개업                 // 첫 수상한 공방 확정 등장 (적발 기회를 늘리려고 1:00 → 0:50)
-    { at: C.FINAL_RUSH_AT, rush: true, banner: '막바지! 점수 1.5배', sub: '조금만 더 힘내요' },
+    { at: C.FINAL_RUSH_AT, rush: true, banner: '막바지 20초! 점수 1.5배', sub: '조금만 더 힘내요' },
   ];
   const hooks = {};                                // 다른 작업이 등록: G.director.on('firstFake', fn)
 

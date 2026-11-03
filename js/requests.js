@@ -136,7 +136,7 @@ G.requests = (() => {
     G.fx.add(S, y.x + y.w / 2, y.y + 16, '미납! 부정 낙찰 업체였어요', '#ff8a7a', 16);
     G.fx.add(S, y.x + y.w / 2, y.y + 16, '신뢰 ' + C.TRUST_FRAUD, '#ff8a7a');
     G.audio.play('scam');
-    if (!S.firstStolen) { S.firstStolen = true; G.narmi.say('연기도 안 나던 새 공방이었는데…', 2.6); }
+    if (!S.firstStolen) { S.firstStolen = true; G.narmi.say('수상한 새 공방은 눌러서 먼저 실사해요!', 2.8); }
   }
 
   // 혁신제품 시범 사용 (기획서 3.9): 혁신 공방이 된 뒤 첫 INNOV_TRIAL건은 시범 사용.

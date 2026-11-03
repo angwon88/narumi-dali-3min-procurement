@@ -13,24 +13,30 @@ G.events = (() => {
   const ZONE = { x: OB.x + 40, y: OB.y + OB.h + 4, w: 76, h: 26 };   // 마을 말풍선과 겹치지 않게
 
   function init(S) {
-    S.stock = 0; S.stockDwell = 0; S.stockWarned = false;
+    S.stock = 0; S.stockDwell = 0; S.stockWarned = false; S.stockBudget = C.STOCK_BUDGET;
     S.surge = null; S.surgeMult = 1; S.stabilized = new Set(); S.surgeDone = false;
     S.dust = null; S.storm = null; S.forecasts = []; S.prep = new Set();
   }
 
   // ---------- ① 비축 ----------
-  const stockOpen = S => S.forecasts.some(f => f.id === 'surge');   // 폭등 예보 동안만
+  // 2026-11-03 실제 비축사업처럼: 조달청 비축 예산(9만원)으로 원자재(알루미늄·구리 등)를 산다.
+  //   평소 시세 1상자 3만원, 폭등 예보가 뜨면 4.5만원(이미 오르기 시작). 폭등 때 공방에 방출해 재료값을 지킴
+  const MAT = { furn: '알루미늄', elec: '구리', health: '니켈', safety: '아연' };
+  const forecasting = S => S.forecasts.some(f => f.id === 'surge');
+  const stockOpen = S => !S.surge && !S.surgeDone;
+  const matPrice = S => forecasting(S) ? C.MAT_PRICE_FORECAST : C.MAT_PRICE;
   function stockUpdate(S, dt) {
     const d = G.dali, inZ = G.U.inRect(d.x, d.y, ZONE);
     if (!inZ) { S.stockDwell = 0; S.stockWarned = false; return; }
-    const why = S.surge || S.surgeDone ? '원자재 가격이 이미 올랐어요' : S.stock >= C.STOCK_MAX ? '비축 창고가 가득 찼어요 (3/3)' : !stockOpen(S) ? '원자재 가격 폭등 예보가 뜨면 여기서 비축해요' : null;
+    const why = !stockOpen(S) ? '원자재 가격이 이미 올랐어요' : S.stock >= C.STOCK_MAX ? '비축 창고가 가득 찼어요 (3/3)' : S.stockBudget < matPrice(S) ? '비축 예산이 모자라요 (' + S.stockBudget + '만원 남음)' : null;
     if (why) { S.stockDwell = 0; if (!S.stockWarned && !d.moving) { G.fx.add(S, ZONE.x + ZONE.w / 2, ZONE.y - 4, why, '#ffd6a0'); S.stockWarned = true; } return; }
     S.stockDwell += dt;
     if (S.stockDwell >= C.STOCK_DWELL) {
-      S.stockDwell = 0; S.stock++;
+      const p = matPrice(S);
+      S.stockDwell = 0; S.stock++; S.stockBudget = r1(S.stockBudget - p);
       S.stats.stocked = (S.stats.stocked || 0) + 1;
-      G.fx.add(S, ZONE.x + ZONE.w / 2, ZONE.y - 4, '원자재 비축 +1 (' + S.stock + '/' + C.STOCK_MAX + ')', '#9be37a', 16);
-      if (S.stock === 1) G.narmi.say('좋아요! 폭등 때 이 상자를 풀어 공방 값을 지켜요', 2.6);
+      G.fx.add(S, ZONE.x + ZONE.w / 2, ZONE.y - 4, '원자재 1상자 비축 (' + p + '만원) · ' + S.stock + '/' + C.STOCK_MAX, '#9be37a', 16);
+      if (S.stock === 1) G.narmi.say('원자재를 쌀 때 사 뒀어요! 값이 폭등하면 공방에 풀어요', 2.8);
       G.audio.play('buy');
     }
   }
@@ -46,15 +52,15 @@ G.events = (() => {
     S.stock -= n; S.stats.released = n;
     if (n) { S.score += C.PREP_BONUS * n; G.score.trust(S, C.PREP_TRUST); S.stats.prepared = (S.stats.prepared || 0) + n;
       G.fx.add(S, OB.x + OB.w / 2, OB.y + OB.h + 50, '미리 대비! +' + C.PREP_BONUS * n, '#ffe48a', 16); }
-    if (n) G.director.banner(S, '원자재 가격 폭등! 비축 원자재 방출', pick.map(c => catNames[c]).join('·') + ' 공방 가격을 지켰어요 · 나머지 ×' + C.SURGE.mult);
-    else G.director.banner(S, '원자재 가격 폭등! 공방 가격 ×' + C.SURGE.mult, '비축해 둔 원자재가 없어요… (조달청 아래 비축칸)');
+    if (n) G.director.banner(S, '원자재 가격 폭등! 비축 원자재 방출', pick.map(c => catNames[c]).join('·') + ' 공방은 재료값 그대로 · 나머지 공방 값 ×' + C.SURGE.mult);
+    else G.director.banner(S, '원자재 가격 폭등! 공방 값 ×' + C.SURGE.mult, '비축해 둔 원자재가 없어요… 다음엔 쌀 때 미리 비축해요');
     G.audio.play(n ? 'gift' : 'warn');
     pick.forEach((cat, i) => {                         // 상자가 조달청 창고에서 그 업종 공방 사이로 날아감
       const row = G.world.CATS.findIndex(c => c.id === cat), a = G.world.shops[row * 2], b = G.world.shops[row * 2 + 1];
       const tx = (a.body.x + b.body.x + b.body.w) / 2, ty = a.body.y + 40;
       G.fx.coins(S, OB.x + OB.w + 14, OB.y + OB.h - 10, tx, ty, 1, () => {
         S.stabilized.add(cat);
-        G.fx.add(S, tx, a.body.y + 112, '비축 방출! ' + catNames[cat] + ' 가격 안정', '#9be37a', 16);
+        G.fx.add(S, tx, a.body.y + 112, catNames[cat] + ' 공방에 ' + MAT[cat] + ' 방출! 값 그대로', '#9be37a', 16);
       }, 'crate', i * 0.15);
     });
   }
@@ -67,14 +73,14 @@ G.events = (() => {
   const FORECAST = {
     dust:  { name: '미세먼지 예보', need: '마스크를 미리 준비해요', items: ['mask'], icon: 'mask' },
     storm: { name: '태풍 예보', need: '안전모·구급상자를 미리 준비해요', items: ['helmet', 'kit'], icon: 'helmet' },
-    surge: { name: '원자재 가격 폭등 예보', need: '조달청 아래 비축칸에 서 있기', items: [], icon: null },
+    surge: { name: '원자재 가격 폭등 예보', need: '시세가 오르기 시작! 지금이라도 비축', items: [], icon: null },
   };
   G.director.on('forecast', (S, p) => {
     const f = FORECAST[p.id]; if (!f) return;
     S.forecasts.push({ id: p.id, at: p.at });
     f.items.forEach(it => S.prep.add(it));
     G.director.banner(S, f.name + ' · ' + C.FORECAST_SEC + '초 뒤', f.need + " · 지금 준비하면 '미리 대비' 임무!");
-    G.narmi.say(p.id === 'surge' ? '조달청 아래 원자재 비축칸으로! 상자가 쌓여요' : "'대비' 표시 공방에서 미리 사 둬요!", 3);
+    G.narmi.say(p.id === 'surge' ? '원자재 값이 오를 거예요! 조달청 아래 비축칸에서 사 둬요' : "'대비' 표시 공방에서 미리 사 둬요!", 3);
     G.audio.play('warn');
   });
   function endForecast(S, id) {
@@ -93,13 +99,13 @@ G.events = (() => {
   function dustStart(S) {
     endForecast(S, 'dust');
     S.dust = { t: 0, specks: Array.from({ length: 70 }, () => ({ x: Math.random() * C.VIEW.w, y: C.HUD_H + Math.random() * (C.VIEW.h - C.HUD_H), s: 1 + Math.random() * 2 })) };
-    G.director.banner(S, '미세먼지 경보!', '마을마다 마스크가 필요해요 · 보건 공방으로');
+    G.director.banner(S, '미세먼지 경보! 긴급조달 시작', '마을마다 마스크가 급해요 · 긴급 계약 점수 ×' + C.STORM.mult);
     G.audio.play('warn');
     for (const v of G.world.villages) {                // 열린 마을마다 마스크 요청 하나씩
-      if (S.openVillages.has(v.id) && G.requests.ofVillage(S, v.id).length < C.MAX_REQ_PER_VILLAGE) G.requests.spawn(S, { vid: v.id, item: 'mask' });
+      if (S.openVillages.has(v.id) && makeUrgent(S, v.id, 'mask')) S.stats.urgentMade = (S.stats.urgentMade || 0) + 1;   // 긴급 계약으로 (2026-11-03)
     }
   }
-  function dustEnd(S) { endPrep(S, 'dust'); S.dust = null; G.director.banner(S, '미세먼지가 걷혔어요', ''); }
+  function dustEnd(S) { endPrep(S, 'dust'); S.dust = null; for (const r of G.requests.active(S)) if (r.urgent && !S.storm) r.urgent = false; G.director.banner(S, '미세먼지가 걷혔어요', ''); }
   // ---------- ⑤ 폭우·태풍 위기 (기획서 4.2, 2026-11-03 구현) ----------
   // 소방서(안전모)·보건소(구급상자)·학교(전등, 정전)에 긴급 계약. 빨간 '긴급 ×2' 탭, 점수 ×2. 태풍 중 STORM.every초마다 소방서·보건소에 긴급 계약.
   // 마을 말풍선이 꽉 찼으면 그 마을의 가장 여유 있는 계약을 긴급으로 바꿈. 비 때문에 달이 이동 -10%(우산)
@@ -115,8 +121,8 @@ G.events = (() => {
   function stormStart(S) {
     endForecast(S, 'storm');
     S.storm = { t: 0, clock: C.STORM.every, drops: Array.from({ length: 110 }, () => ({ x: Math.random() * C.VIEW.w, y: C.HUD_H + Math.random() * (C.VIEW.h - C.HUD_H), v: 380 + Math.random() * 220 })) };
-    S.stats.urgentMade = 0; S.stats.urgentDone = S.stats.urgentDone || 0;
-    G.director.banner(S, '태풍 상륙! 긴급 계약', '소방서·보건소·학교가 급해요 · 긴급 계약 점수 ×' + C.STORM.mult + ' · 비 때문에 조금 느려요');
+    S.stats.urgentMade = S.stats.urgentMade || 0; S.stats.urgentDone = S.stats.urgentDone || 0;
+    G.director.banner(S, '태풍 상륙! 긴급조달 시작', '소방서·보건소·학교가 급해요 · 긴급 계약 점수 ×' + C.STORM.mult + ' · 비 때문에 조금 느려요');
     G.audio.play('warn'); S.shakeT = Math.max(S.shakeT || 0, 0.3);
     for (const [vid, item] of [['fire', 'helmet'], ['clinic', 'kit'], ['school', 'lamp']]) if (makeUrgent(S, vid, item)) S.stats.urgentMade++;
   }
@@ -155,40 +161,46 @@ G.events = (() => {
   }
   function drawWorld(ctx, S) {
     // 비축칸
-    // 비축칸 (2026-11-03): 예보 때만 진한 청록으로 깜빡이며 '지금 비축!', 평소엔 흐리게 '폭등 예보 때 비축'
-    const z = ZONE, open = stockOpen(S), can = open && !S.surge && !S.surgeDone && S.stock < C.STOCK_MAX, PREP = G.missions.BY.prep.col;
-    const on = Math.floor(S.elapsed * 3) % 2 === 0;
-    ctx.fillStyle = can ? (on ? PREP : '#0b5d68') : 'rgba(0,0,0,.08)'; ctx.fillRect(z.x, z.y, z.w, z.h);
-    ctx.strokeStyle = can ? '#fff' : 'rgba(80,60,30,.5)'; ctx.setLineDash([3, 3]); ctx.strokeRect(z.x + .5, z.y + .5, z.w - 1, z.h - 1); ctx.setLineDash([]);
+    // 비축칸 (2026-11-03): 폭등 전에는 언제든 비축 예산으로 원자재 구입. 예보 때는 진하게 깜빡이며 재촉
+    const z = ZONE, can = stockOpen(S) && S.stock < C.STOCK_MAX && S.stockBudget >= matPrice(S), PREP = G.missions.BY.prep.col;
+    const fc = forecasting(S), on = Math.floor(S.elapsed * 3) % 2 === 0;
+    ctx.fillStyle = can ? (fc ? (on ? PREP : '#0b5d68') : 'rgba(15,138,150,.35)') : 'rgba(0,0,0,.08)'; ctx.fillRect(z.x, z.y, z.w, z.h);
+    ctx.strokeStyle = can ? (fc ? '#fff' : PREP) : 'rgba(80,60,30,.5)'; ctx.setLineDash([3, 3]); ctx.strokeRect(z.x + .5, z.y + .5, z.w - 1, z.h - 1); ctx.setLineDash([]);
     crate(ctx, z.x + 4, z.y + 7);
-    T(ctx, '원자재 비축', z.x + z.w / 2 + 8, z.y + z.h / 2 + 1, 12, can ? '#fff' : '#6a5a3a');
+    T(ctx, '원자재 비축', z.x + z.w / 2 + 8, z.y + z.h / 2 + 1, 12, can && fc ? '#fff' : can ? '#0b4d58' : '#6a5a3a');
     if (S.stockDwell > 0) { ctx.fillStyle = '#ffd84a'; ctx.fillRect(z.x, z.y + z.h - 3, Math.round(z.w * S.stockDwell / C.STOCK_DWELL), 3); }
-    if (!can && !S.surgeDone && !S.surge) T(ctx, '폭등 예보 때 비축', z.x + z.w / 2, z.y + z.h + 10, 12, 'rgba(80,60,30,.6)');
-    // 비축 창고 (조달청 오른쪽 옆): 상자 더미
+    if (!fc && stockOpen(S)) T(ctx, '예산 ' + S.stockBudget + '만 · 1상자 ' + matPrice(S) + '만', z.x + z.w / 2, z.y + z.h + 10, 12, '#4a3f2a');
+    // 비축 창고 (조달청 오른쪽 옆): 금속 원자재 상자
     const sx = OB.x + OB.w + 6, sy = OB.y + OB.h - 14;
     for (let i = 0; i < C.STOCK_MAX; i++) {
       if (i < S.stock) crate(ctx, sx + (i % 2) * 15, sy - Math.floor(i / 2) * 13);
       else { ctx.strokeStyle = 'rgba(80,60,30,.35)'; ctx.strokeRect(sx + (i % 2) * 15 + .5, sy - Math.floor(i / 2) * 13 + .5, 13, 11); }
     }
-    T(ctx, '비축 ' + S.stock + '/' + C.STOCK_MAX, sx + 15, sy + 22, 12, '#4a3f2a');
+    T(ctx, '창고 ' + S.stock + '/' + C.STOCK_MAX, sx + 15, sy + 22, 12, '#4a3f2a');
+    // 원자재 시세판 (창고 위): 평소 / 예보(▲ 오르는 중) / 폭등(×1.6)
+    const bx = OB.x + OB.w + 8, by = OB.y + 4, bw = 82, up = fc || S.surge;
+    ctx.fillStyle = '#1e2a3a'; ctx.fillRect(bx, by, bw, 46); ctx.fillStyle = up ? '#d9342b' : '#2e9b3a'; ctx.fillRect(bx, by, bw, 3);
+    T(ctx, '원자재 시세', bx + bw / 2, by + 11, 12, '#cfd8e3');
+    T(ctx, '알루미늄·구리', bx + bw / 2, by + 24, 12, '#c0c6cc');
+    T(ctx, S.surge ? '폭등 ×' + C.SURGE.mult : (up ? '▲ ' : '') + matPrice(S) + '만/상자', bx + bw / 2, by + 37, 12, up ? '#ff8a7a' : '#9be37a');
     // 폭등 중: 공방 지붕 위 표시
     if (S.surge) {
       for (const sh of S.shops) {
         if (!G.shops.isOpen(S, sh) || sh.fake) continue;
         const b = sh.w.body, ok = S.stabilized.has(sh.cat);
         const ty = sh.innov ? b.y + 84 : b.y + 72;      // 혁신 공방은 '시범 사용' 표시 아래로
-        ctx.fillStyle = ok ? '#2e9b3a' : '#d9342b'; ctx.fillRect(b.x + b.w / 2 - 30, ty, 60, 14);
-        T(ctx, ok ? '비축 방출' : '재료값 ×' + S.surgeMult, b.x + b.w / 2, ty + 7, 12, '#fff');
+        ctx.fillStyle = ok || sh.tier >= 2 ? '#2e9b3a' : '#d9342b'; ctx.fillRect(b.x + b.w / 2 - 44, ty, 88, 14);
+        T(ctx, ok ? '비축 덕분 그대로' : sh.tier >= 2 ? '공장 · 그대로' : '재료값 ×' + S.surgeMult, b.x + b.w / 2, ty + 7, 12, '#fff');
       }
     }
   }
   // 폭등 예보 중 비축 안내 (마을 말풍선보다 위층에 그림)
   function drawCallout(ctx, S) {
-    const z = ZONE; if (!stockOpen(S) || S.surge || S.stock >= C.STOCK_MAX) return;
+    const z = ZONE; if (!forecasting(S) || !stockOpen(S) || S.stock >= C.STOCK_MAX || S.stockBudget < matPrice(S)) return;
     const w = 168, x = z.x + z.w / 2 - w / 2, y = z.y + z.h + 6;
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x + 2, y + 3, w, 20);
     ctx.fillStyle = '#0b5d68'; ctx.fillRect(x, y, w, 20); ctx.fillStyle = '#ffd84a'; ctx.fillRect(x, y, w, 2);
-    T(ctx, '지금 비축! 여기 서 있기 (' + S.stock + '/' + C.STOCK_MAX + ')', x + w / 2, y + 11, 12, '#ffd84a');
+    T(ctx, '지금이라도 비축! (1상자 ' + matPrice(S) + '만)', x + w / 2, y + 11, 12, '#ffd84a');
     const ay = z.y - 10 + Math.sin(S.elapsed * 6) * 3;
     ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.moveTo(z.x + z.w / 2 - 7, ay - 6); ctx.lineTo(z.x + z.w / 2 + 7, ay - 6); ctx.lineTo(z.x + z.w / 2, ay + 2); ctx.fill();
   }

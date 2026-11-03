@@ -5,7 +5,7 @@
 'use strict';
 window.PlayBot = {
   run(opt = {}) {
-    const { avoidFake = true, speed = 1, inspect = false, until = 999, quality = true, chase = true, sprout = true } = opt;   // until: 이 시간(초)까지만 진행
+    const { avoidFake = true, speed = 1, inspect = false, until = 999, quality = true, chase = true, sprout = true, stock = true } = opt;   // until: 이 시간(초)까지만 진행
     G.screens.newGame(); const S = G.S, d = G.dali, DT = 1 / 60; G.screen = 'pause';
     let mode = 'buy', target = null;
     const suspicious = sh => Object.keys(sh.mults).some(id => sh.q[id] === 3 && sh.mults[id] < 0.6);   // 개편: ★3인데 ★1 값이면 수상
@@ -28,7 +28,8 @@ window.PlayBot = {
         if (pick) G.shops.request(S, pick);
       }
       const Z = G.events.ZONE;
-      if (S.forecasts.some(f => f.id === 'surge') && S.stock < G.C.STOCK_MAX && !S.surge) target = { x: Z.x + Z.w / 2, y: Z.y + Z.h / 2 };   // 폭등 예보: 비축
+      const fc = S.forecasts.some(f => f.id === 'surge'), mp = fc ? G.C.MAT_PRICE_FORECAST : G.C.MAT_PRICE;
+      if (stock && !S.surge && !S.surgeDone && S.stock < G.C.STOCK_MAX && S.stockBudget >= mp && (S.elapsed < 14 || fc)) target = { x: Z.x + Z.w / 2, y: Z.y + Z.h / 2 };   // 비축: 초반(쌀 때)이나 폭등 예보 때
       else if (mode === 'buy') {
         for (const r of uncovered) {
           // 개편: 계약 조건(★minQ)을 맞추는 공방 중 가장 싼 곳. quality:false면 조건을 안 보고 제일 싼 곳(옛 전략 비교용)

@@ -37,9 +37,14 @@ G.nav = (() => {
   }
   function go(S, t) {
     const d = G.dali;
+    // 2026-11-03: 등록 심사 중(실사 전) 새 공방을 누르면 나르미만 실사하러 감. 실사를 통과하면 다시 눌러 계약 (검증 → 계약 순서)
+    if (t.kind === 'shop' && t.sh.isNew && !t.sh.verified && !t.sh.innov && t.sh.status === 'open') {
+      const why = G.shops.whyNot(S, t.sh);
+      if (!why) G.shops.request(S, t.sh);
+      else { S.wantInspect = t.sh; const b = t.sh.w.body; G.fx.add(S, b.x + b.w / 2, b.y + 110, '나르미가 바빠요 · 곧 실사할게요', '#ffd6a0'); }
+      return;
+    }
     d.path = route({ x: d.x, y: d.y }, { x: t.x, y: t.y }); d.goal = t; d.goalT = 0;
-    // 새 공방이면 나르미가 먼저 실사 (계약 전 실사)
-    if (t.kind === 'shop' && t.sh.isNew && !t.sh.verified && !t.sh.innov && t.sh.status === 'open') S.wantInspect = t.sh;
   }
   function handleTaps(S) {
     for (const p of G.input.taps) {
@@ -47,15 +52,9 @@ G.nav = (() => {
       if (G.broker.hit(S, p)) { G.broker.request(S); return; }
       const t = targetOf(S, p); if (t) { go(S, t); return; }
     }
-    if (G.input.hit(' ')) {                                           // 키보드: 브로커가 달리면 나르미 출동, 아니면 가장 가까운 새 공방 실사
-      if (S.bk && (S.bk.state === 'run' || S.bk.state === 'grab')) { G.broker.request(S); return; }
-      const d = G.dali; let best = null, bd = 1e9;
-      for (const sh of S.shops) {
-        if (G.shops.whyNot(S, sh)) continue;
-        const c = sh.w.door, dist = Math.hypot(c.x + c.w / 2 - d.x, c.y + c.h / 2 - d.y);
-        if (dist < bd) { bd = dist; best = sh; }
-      }
-      if (best) G.shops.request(S, best);
+    if (G.input.hit(' ')) {                                           // 키보드 Space = 브로커 추격 전용 (2026-11-03: 공방 실사는 직접 눌러서)
+      if (S.bk && (S.bk.state === 'run' || S.bk.state === 'grab')) G.broker.request(S);
+      else G.fx.add(S, G.dali.x, G.dali.y - 70, 'Space = 브로커 추격 · 공방 실사는 공방을 눌러요', '#cfd8e3');
     }
   }
   // 목적지 표시: 바닥에 퍼지는 고리

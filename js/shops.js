@@ -86,7 +86,7 @@ G.shops = (() => {
     if (fake) S.stats.fakeSpawned = (S.stats.fakeSpawned || 0) + 1;
   }
   const fakeCount = S => S.shops.filter(sh => sh.fake && (sh.status === 'open' || sh.status === 'closing')).length;
-  const fakeMax = S => (S.elapsed >= 90 ? 2 : 1);
+  const fakeMax = S => (S.elapsed >= C.LATE_AT ? 2 : 1);
   // 수상한 공방 등장: 수상한 공방이 없는 열린 행에서, 빈 칸이 있으면 거기, 없으면 공방 하나를 교체
   // cat: 그 업종 행에만 (브로커용), force: 동시 개수 상한 무시. 성공하면 그 공방을 돌려줌
   function spawnFake(S, cat, force) {
@@ -105,7 +105,7 @@ G.shops = (() => {
     newShop(S, sh, true);
     return sh;
   }
-  G.director.on('firstFake', S => { S.firstFakeDone = true; spawnFake(S); S.fakeClock = 18; });
+  G.director.on('firstFake', S => { S.firstFakeDone = true; spawnFake(S); S.fakeClock = 14; });
   // ---------- 새싹 공방 (개편 2단계: 스타트업 성장) ----------
   // 열린 행에서 빈 칸이 있으면 거기, 없으면 평범한 공방 하나를 새싹 공방으로 교체. 품질 ★2~3, 값은 조금 비쌈
   function spawnSprout(S) {
@@ -126,6 +126,8 @@ G.shops = (() => {
     return sh;
   }
   G.director.on('sprout', S => { spawnSprout(S); });
+  G.director.on('tipStock', () => G.narmi.say('조달청 아래 비축칸: 원자재가 쌀 때 미리 사 둬요', 3.2));
+  G.director.on('tipReg', () => G.narmi.say('지붕의 ✔ = 나라장터 등록 업체! 등록된 곳과만 계약해요', 3.2));
   // 실적을 다 채우면 혁신제품 지정: 혁신 공방(성공 판정 상태)으로, 품질 +1, 업종별 혁신제품 효과
   function graduate(S, sh) {
     sh.sprout = false; sh.innov = true; sh.mature = true; sh.growT = 0; sh.lonely = false; sh.isNew = false;
@@ -138,9 +140,9 @@ G.shops = (() => {
     if (!S.firstFakeDone) return;
     S.fakeClock -= dt;
     if (S.fakeClock > 0) return;
-    const late = S.elapsed >= 90;                                     // 1:30부터 더 자주
+    const late = S.elapsed >= C.LATE_AT;                              // 후반부터 더 자주
     if (Math.random() < (late ? 0.7 : 0.6)) spawnFake(S);
-    S.fakeClock += late ? 15 : 18;
+    S.fakeClock += late ? 11 : 14;   // 2분 기준
   }
 
   // ---------- 구매 ----------
@@ -168,7 +170,7 @@ G.shops = (() => {
     if (!sh.fake) { sh.sales += p; while (sh.tier < C.SHOP_TIER.length && sh.sales >= C.SHOP_TIER[sh.tier]) growShop(S, sh); }
     S.stats.bought = (S.stats.bought || 0) + 1;
     const d = sh.w.door;
-    G.fx.add(S, d.x + d.w / 2, d.y - 6, G.ITEM[item].name + ' 구매 ' + p + '만원', '#fff');
+    G.fx.add(S, d.x + d.w / 2, d.y - 6, G.ITEM[item].name + ' 계약 ' + p + '만원', '#fff');
     if (sh.fake && sh.closeT === 0) sh.closeT = 0.0001;                  // 3초 뒤 사라짐
     compete(S, sh);
   }
@@ -206,7 +208,7 @@ G.shops = (() => {
     if (sh.isNew && !sh.verified && !sh.innov) {                    // 개편: 새 공방은 나르미 실사가 끝나야 계약(구매)
       B.dwell = 0; S.wantInspect = sh;
       const onIt = G.narmi.target === sh && G.narmi.busy();
-      if (!B.warned || onIt !== B.onIt) { const d = sh.w.door; G.fx.add(S, d.x + d.w / 2, d.y - 6, onIt ? '나르미 실사 중… 잠깐만요' : '새 공방 · 나르미 실사 기다리는 중', '#ffd6a0'); B.warned = true; B.onIt = onIt; }
+      if (!B.warned || onIt !== B.onIt) { const d = sh.w.door; G.fx.add(S, d.x + d.w / 2, d.y - 6, onIt ? '나르미 실사 중… 잠깐만요' : '등록 심사 중 · 실사를 통과해야 계약해요', '#ffd6a0'); B.warned = true; B.onIt = onIt; }
       return;
     }
     const want = wanted(S, sh), item = want && want.item;
@@ -284,7 +286,7 @@ G.shops = (() => {
     if (sh.status === 'empty' || sh.status === 'closing' || sh.status === 'caught') return '빈 가게예요';
     if (!isOpen(S, sh)) return '아직 문을 안 열었어요';
     if (sh.innov) return '혁신 공방은 이미 검증됐어요';
-    if (!sh.isNew) return '거래 실적이 있는 업체예요 · 새 공방만 실사';
+    if (!sh.isNew) return '이미 나라장터에 등록된 업체예요';
     if (sh.verified) return '이미 실사한 공방이에요';
     if (G.narmi.busy() || S.inspectCD > 0) return '나르미가 숨 고르는 중 (' + Math.ceil(S.inspectCD) + '초)';
     return null;
@@ -326,7 +328,7 @@ G.shops = (() => {
     } else {
       sh.verified = true; sh.stampT = 0;
       S.stats.certified = (S.stats.certified || 0) + 1;
-      G.fx.add(S, b.x + b.w / 2, b.y + 110, '✔ 실사 완료 · 실제로 만드는 공방이에요', '#9be37a');
+      G.fx.add(S, b.x + b.w / 2, b.y + 110, '✔ 실사 통과 · 나라장터 등록! 이제 계약할 수 있어요', '#9be37a');
       G.audio.play('ok');
     }
   }
@@ -548,6 +550,12 @@ G.shops = (() => {
       if (sh.innov) innovLook(ctx, sh);
       if (sh.sprout) sproutLook(ctx, sh);
       tierLook(ctx, sh);
+      if (sh.status === 'open') {                                         // 나라장터 등록 표시 (2026-11-03)
+        const reg = !sh.isNew || sh.verified || sh.innov, rx = b.x + 9, ry = b.y + 11;
+        ctx.fillStyle = '#1e2a3a'; ctx.beginPath(); ctx.arc(rx, ry, 7, 0, 7); ctx.fill();
+        ctx.fillStyle = reg ? '#2e9b3a' : '#8a8f99'; ctx.beginPath(); ctx.arc(rx, ry, 6, 0, 7); ctx.fill();
+        T(ctx, reg ? '✔' : '…', rx, ry + 1, 12, '#fff');
+      }
       chimney(ctx, sh);
       windowView(ctx, sh);
       priceTag(ctx, S, sh);
@@ -586,7 +594,7 @@ G.shops = (() => {
     const x = Math.max(4, Math.min(C.VIEW.w - w - 4, d.x + d.w / 2 - w / 2)), y = d.y + d.h + 6;
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x + 2, y + 3, w, h);
     ctx.fillStyle = '#fffdf6'; ctx.fillRect(x, y, w, h);
-    const head = sh.innov ? ['★ 혁신 공방', '#b08800'] : sh.sprout ? [sh.verified ? '새싹 공방 · 실적 ' + (C.SPROUT_GOAL - sh.trial) + '/' + C.SPROUT_GOAL : '새싹 공방 · 실사 전', '#3a8a3a'] : !sh.isNew ? ['거래 실적 있는 업체', '#2f4f8a'] : sh.verified ? ['✔ 실사 완료 · 새 공방', '#2e9b3a'] : ['새 공방 · 실사 전', '#6a5a3a'];
+    const head = sh.innov ? ['★ 혁신 공방', '#b08800'] : sh.sprout ? [sh.verified ? '새싹 공방 · 실적 ' + (C.SPROUT_GOAL - sh.trial) + '/' + C.SPROUT_GOAL : '새싹 공방 · 등록 심사 중', '#3a8a3a'] : !sh.isNew ? ['✔ 나라장터 등록 업체', '#2f4f8a'] : sh.verified ? ['✔ 실사 통과 · 등록 완료', '#2e9b3a'] : ['새 공방 · 등록 심사 중', '#6a5a3a'];
     ctx.fillStyle = head[1]; ctx.fillRect(x, y, w, 18);
     T(ctx, head[0] + (sh.tier >= 2 ? ' · 공장' : sh.tier ? ' · 작업장' : ''), x + w / 2, y + 9, 12, '#fff');
     items.forEach((it, i) => {

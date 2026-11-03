@@ -165,16 +165,21 @@ G.narmi = {
       ctx.fillStyle = '#fffdf6'; ctx.fillRect(this.x - 3, y + 22, 6, 4);
       G.world.text(ctx, this.talk.text, this.x, y + 11, 12, '#2a2416');
     }
-    if (this.state === 'inspect') {                     // 데이터 분석: 화면판 + 자라는 막대그래프 + 진행 막대
-      const f = this.timer / G.C.INSPECT_TIME, x = Math.round(this.x), y = Math.round(this.y + 36);   // 나르미 아래 길 쪽
-      ctx.fillStyle = '#1e2a3a'; ctx.fillRect(x - 26, y - 22, 52, 30);
-      ctx.fillStyle = '#5ec8f2'; ctx.fillRect(x - 26, y - 22, 52, 2);
-      const hs = [0.5, 0.9, 0.35, 0.7];
-      hs.forEach((h, i) => { const k = Math.min(1, f * 1.6 - i * 0.15); if (k > 0) { ctx.fillStyle = i % 2 ? '#9be37a' : '#5ec8f2'; const bh = Math.round(18 * h * k); ctx.fillRect(x - 20 + i * 11, y + 2 - bh, 7, bh); } });
-      ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fillRect(x - 22, y - 16 + Math.round(f * 18) % 18, 44, 1);   // 스캔 줄
-      ctx.fillStyle = 'rgba(20,24,30,.85)'; ctx.fillRect(x - 26, y + 10, 52, 6);
-      ctx.fillStyle = '#9be37a'; ctx.fillRect(x - 25, y + 11, Math.round(50 * f), 4);
-      ctx.fillStyle = '#1e2a3a'; ctx.fillRect(x - 32, y + 16, 64, 16); G.world.text(ctx, '데이터 분석', x, y + 24, 12, '#fff');
+    if (this.state === 'inspect' && this.target && !this.target.isBroker) {   // 실사 보고서 (2026-11-03): 확인 항목 3개가 차례로
+      const sh = this.target, f = this.timer / G.C.INSPECT_TIME, x = Math.round(this.x), y = Math.round(this.y + 30);
+      const rows = [['사업장', true], ['생산 설비', !sh.fake], ['납품 실적', !sh.fake]];
+      const w = 132, h = 72, bx = Math.max(4, Math.min(G.C.VIEW.w - w - 4, x - w / 2));
+      ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(bx + 2, y + 3, w, h);
+      ctx.fillStyle = '#fffdf6'; ctx.fillRect(bx, y, w, h);
+      ctx.fillStyle = '#1e2a3a'; ctx.fillRect(bx, y, w, 16); G.world.text(ctx, '실사 보고서', bx + w / 2, y + 8, 12, '#fff');
+      rows.forEach(([name, ok], i) => {
+        const ry = y + 26 + i * 14, shown = f > 0.18 + i * 0.22;
+        G.world.text(ctx, name, bx + 10, ry, 12, '#4a3f2a', 'left');
+        if (shown) G.world.text(ctx, ok ? '✔ 확인' : '✘ 없음', bx + w - 10, ry, 12, ok ? '#2e9b3a' : '#d9342b', 'right');
+        else G.world.text(ctx, '…', bx + w - 10, ry, 12, '#8a8f99', 'right');
+      });
+      ctx.fillStyle = 'rgba(20,24,30,.85)'; ctx.fillRect(bx, y + h - 4, w, 4); ctx.fillStyle = '#5ec8f2'; ctx.fillRect(bx, y + h - 4, Math.round(w * f), 4);
     }
+
   },
 };

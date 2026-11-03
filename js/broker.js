@@ -107,7 +107,7 @@ G.broker = (() => {
       if (step(bk, dt, speed(S))) dumpGoods(S, r);
       return;
     }
-    if (bk.state === 'flee' && step(bk, dt, speed(S) * 1.3)) rest(S, S.elapsed > 120 ? C.BROKER_REST * 0.6 : C.BROKER_REST);
+    if (bk.state === 'flee' && step(bk, dt, speed(S) * 1.3)) rest(S, S.elapsed > C.LATE_AT ? C.BROKER_REST * 0.6 : C.BROKER_REST);
   }
   // 부정 납품: 그 계약은 불량품으로 실패
   function dumpGoods(S, r) {
