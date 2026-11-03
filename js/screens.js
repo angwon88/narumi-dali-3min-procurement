@@ -221,10 +221,11 @@ G.screens = (() => {
   }
 
   // ---------- 일시정지 ----------
-  const BTN_RESUME = { x: W / 2 - 90, y: 220, w: 180, h: 44 };
-  const BTN_RESTART = { x: W / 2 - 90, y: 276, w: 180, h: 44 };
-  const BTN_TITLE = { x: W / 2 - 90, y: 332, w: 180, h: 44 };
-  const BTN_PSOUND = { x: W / 2 - 90, y: 388, w: 88, h: 36 }, BTN_PMUSIC = { x: W / 2 + 2, y: 388, w: 88, h: 36 }, BTN_PULT = { x: W / 2 - 90, y: 432, w: 180, h: 32 }, BTN_PULTQ = { x: W / 2 + 96, y: 432, w: 28, h: 32 };
+  // 2026-11-03 일시정지 화면도 타이틀과 같은 톤(둥근 판·Jua·알약 버튼)
+  const BTN_RESUME = { x: W / 2 - 110, y: 236, w: 220, h: 54 };
+  const BTN_RESTART = { x: W / 2 - 110, y: 302, w: 106, h: 36 };
+  const BTN_TITLE = { x: W / 2 + 4, y: 302, w: 106, h: 36 };
+  const BTN_PSOUND = { x: W / 2 - 110, y: 350, w: 106, h: 32 }, BTN_PMUSIC = { x: W / 2 + 4, y: 350, w: 106, h: 32 }, BTN_PULT = { x: W / 2 - 110, y: 392, w: 180, h: 32 }, BTN_PULTQ = { x: W / 2 + 78, y: 392, w: 32, h: 32 };
   function pauseUpdate() {
     if (G.input.hit('escape') || G.input.hit('p') || ui.clicked(BTN_RESUME)) G.screen = 'play';
     else if (ui.clicked(BTN_RESTART)) newGame();
@@ -234,16 +235,27 @@ G.screens = (() => {
     else if (ui.clicked(BTN_PULTQ)) ultTipOn = !ultTipOn;
     else if (ui.clicked(BTN_PMUSIC)) G.music.toggle();
   }
-  function pauseDraw(ctx) {
+  function pauseDraw(ctx, t) {
     playDraw(ctx);
-    ctx.fillStyle = 'rgba(10,14,20,.7)'; ctx.fillRect(0, 0, W, H);
-    T(ctx, '잠깐 쉬는 중', W / 2, 170, 28, '#fff');
-    ui.button(ctx, BTN_RESUME, '계속'); ui.button(ctx, BTN_RESTART, '처음부터'); ui.button(ctx, BTN_TITLE, '타이틀로');
-    ui.button(ctx, BTN_PSOUND, soundLabel(), { size: 12, fill: '#cfd8e3', hot: '#fff' });
-    ui.button(ctx, BTN_PMUSIC, musicLabel(), { size: 12, fill: '#cfd8e3', hot: '#fff' });
-    ui.button(ctx, BTN_PULT, ultLabel(), { size: 12, fill: '#a9e3f2', hot: '#fff' });
-    ui.button(ctx, BTN_PULTQ, '?', { size: 16, fill: '#ffd84a', hot: '#fff3a0' });
-    if (ultTipOn || ui.hover(BTN_PULT) || ui.hover(BTN_PULTQ)) ui.tip(ctx, W / 2 - 150, 248, ui.ULT_TIP);
+    ctx.fillStyle = 'rgba(30,24,16,.55)'; ctx.fillRect(0, 0, W, H);
+    const S = G.S, px = W / 2 - 150, py = 112, pw = 300, ph = 352;
+    softShadow(ctx, 24, 8, .4); rr(ctx, px, py, pw, ph, 24); ctx.fillStyle = 'rgba(255,251,240,.97)'; ctx.fill(); noShadow(ctx);
+    // 3D 마스코트가 판 위로 살짝 고개를 내밂
+    const im = G.img.mascot3d;
+    if (im && im.naturalWidth) { const h = 120, w = im.naturalWidth * h / im.naturalHeight, bob = Math.sin((t || 0) * 2) * 2; ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, py + 6); ctx.clip(); ctx.imageSmoothingEnabled = true; ctx.drawImage(im, W / 2 - w / 2, py - 70 + bob, w, h); ctx.imageSmoothingEnabled = false; ctx.restore(); }
+    rr(ctx, W / 2 - 92, py + 4, 184, 40, 20); ctx.fillStyle = '#2f4f8a'; ctx.fill();
+    J(ctx, '잠깐 쉬는 중', W / 2, py + 25, 26, '#fff');
+    if (S) {                                                         // 지금 상황 한 줄
+      const k = G.missions.count(S);
+      J(ctx, '남은 시간 ' + G.U.fmtTime(S.timeLeft) + ' · 점수 ' + S.score + ' · 임무 ' + k + '/5', W / 2, py + 66, 15, '#6a5a3a');
+      J(ctx, '시간이 멈춰 있어요', W / 2, py + 88, 14, '#9a8a6a');
+    }
+    pill(ctx, BTN_RESUME, '계속하기', 'main', t || 0);
+    pill(ctx, BTN_RESTART, '처음부터', 'sub', 0); pill(ctx, BTN_TITLE, '타이틀로', 'sub', 0);
+    pill(ctx, BTN_PSOUND, soundLabel(), 'sub', 0); pill(ctx, BTN_PMUSIC, musicLabel(), 'sub', 0);
+    pill(ctx, BTN_PULT, ultLabel(), 'ult', 0); pill(ctx, BTN_PULTQ, '?', 'q', 0);
+    J(ctx, 'Esc·P 계속', W / 2, py + ph - 13, 13, '#9a8a6a');
+    if (ultTipOn || ui.hover(BTN_PULT) || ui.hover(BTN_PULTQ)) ui.tip(ctx, W / 2 - 150, BTN_PULT.y + 38, ui.ULT_TIP);
   }
 
   // ---------- 작전 종료 → 결과 ----------

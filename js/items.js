@@ -75,6 +75,7 @@ G.icons = (() => {
   // 가운데 (cx, cy), 크기 size
   function draw(ctx, id, cx, cy, size) {
     const s = size || 24; ctx.imageSmoothingEnabled = false;
+    if (id === 'raccoon') { G.broker.face(ctx, cx, cy, s); return; }   // 브로커 너구리 얼굴 (broker.js)
     ctx.drawImage(get(id), Math.round(cx - s / 2), Math.round(cy - s / 2), s, s);
   }
   return { draw, stars };

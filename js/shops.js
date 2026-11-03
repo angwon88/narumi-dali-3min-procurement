@@ -402,6 +402,24 @@ G.shops = (() => {
     ctx.fillStyle = '#6b4423'; ctx.fillRect(x + 12, up ? y + 6 : y + 10, 2, 6);   // 망치 자루
     ctx.fillStyle = '#7d7d7d'; ctx.fillRect(x + 11, up ? y + 4 : y + 9, 5, 3);    // 망치 머리
   }
+  // 구매 자리(문 앞 발판) 2026-11-03: 어디 서야 사는지 잘 안 보인다는 피드백 → 둥근 발판 + 필요한 물건이 있으면 깜빡이는 '구매' + 문 쪽 화살표
+  function doorMat(ctx, S, sh) {
+    const d = sh.w.door, x = d.x + 3, y = d.y + 4, w = d.w - 6, h = d.h - 8, t = S.elapsed || 0;
+    const here = S.buy && S.buy.shop === sh, check = sh.isNew && !sh.verified && !sh.innov;
+    const need = itemsOf(sh).some(it => needFits(S, sh, it.id));
+    const rr = () => { const r = 6; ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+    if (!need && !here) { rr(); ctx.fillStyle = 'rgba(255,248,225,.35)'; ctx.fill(); ctx.strokeStyle = 'rgba(120,90,40,.45)'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.lineWidth = 1; return; }
+    const on = 0.5 + Math.sin(t * 6) * 0.5, col = check ? '#0f8a96' : '#2e9b3a';
+    ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(x + 1, y + h - 1, w, 3);
+    rr(); ctx.fillStyle = here ? '#fff3b0' : check ? 'rgba(200,240,245,.95)' : 'rgba(225,255,215,.95)'; ctx.fill();
+    ctx.strokeStyle = col; ctx.lineWidth = 2 + on; ctx.stroke(); ctx.lineWidth = 1;
+    G.world.text(ctx, check ? '실사' : '구매', x + w / 2, y + h / 2 + 1, 12, col);
+    if (!here) {                                                      // 위(문)로 올라가는 작은 화살표
+      const ax = x + w / 2, ay = y - 2 - ((t * 1.5) % 1) * 5;
+      ctx.globalAlpha = 0.6 + on * 0.4; ctx.fillStyle = col;
+      ctx.beginPath(); ctx.moveTo(ax - 5, ay); ctx.lineTo(ax + 5, ay); ctx.lineTo(ax, ay - 5); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+    }
+  }
   function needFits(S, sh, itemId) {
     const reqs = G.requests.active(S).filter(r => r.item === itemId);
     if (!reqs.length || reqs.length <= G.dali.bag.filter(b => b.item === itemId).length) return false;
@@ -575,6 +593,7 @@ G.shops = (() => {
       chimney(ctx, sh);
       windowView(ctx, sh);
       priceTag(ctx, S, sh);
+      if (sh.status === 'open') doorMat(ctx, S, sh);
       if (sh.status === 'closing') {               // 속인 뒤: 셔터 + 폐업 팻말
         shutter(ctx, b, Math.min(1, sh.closeT / 0.4), '');
         ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + b.w / 2 - 34, b.y + 34, 68, 20);

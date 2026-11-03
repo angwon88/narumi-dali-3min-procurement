@@ -1,0 +1,17 @@
+"""타이틀·일시정지 화면용 둥근 글꼴(Jua, OFL) 부분 글꼴 만들기.
+화면에 새 글자를 넣으면 STRS에 추가하고 다시 실행: python3 tools/subset_font.py
+Google Fonts의 text= 기능으로 필요한 글자만 담은 woff2를 받는다 (인터넷 필요)."""
+import urllib.parse, urllib.request, re, string, os
+STRS = ['나르미와 달이의', '2분 조달작전', '조달관 5대 임무', '조건 맞춰 가성비 납품', '페이퍼컴퍼니 적발', '브로커 차단', '새싹을 혁신제품으로', '위기 대응',
+        '작전 시작', '소개 다시 보기', '소리 켜기', '소리 끄기', '음악 켜기', '음악 끄기', 'AI 조사: 자동 사용', 'AI 조사: 직접 사용(Q)',
+        '터치·클릭으로 이동 · Space 브로커 · Enter 시작 · M 소리', '최고 점수 최고 등급', '조달청 공식 마스코트', '나르미', '달이',
+        # 일시정지
+        '잠깐 쉬는 중', '작전 일시정지', '계속하기', '처음부터', '타이틀로', '남은 시간', '점수', '임무', '아낀 세금', '만원', 'Esc·P 계속', '시간이 멈춰 있어요']
+chars = set(''.join(STRS)) | set(string.ascii_letters + string.digits + string.punctuation + ' ·★✔')
+url = 'https://fonts.googleapis.com/css2?family=Jua&text=' + urllib.parse.quote(''.join(sorted(chars)))
+ua = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 Chrome/120 Safari/537.36'}
+css = urllib.request.urlopen(urllib.request.Request(url, headers=ua)).read().decode()
+src = re.search(r"url\((.*?)\) format\('woff2'\)", css).group(1)
+data = urllib.request.urlopen(src).read()
+out = os.path.join(os.path.dirname(__file__), '..', 'assets', 'Jua-title.woff2')
+open(out, 'wb').write(data); print('assets/Jua-title.woff2', len(data), 'bytes,', len(chars), '글자')

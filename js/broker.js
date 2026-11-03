@@ -186,6 +186,17 @@ G.broker = (() => {
     rows.forEach((row, y) => [...row.padEnd(22, '.')].forEach((ch, x) => { if (PAL[ch]) { g.fillStyle = PAL[ch]; g.fillRect(x * u, y * u, u, u); } }));
     return (frames[i] = c);
   }
+  // 얼굴만 (2026-11-03: 5대 임무 '브로커 차단' 아이콘) — 몸 그림의 위 12줄(모자+얼굴)
+  let faceC = null;
+  function face(ctx, cx, cy, size) {
+    if (!faceC) {
+      const u = 2, rows = TOP.slice(0, 12); faceC = document.createElement('canvas'); faceC.width = 17 * u; faceC.height = rows.length * u;
+      const g = faceC.getContext('2d');
+      rows.forEach((row, y) => [...row.padEnd(22, '.')].slice(3, 20).forEach((ch, x) => { if (PAL[ch]) { g.fillStyle = PAL[ch]; g.fillRect(x * u, y * u, u, u); } }));
+    }
+    const w = size * 1.15, h = w * faceC.height / faceC.width;
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(faceC, Math.round(cx - w / 2), Math.round(cy - h / 2), Math.round(w), Math.round(h));
+  }
   function raccoon(ctx, bk, S) {
     const moving = bk.state === 'run' || bk.state === 'flee', step2 = moving ? Math.floor(bk.t * 10) % 2 : 0;
     const bob = moving ? step2 : Math.round(Math.sin(bk.t * 3));
@@ -247,5 +258,5 @@ G.broker = (() => {
     ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('브로커!', b.w - 22, -5);
     ctx.strokeStyle = blink ? '#e5533d' : 'rgba(229,83,61,.5)'; ctx.lineWidth = 2; ctx.strokeRect(-2, -2, b.w + 4, b.h + 4); ctx.lineWidth = 1;
   }
-  return { init, update, draw, drawSanction, hit, request, caught, bubbleMark, raccoon };
+  return { init, update, draw, drawSanction, hit, request, caught, bubbleMark, raccoon, face };
 })();

@@ -13,7 +13,7 @@ G.missions = (() => {
     { id: 'paper', desc: '너무 싸고 좋은 새 공방은 나르미 실사로 걸러내요', name: '페이퍼컴퍼니 적발', short: '페이퍼컴퍼니 적발!', col: '#d9342b', icon: 'tablet',
       done: s => n(s.caught) > 0,
       real: '실제로도 조달청은 데이터로 페이퍼컴퍼니 의심 업체를 골라 걸러내요' },
-    { id: 'broker', desc: '계약을 가로채려는 브로커를 눌러 나르미로 막아요', name: '브로커 차단', short: '브로커 차단!', col: '#7a3fb0', icon: 'ext',
+    { id: 'broker', desc: '계약을 가로채려는 브로커를 눌러 나르미로 막아요', name: '브로커 차단', short: '브로커 차단!', col: '#7a3fb0', icon: 'raccoon',
       done: s => n(s.brokerCaught) + n(s.brokerBlocked) > 0,
       real: '실제로도 조달청은 브로커의 불공정 행위를 신고받고, 걸리면 입찰참가자격을 제한해요' },
     { id: 'sprout', desc: '새싹 공방을 사 줘서 실적 3건이면 혁신제품 지정!', name: '새싹을 혁신제품으로', short: '새싹 성장!', col: '#d39e00', icon: 'lamp',
