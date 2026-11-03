@@ -2,7 +2,7 @@
    제도명은 여기서만 연결한다(기획서 원칙). 문구 근거는 기획서 부록 B. */
 'use strict';
 G.result = (() => {
-  const C = G.C, W = C.VIEW.w, T = (...a) => G.world.text(...a);
+  const C = G.C, W = C.VIEW.w;
   let t = 0, stamped = false;
 
   // S등급은 점수·신뢰 + 조달관 5대 임무를 모두 해야 (2026-11-03). 점수는 S인데 임무가 모자라면 A + 안내
@@ -147,50 +147,47 @@ G.result = (() => {
     if (!stamped && t >= 0.7) { stamped = true; G.audio.play(G.S.grade === 'S' || G.S.grade === 'A' ? 'levelup' : 'ok'); }
   }
 
-  function card(ctx, x, y, w, h, title, main, mainCol, sub) {
-    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x + 3, y + 4, w, h);
-    ctx.fillStyle = '#fffdf6'; ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = '#2f4f8a'; ctx.fillRect(x, y, w, 22);
-    T(ctx, title, x + w / 2, y + 11, 12, '#fff');
-    T(ctx, main, x + w / 2, y + 37, 20, mainCol);
-    if (sub) T(ctx, sub, x + w / 2, y + 54, 12, '#6a5a3a');
-  }
-
+  // 2026-11-03 타이틀·일시정지와 같은 톤: 일러스트 배경 + 둥근 크림 판 + 둥근 글꼴(Jua) + 스티커 제목
   function draw(ctx, S) {
-    const s = S.stats || {};
-    ctx.fillStyle = '#1e2a3a'; ctx.fillRect(0, 0, W, C.VIEW.h);
-    ctx.fillStyle = '#25344a'; for (let x = 0; x < W; x += 32) ctx.fillRect(x, 0, 16, C.VIEW.h);   // 은은한 줄무늬
+    const s = S.stats || {}, K = G.soft, J = K.J, H = C.VIEW.h;
+    K.bg(ctx);
+    ctx.fillStyle = 'rgba(40,30,20,.5)'; ctx.fillRect(0, 0, W, H);
 
-    // 1. 제목 + 점수 + 등급 도장(나르미가 찍음)
-    T(ctx, '작전 종료!', W / 2 - 80 + 3, 40 + 3, 36, '#2f4f8a'); T(ctx, '작전 종료!', W / 2 - 80, 40, 36, '#ffd84a');
-    T(ctx, '점수 ' + S.score.toLocaleString() + (S.newBest ? '  · 최고 기록!' : ''), W / 2 - 80, 82, 20, S.newBest ? '#ffe48a' : '#fff');
-    if (S.resTitle && t >= 0.3) {                                    // 오늘의 칭호 리본
+    // 1. 스티커 제목 + 점수 + 오늘의 칭호
+    const hx = W / 2 - 110;
+    const tg = ctx.createLinearGradient(0, 18, 0, 70); tg.addColorStop(0, '#fff17a'); tg.addColorStop(0.55, '#ffc93a'); tg.addColorStop(1, '#ff9a26');
+    K.softShadow(ctx, 10, 5, .35); J(ctx, '작전 종료!', hx, 42, 50, '#fff', { stroke: [['#fff', 16]] }); K.noShadow(ctx);
+    J(ctx, '작전 종료!', hx, 42, 50, tg, { stroke: [['#2f4f8a', 8]] });
+    J(ctx, '점수 ' + S.score.toLocaleString() + (S.newBest ? '  · 최고 기록!' : ''), hx, 86, 24, S.newBest ? '#fff3b0' : '#fff', { stroke: [['rgba(40,28,10,.6)', 5]] });
+    if (S.resTitle && t >= 0.3) {                                    // 오늘의 칭호 리본(둥근 알약)
       const tl = S.resTitle, k = Math.min(1, (t - 0.3) / 0.25);
-      ctx.save(); ctx.globalAlpha = k; ctx.font = '16px "Galmuri11 Bold", ' + G.FONT;
-      const tw = ctx.measureText('오늘의 칭호  ' + tl.name).width + 28, rx = W / 2 - 80 - tw / 2, ry = 96;
-      ctx.fillStyle = '#a8231b'; ctx.fillRect(rx - 8, ry + 4, 8, 16); ctx.fillRect(rx + tw, ry + 4, 8, 16);
-      ctx.fillStyle = '#d9342b'; ctx.fillRect(rx, ry, tw, 22);
-      ctx.fillStyle = '#ffd84a'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(tl.name, rx + 14 + ctx.measureText('오늘의 칭호  ').width, ry + 12);
-      ctx.font = '12px ' + G.FONT; ctx.fillStyle = '#fff'; ctx.fillText('오늘의 칭호', rx + 14, ry + 12);
+      ctx.save(); ctx.globalAlpha = k;
+      ctx.font = '18px ' + '"Jua", sans-serif'; const nw = ctx.measureText(tl.name).width; ctx.font = '13px "Jua", sans-serif'; const lw = ctx.measureText('오늘의 칭호').width;
+      const tw = nw + lw + 40, rx = hx - tw / 2, ry = 102;
+      K.softShadow(ctx, 8, 3, .3); K.rr(ctx, rx, ry, tw, 28, 14); ctx.fillStyle = '#d9342b'; ctx.fill(); K.noShadow(ctx);
+      J(ctx, '오늘의 칭호', rx + 14, ry + 15, 13, '#ffd6cc', { align: 'left' });
+      J(ctx, tl.name, rx + 26 + lw, ry + 15, 18, '#ffe45a', { align: 'left' });
       ctx.restore();
-      T(ctx, tl.sub + '  ·  신뢰 ' + Math.round(S.trust) + '  ·  아낀 세금 ' + S.saved + '만원', W / 2 - 80, 127, 12, '#cfe3f5');
+      J(ctx, tl.sub + '  ·  신뢰 ' + Math.round(S.trust) + '  ·  아낀 세금 ' + S.saved + '만원', hx, 145, 15, '#fff6dc', { stroke: [['rgba(40,28,10,.55)', 4]] });
     }
-    const gx = W / 2 + 190, gy = 66, col = GRADE_COL[S.grade];
-    const im = G.img.mascot3d;                                          // 2026-11-03: 공식 3D 나르미·달이 (도장 찍을 때 톡 튀어 오름)
-    if (im && im.naturalWidth) { const h = 112, w = im.naturalWidth * h / im.naturalHeight, jump = t > 0.5 && t < 0.9 ? -Math.sin((t - 0.5) / 0.4 * Math.PI) * 10 : 0; ctx.imageSmoothingEnabled = true; ctx.drawImage(im, gx + 168 - w / 2, gy - 58 + jump, w, h); ctx.imageSmoothingEnabled = false; }
+    // 등급 도장 (흰 원판 위) + 3D 나르미·달이
+    const gx = W / 2 + 190, gy = 72, col = GRADE_COL[S.grade];
+    const im = G.img.mascot3d;
+    if (im && im.naturalWidth) { const h = 124, w = im.naturalWidth * h / im.naturalHeight, jump = t > 0.5 && t < 0.9 ? -Math.sin((t - 0.5) / 0.4 * Math.PI) * 10 : 0; ctx.imageSmoothingEnabled = true; ctx.drawImage(im, gx + 170 - w / 2, gy - 62 + jump, w, h); ctx.imageSmoothingEnabled = false; }
     else G.spr.drawChar(ctx, 'narmi', t < 0.9 ? 'act' : 'rot', 'sw', t, gx + 92, gy + 38, 1.1);
     if (t >= 0.5) {
       const k = Math.min(1, (t - 0.5) / 0.2), sc = 2.4 - 1.4 * k;
       ctx.save(); ctx.translate(gx, gy); ctx.rotate(-0.14); ctx.scale(sc, sc); ctx.globalAlpha = Math.min(1, k * 1.5);
-      ctx.strokeStyle = col; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 0, 34, 0, Math.PI * 2); ctx.stroke();
-      ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 28, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1;
-      ctx.font = '40px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(S.grade, 0, 2);
+      K.softShadow(ctx, 10, 4, .35); ctx.fillStyle = 'rgba(255,251,240,.96)'; ctx.beginPath(); ctx.arc(0, 0, 40, 0, 7); ctx.fill(); K.noShadow(ctx);
+      ctx.strokeStyle = col; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 0, 34, 0, 7); ctx.stroke();
+      ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 28, 0, 7); ctx.stroke(); ctx.lineWidth = 1;
+      J(ctx, S.grade, 0, 3, 46, col);
       ctx.restore(); ctx.globalAlpha = 1;
-      if (t >= 0.8) T(ctx, S.gradeNote || (GRADE_MSG[S.grade] + (S.newBestGrade ? ' (최고 등급!)' : '')), gx, gy + 52, 12, S.gradeNote ? '#ffb3a8' : '#ffe48a');
+      if (t >= 0.8) J(ctx, S.gradeNote || (GRADE_MSG[S.grade] + (S.newBestGrade ? ' (최고 등급!)' : '')), gx, gy + 56, 15, S.gradeNote ? '#ffd0c8' : '#fff3b0', { stroke: [['rgba(40,28,10,.6)', 4]] });
     }
 
-    // 2. 조달관 5대 임무 카드 (2026-11-03): 임무 색 머리 + 이번 판 숫자, 달성하면 ✔ 도장
-    const cw = 168, ch = 62, gap = 10, cx0 = (W - (cw * 5 + gap * 4)) / 2, cy = 150;
+    // 2. 조달관 5대 임무 카드: 둥근 카드 + 임무 색 머리 + ✔ 도장
+    const cw = 170, ch = 64, gap = 9, cx0 = (W - (cw * 5 + gap * 4)) / 2, cy = 184;
     const late = s.reqExpired || 0, qf = s.qFail || 0, stop = (s.brokerBlocked || 0) + (s.brokerCaught || 0);
     const info = {
       value: ['가성비 ' + (s.valueBest || 0) + '번', '합격 ' + S.delivered + (qf || late ? ' · 불합격 ' + qf + ' · 늦음 ' + late : '건')],
@@ -199,44 +196,49 @@ G.result = (() => {
       sprout: ['혁신제품 ' + (s.innov || 0) + '곳', '새싹 실적 ' + (s.sproutBuy || 0) + ' · 공방 성장 ' + (s.shopGrow || 0)],
       prep: ['대응 ' + ((s.prepared || 0) + (s.urgentDone || 0)) + '번', '긴급 해결 ' + (s.urgentDone || 0) + ' · 비축 방출 ' + (s.released || 0)],
     };
+    const mk = G.missions.count(S);
+    J(ctx, mk === 5 ? '★ 5대 임무 완수! 완벽한 조달관 ★' : '조달관 5대 임무 ' + mk + '/5', W / 2, cy - 13, 15, mk === 5 ? '#ffe45a' : '#fff6dc', { stroke: [['rgba(40,28,10,.6)', 4]] });
     G.missions.LIST.forEach((m, i) => {
       const x = cx0 + (cw + gap) * i, on = S.missions && S.missions[m.id] != null, [main, sub] = info[m.id];
-      ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x + 3, cy + 4, cw, ch);
-      ctx.fillStyle = on ? '#fffdf6' : '#d8d2c4'; ctx.fillRect(x, cy, cw, ch);
-      ctx.fillStyle = on ? m.col : '#7d8590'; ctx.fillRect(x, cy, cw, 22);
-      T(ctx, (i + 1) + ' ' + m.name, x + cw / 2, cy + 11, 12, '#fff');
-      T(ctx, main, x + cw / 2 - (on ? 14 : 0), cy + 37, 16, on ? m.col : '#6a6a6a');
-      T(ctx, sub, x + cw / 2, cy + 55, 12, '#6a5a3a');
-      if (on) {                                                       // ✔ 도장
-        ctx.save(); ctx.translate(x + cw - 24, cy + 38); ctx.rotate(-0.2);
+      K.softShadow(ctx, 10, 4, .3); K.rr(ctx, x, cy, cw, ch, 14); ctx.fillStyle = on ? 'rgba(255,251,240,.97)' : 'rgba(225,220,208,.94)'; ctx.fill(); K.noShadow(ctx);
+      ctx.save(); K.rr(ctx, x, cy, cw, ch, 14); ctx.clip(); ctx.fillStyle = on ? m.col : '#8a909a'; ctx.fillRect(x, cy, cw, 22); ctx.restore();
+      J(ctx, (i + 1) + '  ' + m.name, x + cw / 2, cy + 12, 14, '#fff');
+      J(ctx, main, x + cw / 2 - (on ? 14 : 0), cy + 38, 19, on ? m.col : '#6a6a6a');
+      J(ctx, sub, x + cw / 2, cy + 55, 12, '#7a6a4a');
+      if (on) {
+        ctx.save(); ctx.translate(x + cw - 22, cy + 39); ctx.rotate(-0.2);
         ctx.strokeStyle = m.col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 12, 0, 7); ctx.stroke(); ctx.lineWidth = 1;
-        T(ctx, '✔', 0, 1, 16, m.col); ctx.restore();
+        J(ctx, '✔', 0, 1, 16, m.col); ctx.restore();
       }
     });
-    const mk = G.missions.count(S);
-    T(ctx, mk === 5 ? '★ 5대 임무 완수! 완벽한 조달관 ★' : '조달관 5대 임무 ' + mk + '/5', W / 2, cy - 9, 12, mk === 5 ? '#ffd84a' : '#cfe3f5');
 
-    // 3. 오늘 한 일, 실제로는?
-    const bx = cx0, by = 228, bw = W - cx0 * 2, bh = 192;
-    ctx.fillStyle = 'rgba(255,253,246,.96)'; ctx.fillRect(bx, by, bw, bh);
-    ctx.strokeStyle = '#ffd84a'; ctx.lineWidth = 2; ctx.strokeRect(bx + 1, by + 1, bw - 2, bh - 2); ctx.lineWidth = 1;
-    ctx.fillStyle = '#ffd84a'; ctx.fillRect(bx, by - 12, 186, 24);
-    T(ctx, '오늘 한 일, 실제로는?', bx + 93, by, 16, '#2a2416');
-    let y = by + 24;
-    (S.resFacts || []).forEach((f, i) => {
+    // 3. 오늘 한 일, 실제로는? (크림색 둥근 판)
+    const bx = cx0, by = 266, bw = W - cx0 * 2, bh = 180;
+    K.softShadow(ctx, 18, 6, .3); K.rr(ctx, bx, by, bw, bh, 18); ctx.fillStyle = 'rgba(255,251,240,.97)'; ctx.fill(); K.noShadow(ctx);
+    K.rr(ctx, bx + 20, by - 13, 200, 26, 13); ctx.fillStyle = '#2f4f8a'; ctx.fill();
+    J(ctx, '오늘 한 일, 실제로는?', bx + 120, by + 1, 16, '#fff');
+    // 글자 크기: 3개가 다 들어가는 가장 큰 크기(14 → 13 → 12)
+    const facts = S.resFacts || [];
+    let fs = 14, LH = 16, wrapped;
+    for (fs = 14; fs >= 12; fs--) {
+      LH = fs + 2; ctx.font = fs + 'px "Jua", sans-serif';
+      wrapped = facts.map(f => wrap(ctx, '→ 실제로는 ' + f.text, bw - 186));
+      if (28 + wrapped.reduce((h, ls) => h + 19 + ls.length * LH + 8, 0) - 8 <= bh) break;
+    }
+    const used = 28 + wrapped.reduce((h, ls) => h + 19 + ls.length * LH + 8, 0) - 8;
+    let y = by + 28 + Math.max(0, Math.min(16, (bh - used) / 2));      // 남는 공간이 있으면 가운데 쪽으로
+    facts.forEach((f, i) => {
       if (t < 1.0 + i * 0.35) return;                                   // 한 줄씩 차례로 등장
-      ctx.font = '12px ' + G.FONT;
-      const lines = wrap(ctx, '→ 실제로는 ' + f.text, bw - 176);
-      if (y + 16 + lines.length * 15 > by + bh) return;
-      ctx.fillStyle = f.col; ctx.fillRect(bx + 14, y - 9, 132, 20);
-      T(ctx, f.tag, bx + 80, y + 1, 12, '#fff');
-      ctx.font = '16px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = f.col; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(f.me, bx + 158, y + 1);
-      lines.forEach((ln, j) => T(ctx, ln, bx + 158, y + 20 + j * 15, 12, '#4a3f2a', 'left'));
-      y += 20 + lines.length * 15 + 16;
+      const lines = wrapped[i]; if (y + 8 + lines.length * LH > by + bh) return;   // 그래도 넘치면 그 사실은 생략
+      K.rr(ctx, bx + 16, y - 11, 138, 22, 11); ctx.fillStyle = f.col; ctx.fill();
+      J(ctx, f.tag, bx + 85, y + 1, 13, '#fff');
+      J(ctx, f.me, bx + 168, y + 1, 17, f.col, { align: 'left' });
+      lines.forEach((ln, j) => J(ctx, ln, bx + 168, y + 19 + j * LH, fs, '#5a4e36', { align: 'left' }));
+      y += 19 + lines.length * LH + 8;
     });
 
-    // 4. 고정 문구 + 버튼 + CI
-    T(ctx, '필요한 것을, 공정하게, 효율적으로, 필요한 곳에 제때 — 그게 조달입니다.', W / 2, 436, 16, '#fff');
+    // 4. 고정 문구
+    J(ctx, '필요한 것을, 공정하게, 효율적으로, 필요한 곳에 제때 — 그게 조달입니다.', W / 2, 457, 17, '#fff', { stroke: [['rgba(40,28,10,.65)', 5]] });
   }
   return { start, update, draw, grade };
 })();

@@ -67,7 +67,7 @@ G.screens = (() => {
     } else {
       softShadow(ctx, 8, 3, .25); rr(ctx, 0, 0, r.w, r.h, R); ctx.fillStyle = kind === 'q' ? (hot ? '#fff0a0' : '#ffd84a') : kind === 'ult' ? (hot ? '#ffffff' : 'rgba(225,246,255,.92)') : (hot ? '#ffffff' : 'rgba(255,252,244,.88)'); ctx.fill(); noShadow(ctx);
       ctx.strokeStyle = kind === 'ult' ? 'rgba(47,140,190,.55)' : 'rgba(47,79,138,.25)'; ctx.lineWidth = 1.5; rr(ctx, .75, .75, r.w - 1.5, r.h - 1.5, R); ctx.stroke(); ctx.lineWidth = 1;
-      J(ctx, label, r.w / 2, r.h / 2 + 1, kind === 'q' ? 18 : 15, kind === 'ult' ? '#1d5f85' : '#2f4f8a');
+      J(ctx, label, r.w / 2, r.h / 2 + 1, kind === 'q' ? 18 : r.h >= 40 ? 21 : 15, kind === 'ult' ? '#1d5f85' : '#2f4f8a');
     }
     ctx.restore();
   }
@@ -77,6 +77,7 @@ G.screens = (() => {
     softShadow(ctx, 8, 3, .2); rr(ctx, cx - w / 2 - 14, y - 7, w + 28, h + 14, (h + 14) / 2); ctx.fillStyle = '#fff'; ctx.fill(); noShadow(ctx);
     ctx.imageSmoothingEnabled = true; ctx.drawImage(im, cx - w / 2, y, w, h); ctx.imageSmoothingEnabled = false;
   }
+  G.soft = { rr, J, pill, softShadow, noShadow, bg: c => titleBg(c), ciPlate: (...a) => ciPlate(...a) };   // 결과 화면도 같이 씀 (2026-11-03)
   const LX = 300;                                                       // 왼쪽 단 가운데
   // 5대 임무: 크림색 둥근 판 + 임무 색 동그라미 번호
   function titleMissions(ctx) {
@@ -262,20 +263,22 @@ G.screens = (() => {
   function endUpdate(dt) { endT -= dt; if (endT <= 0) finish(); }
   function endDraw(ctx) {
     playDraw(ctx);
-    ctx.fillStyle = 'rgba(10,14,20,.5)'; ctx.fillRect(0, 0, W, H);
-    T(ctx, '작전 종료!', W / 2 + 3, H / 2 + 3, 48, '#2f4f8a'); T(ctx, '작전 종료!', W / 2, H / 2, 48, '#ffd84a');
+    ctx.fillStyle = 'rgba(30,24,16,.5)'; ctx.fillRect(0, 0, W, H);
+    const tg = ctx.createLinearGradient(0, H / 2 - 30, 0, H / 2 + 30); tg.addColorStop(0, '#fff17a'); tg.addColorStop(0.55, '#ffc93a'); tg.addColorStop(1, '#ff9a26');
+    softShadow(ctx, 12, 6, .35); J(ctx, '작전 종료!', W / 2, H / 2, 72, '#fff', { stroke: [['#fff', 20]] }); noShadow(ctx);
+    J(ctx, '작전 종료!', W / 2, H / 2, 72, tg, { stroke: [['#2f4f8a', 10]] });
   }
-  const BTN_AGAIN = { x: W / 2 - 210, y: 454, w: 200, h: 40 };
-  const BTN_HOME = { x: W / 2 + 10, y: 454, w: 200, h: 40 };
+  const BTN_AGAIN = { x: W / 2 - 215, y: 476, w: 200, h: 44 };
+  const BTN_HOME = { x: W / 2 + 15, y: 476, w: 200, h: 44 };
   function resultUpdate(dt) {
     G.result.update(dt);
     if (ui.clicked(BTN_AGAIN) || G.input.hit('enter')) newGame();
     else if (ui.clicked(BTN_HOME) || G.input.hit('escape')) G.screen = 'title';
   }
-  function resultDraw(ctx) {
+  function resultDraw(ctx, t) {
     G.result.draw(ctx, G.S);
-    ui.button(ctx, BTN_AGAIN, '다시 하기'); ui.button(ctx, BTN_HOME, '타이틀로');
-    ciPlate(ctx, 'ci_h', W / 2, 508, 22);
+    pill(ctx, BTN_AGAIN, '다시 하기', 'main', t || 0); pill(ctx, BTN_HOME, '타이틀로', 'sub', 0);
+    ciPlate(ctx, 'ci_h', W - 80, 488, 22);
   }
 
   const table = {
