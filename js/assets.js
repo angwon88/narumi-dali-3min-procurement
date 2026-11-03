@@ -3,7 +3,7 @@
 'use strict';
 G.ASSET_SRC = {
   dali: 'assets/dali.png', narmi: 'assets/narmi.png',
-  ci_h: 'assets/ci_h.png', ci_v: 'assets/ci_v.png',
+  ci_h: 'assets/ci_h.png', ci_v: 'assets/ci_v.png', mascot3d: 'assets/mascot3d.png',   // mascot3d: 공모전 제공 공식 3D 이미지를 줄인 것(타이틀·결과)
 };
 G.FONT_SRC = {
   'Galmuri11': 'assets/Galmuri11.woff2',

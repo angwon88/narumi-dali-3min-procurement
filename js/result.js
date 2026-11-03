@@ -176,7 +176,9 @@ G.result = (() => {
       T(ctx, tl.sub + '  ·  신뢰 ' + Math.round(S.trust) + '  ·  아낀 세금 ' + S.saved + '만원', W / 2 - 80, 127, 12, '#cfe3f5');
     }
     const gx = W / 2 + 190, gy = 66, col = GRADE_COL[S.grade];
-    G.spr.drawChar(ctx, 'narmi', t < 0.9 ? 'act' : 'rot', 'sw', t, gx + 92, gy + 38, 1.1);
+    const im = G.img.mascot3d;                                          // 2026-11-03: 공식 3D 나르미·달이 (도장 찍을 때 톡 튀어 오름)
+    if (im && im.naturalWidth) { const h = 112, w = im.naturalWidth * h / im.naturalHeight, jump = t > 0.5 && t < 0.9 ? -Math.sin((t - 0.5) / 0.4 * Math.PI) * 10 : 0; ctx.imageSmoothingEnabled = true; ctx.drawImage(im, gx + 168 - w / 2, gy - 58 + jump, w, h); ctx.imageSmoothingEnabled = false; }
+    else G.spr.drawChar(ctx, 'narmi', t < 0.9 ? 'act' : 'rot', 'sw', t, gx + 92, gy + 38, 1.1);
     if (t >= 0.5) {
       const k = Math.min(1, (t - 0.5) / 0.2), sc = 2.4 - 1.4 * k;
       ctx.save(); ctx.translate(gx, gy); ctx.rotate(-0.14); ctx.scale(sc, sc); ctx.globalAlpha = Math.min(1, k * 1.5);
@@ -191,7 +193,7 @@ G.result = (() => {
     const cw = 168, ch = 62, gap = 10, cx0 = (W - (cw * 5 + gap * 4)) / 2, cy = 150;
     const late = s.reqExpired || 0, qf = s.qFail || 0, stop = (s.brokerBlocked || 0) + (s.brokerCaught || 0);
     const info = {
-      value: ['가성비 ' + (s.valueBest || 0) + '번', '검수 합격 ' + S.delivered + '건' + (qf || late ? ' · 불합격 ' + qf + ' · 늦음 ' + late : '')],
+      value: ['가성비 ' + (s.valueBest || 0) + '번', '합격 ' + S.delivered + (qf || late ? ' · 불합격 ' + qf + ' · 늦음 ' + late : '건')],
       paper: ['적발 ' + (s.caught || 0) + '곳', '실사 ' + ((s.certified || 0) + (s.caught || 0)) + '번'],
       broker: ['차단 ' + stop + '번', s.brokerWon ? '뺏긴 계약 ' + s.brokerWon + '건' : '한 번도 안 뺏김!'],
       sprout: ['혁신제품 ' + (s.innov || 0) + '곳', '새싹 실적 ' + (s.sproutBuy || 0) + ' · 공방 성장 ' + (s.shopGrow || 0)],

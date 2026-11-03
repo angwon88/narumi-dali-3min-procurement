@@ -21,8 +21,8 @@ G.screens = (() => {
   }
 
   // ---------- 타이틀 ----------
-  const BTN_START = { x: W / 2 - 100, y: 360, w: 200, h: 48 };
-  const BTN_INTRO = { x: W / 2 - 70, y: 420, w: 140, h: 30 };          // 상황 소개 다시 보기
+  const BTN_START = { x: 300 - 110, y: 362, w: 220, h: 48 };   // 2026-11-03 왼쪽 단
+  const BTN_INTRO = { x: 300 - 70, y: 420, w: 140, h: 30 };            // 상황 소개 다시 보기
   const BTN_SOUND = { x: W - 118, y: 12, w: 106, h: 30 };              // 소리 켜기/끄기 (휴대폰용, 2026-11-03)
   const soundLabel = () => G.audio.isMuted() ? '소리 켜기' : '소리 끄기';
   const BTN_MUSIC = { x: W - 118, y: 48, w: 106, h: 30 };
@@ -45,36 +45,42 @@ G.screens = (() => {
     ctx.imageSmoothingEnabled = true; ctx.drawImage(im, cx - w / 2, y, w, h); ctx.imageSmoothingEnabled = false;
   }
   // 이 게임에 담긴 조달청 제도 (2026-11-02 주제 가시성): 결과 화면 '실제로는?' 태그와 같은 색
-  // 2026-11-03: 조달관 5대 임무 (missions.js의 이름·색)
-  const BADGES = () => G.missions.LIST.map((m, i) => [(i + 1) + ' ' + m.name, m.col]);
-  function titleBadges(ctx) {
-    ctx.font = '12px ' + G.FONT;
-    const bs = BADGES(), pad = 10, gap = 6, ws = bs.map(([s]) => Math.ceil(ctx.measureText(s).width) + pad * 2);
-    let x = W / 2 - (ws.reduce((a, b) => a + b, 0) + gap * (ws.length - 1)) / 2;
-    const y = 236;
-    T(ctx, '조달관 5대 임무', W / 2, y - 12, 12, '#ffe48a');
-    bs.forEach(([s, col], i) => {
-      ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x + 2, y + 3, ws[i], 22);
-      ctx.fillStyle = col; ctx.fillRect(x, y, ws[i], 22);
-      ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(x, y, ws[i], 2);
-      T(ctx, s, x + ws[i] / 2, y + 12, 12, '#fff');
-      x += ws[i] + gap;
+  // 2026-11-03 그래픽 상향: 왼쪽 = 제목·5대 임무·버튼, 오른쪽 = 공식 3D 나르미·달이 (공모전 제공 이미지)
+  const LX = 300;                                                       // 왼쪽 단 가운데
+  function titleMissions(ctx) {
+    const y0 = 214;
+    T(ctx, '조달관 5대 임무', LX, y0, 12, '#ffe48a');
+    G.missions.LIST.forEach((m, i) => {
+      const y = y0 + 14 + i * 25, x = LX - 150;
+      ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x + 2, y + 3, 300, 21);
+      ctx.fillStyle = 'rgba(255,253,246,.94)'; ctx.fillRect(x, y, 300, 21);
+      ctx.fillStyle = m.col; ctx.fillRect(x, y, 26, 21);
+      T(ctx, String(i + 1), x + 13, y + 11, 12, '#fff');
+      G.icons.draw(ctx, m.icon, x + 40, y + 10, 16);
+      ctx.font = '12px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = m.col; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(m.name, x + 54, y + 11);
     });
   }
   function titleDraw(ctx, t) {
     G.world.draw(ctx);
-    ctx.fillStyle = 'rgba(16,24,36,.62)'; ctx.fillRect(0, 0, W, H);
-    ciPlate(ctx, 'ci_h', W / 2, 28, 30);
-    ctx.font = '40px "Galmuri11 Bold", ' + G.FONT;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#2f4f8a'; ctx.fillText('나르미와 달이의', W / 2 + 3, 126 + 3);
-    ctx.fillStyle = '#fff'; ctx.fillText('나르미와 달이의', W / 2, 126);
+    const g = ctx.createLinearGradient(0, 0, W, 0);                     // 왼쪽은 어둡게(글자), 오른쪽은 밝게(마스코트)
+    g.addColorStop(0, 'rgba(16,24,36,.86)'); g.addColorStop(0.55, 'rgba(16,24,36,.6)'); g.addColorStop(1, 'rgba(30,60,100,.35)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    // 오른쪽: 빛 원 + 3D 마스코트 (둥실둥실)
+    const im = G.img.mascot3d, bob = Math.sin(t * 2) * 4;
+    ctx.fillStyle = 'rgba(255,240,180,.16)'; ctx.beginPath(); ctx.ellipse(722, 300, 220, 170, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,240,180,.12)'; ctx.beginPath(); ctx.ellipse(722, 300, 170, 130, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(722, 452, 170, 16, 0, 0, 7); ctx.fill();
+    if (im && im.naturalWidth) { const h = 320, w = im.naturalWidth * h / im.naturalHeight; ctx.imageSmoothingEnabled = true; ctx.drawImage(im, 722 - w / 2, 130 + bob, w, h); ctx.imageSmoothingEnabled = false; }
+    else { G.spr.drawChar(ctx, 'narmi', 'walk', 's', t, 700, 380, 1.6); G.spr.drawChar(ctx, 'dali', 'walk', 's', t, 790, 380, 1.6); }
+    // 왼쪽: CI · 제목 · 임무 · 버튼
+    ciPlate(ctx, 'ci_h', LX, 26, 28);
+    ctx.font = '36px "Galmuri11 Bold", ' + G.FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#2f4f8a'; ctx.fillText('나르미와 달이의', LX + 3, 108 + 3);
+    ctx.fillStyle = '#fff'; ctx.fillText('나르미와 달이의', LX, 108);
     ctx.font = '56px "Galmuri11 Bold", ' + G.FONT;
-    ctx.fillStyle = '#2f4f8a'; ctx.fillText('2분 조달작전', W / 2 + 4, 186 + 4);
-    ctx.fillStyle = '#ffd84a'; ctx.fillText('2분 조달작전', W / 2, 186);
-    titleBadges(ctx);
-    G.spr.drawChar(ctx, 'narmi', 'walk', 's', t, W / 2 - 60, 330, 1.25);
-    G.spr.drawChar(ctx, 'dali', 'walk', 's', t, W / 2 + 60, 330, 1.25);
+    ctx.fillStyle = '#2f4f8a'; ctx.fillText('2분 조달작전', LX + 4, 164 + 4);
+    ctx.fillStyle = '#ffd84a'; ctx.fillText('2분 조달작전', LX, 164);
+    titleMissions(ctx);
     ui.button(ctx, BTN_START, '작전 시작', { size: 20 });
     ui.button(ctx, BTN_INTRO, '소개 다시 보기', { size: 12, fill: '#cfd8e3', hot: '#fff' });
     ui.button(ctx, BTN_SOUND, soundLabel(), { size: 12, fill: '#cfd8e3', hot: '#fff' });
@@ -85,7 +91,7 @@ G.screens = (() => {
     const best = G.store.get('best', 0);
     if (best) T(ctx, '최고 점수 ' + best + ' · 최고 등급 ' + G.store.get('bestGrade', '-'), W - 20, H - 20, 12, '#ffe48a', 'right');
     if (G.VERSION) T(ctx, G.VERSION, 16, H - 20, 12, '#8fa3b8', 'left');
-    T(ctx, '터치·클릭으로 이동 · 방향키+Space(나르미)도 가능 · Enter 시작 · M 소리 ' + (G.audio.isMuted() ? '켜기' : '끄기'), W / 2, H - 20, 12, '#cfd8e3');
+    T(ctx, '터치·클릭으로 이동 · Space 브로커 · Enter 시작 · M 소리', LX, H - 44, 12, '#cfd8e3');
     if (G.input.hit('m')) G.audio.toggle();
   }
 
