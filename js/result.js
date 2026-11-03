@@ -112,6 +112,7 @@ G.result = (() => {
     { name: '페이퍼컴퍼니 탐정', sub: '수상한 새 공방을 척척', score: (S, s) => n0(s.caught) >= 4 ? n0(s.caught) / 6 : 0 },
     { name: '비축 전략가', sub: '가격 폭등에 미리 대비', score: (S, s) => n0(s.stocked) >= 2 ? 0.7 + n0(s.released) * 0.1 : 0 },
     { name: '동네 성장 도우미', sub: '공방은 자라고 마을은 새 단장', score: (S, s) => n0(s.shopGrow) + n0(s.villageUp) >= 5 ? (n0(s.shopGrow) + n0(s.villageUp)) / 7 : 0 },
+    { name: 'AI 데이터 조사관', sub: '필살기로 부정 업체를 싹', score: (S, s) => n0(s.ult) ? 0.9 + n0(s.ult) * 0.3 : 0 },
     { name: '위기 해결사', sub: '태풍 속 긴급 계약을 척척', score: (S, s) => n0(s.urgentDone) >= 3 ? n0(s.urgentDone) / 5 : 0 },
     { name: '마을 수호천사', sub: '마을 신뢰를 끝까지 지켰어요', score: (S, s) => S.trust >= 95 && n0(s.reqExpired) <= 1 ? 1.0 : 0 },
   ];

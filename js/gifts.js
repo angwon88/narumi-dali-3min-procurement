@@ -12,6 +12,7 @@ G.gifts = (() => {
   const SLOTS = [14, 196, 44, 166, 74, 136];          // 앞마당 안 x 위치 (가운데는 비워 둠)
   function init(S) { S.bank = 0; S.gifts = []; S.giftIdx = 0; }
   function add(S, amount) {
+    if (!C.GIFTS) return;                                            // 2026-11-03 세금 저금통·마을 선물 끔
     S.bank = Math.max(0, Math.round((S.bank + amount) * 10) / 10);
     while (S.bank >= C.GIFT_STEP) { S.bank = Math.round((S.bank - C.GIFT_STEP) * 10) / 10; give(S); }
   }

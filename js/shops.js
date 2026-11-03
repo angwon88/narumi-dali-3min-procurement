@@ -328,13 +328,14 @@ G.shops = (() => {
     } else {
       sh.verified = true; sh.stampT = 0;
       S.stats.certified = (S.stats.certified || 0) + 1;
-      G.fx.add(S, b.x + b.w / 2, b.y + 110, '✔ 실사 통과 · 나라장터 등록! 이제 계약할 수 있어요', '#9be37a');
+      G.fx.add(S, b.x + b.w / 2, b.y + 110, S.ultQuiet ? '✔ 실사 통과' : '✔ 실사 통과 · 나라장터 등록! 이제 계약할 수 있어요', '#9be37a');
       G.audio.play('ok');
     }
   }
   // 나르미 데이터 성장: 검증할 때마다 +1, DATA_LV마다 단계 상승
   function addData(S) {
     S.data++;
+    if (!C.DATA_LEVELS) return;                                      // 2026-11-03 데이터 단계 끔 (필살기로 대체)
     const lv = C.DATA_LV.filter(n => S.data >= n).length;
     if (lv <= S.dataLv) return;
     S.dataLv = lv;

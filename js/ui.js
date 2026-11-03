@@ -16,18 +16,16 @@ G.ui = (() => {
   const clicked = r => G.input.taps.some(p => G.U.inRect(p.x, p.y, r));
   function hud(ctx, S) {
     ctx.fillStyle = '#1e2a3a'; ctx.fillRect(0, 0, C.VIEW.w, C.HUD_H);
-    // 경험치 막대 (HUD 아래 테두리) + 레벨
-    const need = G.levelup.xpNeed(S), prev = S.level > 1 ? C.LEVEL_REQ[S.level - 2] : 0;
-    const xf = need == null ? 1 : (S.delivered - prev) / (need - prev);
+    // HUD 아래 테두리 = 남은 시간 막대 (2026-11-03: 레벨업 대신), 필살기 버튼
+    const tf = Math.max(0, S.timeLeft / C.GAME_SECONDS);
     ctx.fillStyle = '#2f4f8a'; ctx.fillRect(0, C.HUD_H - 4, C.VIEW.w, 4);
-    ctx.fillStyle = '#ffd84a'; ctx.fillRect(0, C.HUD_H - 4, Math.round(C.VIEW.w * Math.max(0, Math.min(1, xf))), 4);
-    T(ctx, 'Lv.' + S.level, 762, 22, 16, '#ffd84a', 'left');
+    ctx.fillStyle = S.timeLeft <= 20 ? '#ff6b5b' : '#ffd84a'; ctx.fillRect(0, C.HUD_H - 4, Math.round(C.VIEW.w * tf), 4);
+    G.ult.drawHud(ctx, S);
     const low = S.timeLeft <= 30;
     T(ctx, '⏱', 20, 22, 16, '#fff');
     T(ctx, G.U.fmtTime(S.timeLeft), 64, 22, 24, low ? (Math.floor(S.timeLeft * 2) % 2 ? '#ff6b5b' : '#ffb3a8') : '#fff');
     T(ctx, '점수', 128, 22, 12, '#8fa3b8', 'left'); T(ctx, String(S.score), 160, 22, 18, '#ffe48a', 'left');
     T(ctx, '아낀 세금', 262, 17, 12, '#8fa3b8', 'left'); T(ctx, S.saved + '만원', 322, 17, 16, '#9be37a', 'left');
-    G.gifts.hudBar(ctx, S, 262, 29, 128);                       // 다음 마을 선물까지
     // 마을 신뢰도 게이지
     const gx = 452, gw = 112, f = S.trust / 100, danger = S.trust <= C.TRUST_DANGER;   // 2026-11-03 임무 칸 자리 때문에 170 → 112
     T(ctx, '마을 신뢰', gx - 6, 22, 12, '#8fa3b8', 'right');
@@ -45,9 +43,9 @@ G.ui = (() => {
     ctx.lineWidth = 1;
     ctx.save(); ctx.beginPath(); ctx.arc(nx, ny, 13, 0, Math.PI * 2); ctx.clip();
     G.spr.drawChar(ctx, 'narmi', 'rot', 's', 0, nx, ny + 30, 0.6); ctx.restore();
-    T(ctx, ready ? '실사 OK' : Math.ceil(cd) + '초', nx + 22, 14, 12, ready ? '#9be37a' : '#8fa3b8', 'left');
+    T(ctx, '나르미', nx + 22, 14, 12, '#cfd8e3', 'left'); T(ctx, ready ? '출동 OK' : Math.ceil(cd) + '초', nx + 22, 30, 12, ready ? '#9be37a' : '#8fa3b8', 'left');
     const nextLv = C.DATA_LV[S.dataLv || 0];                         // 나르미 데이터: 다음 단계까지
-    T(ctx, '데이터 ' + (S.data || 0) + (nextLv ? '/' + nextLv : ' MAX'), nx + 22, 31, 12, '#cfa8ff', 'left');
+
     G.missions.drawHud(ctx, S, 572);                                  // 조달관 5대 임무 칸
     T(ctx, '‖', C.VIEW.w - 22, 22, 18, '#fff');
   }

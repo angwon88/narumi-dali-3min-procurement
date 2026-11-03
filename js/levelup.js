@@ -52,6 +52,7 @@ G.levelup = (() => {
   }
   const xpNeed = S => C.LEVEL_REQ[S.level - 1];               // 다음 레벨까지 필요한 누적 납품 수 (없으면 최고 레벨)
   function gain(S) {
+    if (!C.LEVELUP) return;                                          // 2026-11-03 레벨업 카드 끔
     while (xpNeed(S) != null && S.delivered >= xpNeed(S)) { S.level++; S.pendingLevels++; }
   }
   function available(S) { return CARDS.filter(c => (S.taken[c.id] || 0) < c.max && (!c.ok || c.ok(S))); }

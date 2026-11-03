@@ -38,6 +38,10 @@ G.C = {
   SPROUT_PRICE_MULT: 1.25, SPROUT_GOAL: 2, SPROUT_TRUST: 2, SPROUT_SCORE: 80, SPROUT_GRAD_SCORE: 1000, SPROUT_GRAD_TRUST: 8,   // 2분 기준 실적 2건 (3분 때 3건)
   FAKE_BID: true,                   // 2026-11-03 다시 켬: 수상한 새 공방을 FAKE_BID_SEC초 안에 실사하지 않으면 그 업종 계약 하나를 부정 낙찰로 가로챔 (Space 연타 대신 '알아보고 실사'하게)
   // 브로커 (개편): 계약을 가로채 불량품을 납품하려는 AI 라이벌
+  // 필살기 'AI 데이터 일제 조사' (2026-11-03): 브로커 ULT_NEED명 적발로 충전
+  ULT_NEED: 3, ULT_SCAN: 1.2, ULT_SCORE: 300, ULT_BROKER_PAUSE: 12,
+  // 덜어내기 (2026-11-03): 레벨업 카드·세금 저금통(마을 선물)·나르미 데이터 단계 끔. 능력은 혁신제품 지정으로만
+  LEVELUP: false, GIFTS: false, DATA_LEVELS: false,
   BROKER: true, BROKER_FIRST_AT: 30, BROKER_SPEED: [115, 165], BROKER_GRAB: 1.5, BROKER_REST: 5,   // 2026-11-02 강화: 0:55→0:45, 100~145→115~165, 쉬는 시간 7→5 / 11-03 BROKER_GRAB: 등장 뒤 두리번(알아챌 틈) 1.0→1.5
   TRUST_BROKER: -12, BROKER_BLOCK_SCORE: 150, BROKER_CATCH_BONUS: 300, BROKER_CATCH_TIME: 0.5, BROKER_BLOCK_SEC: 1.0, BROKER_BLOCK_CD: 2.5,   // 달이가 닿으면 브로커 1초 멈칫(검거 아님), 2.5초에 한 번
   REQ_FIRST_AT: 2, REQ_INTERVAL: 6.0, REQ_LIMIT: 35, REQ_EMPTY_FILL: 1,   // 기본값. 실제 구간별 값은 director.js
@@ -51,18 +55,18 @@ G.C = {
     // 원자재 비축 (2026-11-03 단순화): 가격 폭등 '예보' 동안만, 비축칸에 0.5초마다 1상자, 돈 안 듦
   SURGE: { mult: 1.6 },
   // 사건 켜고 끄기 (false면 그 사건이 아예 일어나지 않음 — 빼고 싶을 때 여기 한 곳만 바꾸면 됨)
-  EVENTS: { fake: true, dust: true, storm: true, surge: true },   // 2026-11-03 태풍 위기 구현(기획서 4.2)
+  EVENTS: { fake: true, dust: false, storm: true, surge: true },   // 2026-11-03 사건 2개: 태풍(긴급조달) → 원자재 폭등 (미세먼지 뺌)   // 2026-11-03 태풍 위기 구현(기획서 4.2)
   STORM: { limit: 24, mult: 2, every: 6, speed: 0.9 },   // 긴급 계약 제한 시간·점수 배율, 태풍 중 긴급 계약 간격(초), 달이 이동 배율(비)
   // 사건 배치 (2026-11-02, 반쯤 랜덤): 모든 사건이 매 판 한 번씩, 아래 '자리'에 섞어서 배치. 자리 안에서 시작 시점도 흔듦
-  EVENT_SLOTS: [[38, 46], [62, 70], [86, 94]],   // 2분 기준   // 각 자리의 시작 시점 범위(초)
+  EVENT_SLOTS: [[40, 48], [78, 86]],   // 2분·사건 2개 기준 (폭등은 첫 자리에 못 오니 늘 태풍 → 폭등)   // 각 자리의 시작 시점 범위(초)
   EVENT_DUR: { dust: 15, storm: 20, surge: 20 },     // 사건 길이(초)
   EVENT_NOT_FIRST: ['surge'],                        // 첫 자리(1:00 무렵)에 오면 안 되는 사건 (비축할 시간이 필요)
   EVENT_FIXED: false,                                // true면 고정 순서 (시연 영상 촬영용)
-  EVENT_FIXED_AT: { dust: 40, storm: 64, surge: 88 },
+  EVENT_FIXED_AT: { dust: 40, storm: 44, surge: 82 },
   FORECAST_SEC: 15,                                  // 사건 예보: 시작 15초 전
   PREP_BONUS: 100, PREP_TRUST: 2,                    // 예보 보고 미리 준비한 물건을 사건 중 납품하면 보너스                             // 원자재 가격 폭등 배율
   GIFT_STEP: 7, GIFT_TRUST: 3, GIFT_SCORE: 100,   // 세금 저금통: 7만원마다 마을 선물
-  GRADE: { S: [24000, 80], A: [15000, 60], B: [7000, 0] },   // 2026-11-03 2분 기준 (봇 0.7 ≈ 19,000~38,000 · 0.45 ≈ 13,000~16,000)
+  GRADE: { S: [20000, 80], A: [13000, 60], B: [6000, 0] },   // 2026-11-03 덜어내기 뒤 2분 기준 (봇 0.7 ≈ 16,000~25,000 · 0.45 ≈ 10,000~19,000)
 };
 G.FONT = 'Galmuri11';
-G.VERSION = 'v4.0 · 2분판·등록·비축 예산';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)
+G.VERSION = 'v4.1 · 필살기·덜어내기';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)

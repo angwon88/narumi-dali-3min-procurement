@@ -12,10 +12,10 @@ G.fx = (() => {
   const GOLD = ['#ffd84a', '#fff3a0', '#fff', '#e0a800'];
   function burst(S, x, y, gold, n) {
     S.parts = S.parts || [];
-    const pal = gold ? GOLD : ['#ffd84a', '#ff8a7a', '#fff', '#e2433b'];
+    const paper = gold === 'paper', pal = paper ? ['#ffffff', '#f4efe0', '#e8e2d0', '#ffffff'] : gold ? GOLD : ['#ffd84a', '#ff8a7a', '#fff', '#e2433b'];
     for (let i = 0; i < (n || 26); i++) {
       const a = Math.random() * Math.PI * 2, v = 80 + Math.random() * (gold ? 240 : 160);
-      S.parts.push({ kind: 'spark', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, age: 0, life: 0.6 + Math.random() * (gold ? 0.7 : 0.4), col: pal[i % 4], sz: 2 + (i % 3) + (gold && i % 5 === 0 ? 2 : 0) });
+      S.parts.push({ kind: 'spark', x, y, vx: Math.cos(a) * v * (paper ? 0.8 : 1), vy: Math.sin(a) * v - (paper ? 140 : 60), age: 0, life: paper ? 1.2 + Math.random() * 0.5 : 0.6 + Math.random() * (gold ? 0.7 : 0.4), col: pal[i % 4], sz: paper ? 5 + (i % 3) : 2 + (i % 3) + (gold && i % 5 === 0 ? 2 : 0), paper });
     }
   }
   // 동전: (x, y)에서 (tx, ty)로 날아감. 모두 도착하면 done()
@@ -28,7 +28,7 @@ G.fx = (() => {
     if (!S.parts) return;
     for (const p of S.parts) {
       p.age += dt;
-      if (p.kind === 'spark') { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 300 * dt; }
+      if (p.kind === 'spark') { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += (p.paper ? 160 : 300) * dt; if (p.paper) p.vx *= 0.98; }
       else if (p.kind === 'coin' && p.age >= p.life && p.done) { p.done(); p.done = null; G.audio.play('buy'); }
     }
     S.parts = S.parts.filter(p => p.age < p.life);
@@ -38,7 +38,7 @@ G.fx = (() => {
     for (const p of S.parts) {
       if (p.age < 0) continue;
       const k = p.age / p.life;
-      if (p.kind === 'spark') { ctx.globalAlpha = 1 - k; ctx.fillStyle = p.col; ctx.fillRect(Math.round(p.x), Math.round(p.y), p.sz, p.sz); }
+      if (p.kind === 'spark') { ctx.globalAlpha = 1 - k; ctx.fillStyle = p.col; if (p.paper) { const f = Math.abs(Math.sin(p.age * 9 + p.sz)); ctx.fillRect(Math.round(p.x), Math.round(p.y), p.sz, Math.max(1, Math.round(p.sz * 1.3 * f))); ctx.fillStyle = '#b9b2a0'; ctx.fillRect(Math.round(p.x) + 1, Math.round(p.y) + 1, p.sz - 2, 1); } else ctx.fillRect(Math.round(p.x), Math.round(p.y), p.sz, p.sz); }
       else {                                       // 위로 튀었다가 저금통으로 (베지어 곡선)
         const u = 1 - k, x = u * u * p.x + 2 * u * k * p.sx + k * k * p.tx, y = u * u * p.y + 2 * u * k * p.sy + k * k * p.ty;
         ctx.globalAlpha = 1;

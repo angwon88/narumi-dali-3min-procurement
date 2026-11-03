@@ -64,7 +64,7 @@ G.broker = (() => {
     bk.t += dt;
     if (bk.stun) return;                                              // 나르미가 붙잡는 중
     if (bk.state === 'off') {
-      if (S.elapsed < C.BROKER_FIRST_AT || C.BROKER === false) return;
+      if (S.elapsed < C.BROKER_FIRST_AT || C.BROKER === false || S.elapsed < (S.brokerPauseUntil || 0)) return;   // 필살기 뒤 잠시 쉼
       if ((bk.wait -= dt) <= 0 && !plan(S)) bk.wait = 1;
       return;
     }
@@ -137,9 +137,12 @@ G.broker = (() => {
     if (bk.req) bk.req.broker = false;
     S.stats.brokerCaught++;
     S.score += C.BROKER_CATCH_BONUS; G.score.trust(S, C.TRUST_CATCH);
-    S.hitStop = 0.15; S.shakeT = 0.35; G.fx.burst(S, bk.x, bk.y - 20);
+    // 2026-11-03 통쾌한 제재 연출: 한순간 멈춤 + 큰 흔들림 + 거대한 '입찰참가자격 제한' 도장 + 가짜 서류 폭죽 (피·폭력 없이)
+    S.hitStop = 0.28; S.shakeT = 0.5; G.fx.burst(S, bk.x, bk.y - 20); G.fx.burst(S, bk.x, bk.y - 30, 'paper', 34);
+    S.sanction = { x: bk.x, y: bk.y - 40, t: 0, n: S.stats.brokerCaught };
     G.fx.add(S, bk.x, bk.y - 60, '브로커 차단! +' + C.BROKER_CATCH_BONUS, '#ffe48a', 16);
-    G.audio.play('catch');
+    G.audio.play('catch'); setTimeout(() => G.audio.play('end'), 120);
+    if (!S.ultLock) G.ult.charge(S);                                    // 필살기 충전 (필살기로 잡은 건 빼고)
     G.narmi.say('브로커 차단! 입찰참가자격 제한이에요', 2.2);
     if (bk.shop && bk.shop.status === 'open' && bk.shop.fake) G.shops.inspected(S, bk.shop);   // 뒤에 있던 페이퍼컴퍼니도 드러남
     Object.assign(bk, { state: 'caught', timer: 0, req: null, path: [] });
@@ -152,7 +155,7 @@ G.broker = (() => {
     const bob = moving ? step2 : Math.round(Math.sin(bk.t * 3));
     G.spr.shadow(ctx, bk.x, bk.y - 1, 11);
     ctx.save(); ctx.translate(Math.round(bk.x), Math.round(bk.y) - bob); ctx.scale(bk.face * 1.3, 1.3);   // 1.3배 (지도에서 잘 보이게)
-    if (bk.state === 'caught') ctx.rotate(Math.sin(bk.t * 20) * 0.15);
+    if (bk.state === 'caught') { const k = Math.min(1, bk.timer / 0.2); ctx.translate(bk.face * -bk.timer * 60, 0); ctx.rotate(-bk.face * bk.timer * 6); ctx.scale(1 + 0.3 * k, 1 - 0.55 * k); }   // 납작해져 데굴데굴 굴러 나감
     else if (bk.freeze > 0) ctx.translate(Math.sin(bk.t * 40) * 1.5, 0);   // 멈칫: 부르르
     // 꼬리 (뒤쪽, 줄무늬)
     for (let i = 0; i < 4; i++) px(ctx, i % 2 ? '#2b2622' : '#8c7f70', -14 - i * 2, -16 + i * 2, 5, 5);
@@ -200,6 +203,19 @@ G.broker = (() => {
     }
     raccoon(ctx, bk, S);
   }
+  // 제재 도장 (브로커가 사라져도 남아서 찍힘)
+  function drawSanction(ctx, S) {
+    const st = S.sanction; if (!st) return;
+    st.t += 1 / 60; if (st.t > 1.4) { S.sanction = null; return; }
+    const k = Math.min(1, st.t / 0.12), sc = (3 - 2 * k) * (1 + Math.min(0.4, (st.n - 1) * 0.1)), a = st.t > 1.1 ? (1.4 - st.t) / 0.3 : 1;
+    const x = Math.max(110, Math.min(C.VIEW.w - 110, st.x)), y = Math.max(90, st.y);
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.rotate(-0.18); ctx.scale(sc, sc);
+    ctx.font = '16px "Galmuri11 Bold", ' + G.FONT; const w = ctx.measureText('입찰참가자격 제한').width + 24;
+    ctx.strokeStyle = '#d9342b'; ctx.lineWidth = 3; ctx.strokeRect(-w / 2, -18, w, 36); ctx.lineWidth = 1; ctx.strokeRect(-w / 2 + 4, -14, w - 8, 28);
+    ctx.fillStyle = 'rgba(255,253,246,.85)'; ctx.fillRect(-w / 2 + 5, -13, w - 10, 26);
+    ctx.fillStyle = '#d9342b'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('입찰참가자격 제한', 0, 1);
+    ctx.restore();
+  }
   // 말풍선에 '브로커!' 표시 (ui.bubble에서 호출)
   function bubbleMark(ctx, r, b) {
     if (!r.broker || r.state !== 'open') return;
@@ -208,5 +224,5 @@ G.broker = (() => {
     ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('브로커!', b.w - 22, -5);
     ctx.strokeStyle = blink ? '#e5533d' : 'rgba(229,83,61,.5)'; ctx.lineWidth = 2; ctx.strokeRect(-2, -2, b.w + 4, b.h + 4); ctx.lineWidth = 1;
   }
-  return { init, update, draw, hit, request, caught, bubbleMark, raccoon };
+  return { init, update, draw, drawSanction, hit, request, caught, bubbleMark, raccoon };
 })();

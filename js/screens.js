@@ -8,7 +8,7 @@ G.screens = (() => {
 
   function newGame() {
     G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, floats: [], bagCap: C.BAG_START, scoreMult: 1 };
-    G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S); G.gifts.init(G.S); G.events.init(G.S); G.broker.init(G.S); G.missions.init(G.S);
+    G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S); G.gifts.init(G.S); G.events.init(G.S); G.broker.init(G.S); G.missions.init(G.S); G.ult.init(G.S);
     G.dali.reset(); G.narmi.reset(); G.input.reset();
     G.screen = 'play';
   }
@@ -88,6 +88,7 @@ G.screens = (() => {
     if (G.debug && G.debug.update()) return;
     if (G.S.hitStop > 0) { G.S.hitStop -= dt; return; }              // 적발 순간 한순간 멈춤
     G.dali.update(dt);
+    G.ult.input(G.S);
     G.nav.handleTaps(G.S);
     step(G.S, dt);
     if (G.screen === 'play' && G.S.pendingLevels > 0) G.levelup.open(G.S);   // 레벨업: 시간 정지하고 카드 선택
@@ -100,6 +101,7 @@ G.screens = (() => {
     G.narmi.update(dt, S);
     G.broker.update(S, dt);
     G.missions.update(S, dt);
+    G.ult.update(S, dt);
     G.shops.update(S, dt);
     G.requests.deliver(S);
     G.villages.update(S, dt);
@@ -134,6 +136,8 @@ G.screens = (() => {
     G.shops.drawHover(ctx, G.S);
     G.fx.draw(ctx, G.S);
     G.events.drawOverlay(ctx, G.S);
+    G.ult.draw(ctx, G.S);
+    G.broker.drawSanction(ctx, G.S);
     G.missions.drawStamp(ctx, G.S);
     ctx.restore();
     if (S0.flashT > 0) { ctx.fillStyle = 'rgba(255,216,74,' + (S0.flashT * 0.9).toFixed(2) + ')'; ctx.fillRect(0, 0, W, H); }   // 혁신 성공 판정 금빛 번쩍임
