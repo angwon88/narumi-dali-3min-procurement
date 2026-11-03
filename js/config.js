@@ -13,8 +13,10 @@ G.C = {
   TRUST_ON_TIME: 4, TRUST_FAST: 6, TRUST_FAIL: -10, TRUST_FRAUD: -15, TRUST_CATCH: 5, CATCH_SCORE: 500, CATCH_BANK: 3, CATCH_STREAK_BONUS: 200,
   PRICE_NORMAL: [0.80, 0.95], PRICE_FAKE: [0.45, 0.55], PRICE_REROLL_SEC: 20,   // 20초마다 행별 가격을 새로 뽑음(싼 쪽이 50% 확률로 바뀜)
   MONOPOLY_MULT: 1.3, STREAK_WARN: 3, STREAK_CLOSE: 5, REOPEN_SEC: 20, REOPEN_FAKE_CHANCE: 0.4,
-  FAKE_VANISH_SEC: 3, INNOV_PRICE_MULT: 0.9, INNOV_SCORE_MULT: 1.5, INNOV_TRUST_BONUS: 2,
-  INNOV_TRIAL: 3, INNOV_TRIAL_FAIL: 0.15, INNOV_MATURE_MULT: 1.8,   // 혁신제품 시범 사용, '보완 필요' 15%(2026-11-03 2분판이라 25 → 15), 성공 판정 뒤 ×1.8
+  FAKE_VANISH_SEC: 3, INNOV_PRICE_MULT: 1.0, INNOV_SCORE_MULT: 1.2,   // 11-04 실제 제도처럼 혁신제품이라고 더 싸지 않음(0.9→1.0), 점수 1.5→1.2
+  INNOV_TRUST_BONUS: 2,
+  INNOV_TRIAL: 3, INNOV_TRIAL_FAIL: 0.15, INNOV_MATURE_MULT: 1.2,   // 11-04 1.8→1.2: 혁신 공방만 쓰면 늘 정답이 되던 문제 (가성비 비교가 계속 필요하게)
+    // 혁신제품 시범 사용, '보완 필요' 15%(2026-11-03 2분판이라 25 → 15), 성공 판정 뒤 ×1.8
   LEVEL_REQ: [3, 6, 10, 14, 19, 25, 32, 40],   // 2분 기준
   FINAL_RUSH_AT: 100, FINAL_RUSH_MULT: 1.5,   // 마지막 20초
   STORM: { warnAt: 88, start: 90, end: 110, limit: 18, mult: 2, slow: 0.9 },
@@ -34,6 +36,7 @@ G.C = {
   VILLAGE_LIMIT_MULT: 1.15, VILLAGE_T2_SCORE: 1.2, VILLAGE_T2_TRUST: 1,   // 1단계 새 계약 시간 +15%, 2단계 납품 점수 ×1.2·신뢰 +1
   TIER_SCORE: 100, TIER_TRUST: 2,
   // 새싹 공방 (개편 2단계): 실적 없는 스타트업. 품질은 좋지만 처음엔 조금 비쌈. 정상 납품 실적 SPROUT_GOAL건 → 혁신제품 지정
+  HARD: { limit: 0.68, brokerRest: 0.7, brokerSpeed: 1.15, fakeEvery: 1 },   // 11-04 하드 모드: 계약 시간 -32% · 브로커 더 자주(쉬는 시간 -30%)·더 빠르게(+15%). 페이퍼컴퍼니를 늘리면 적발 점수가 늘어 오히려 쉬워져서 그대로
   SPROUT_AT: [15, 38, 62, 85],   // 11-03 4곳(혁신 보상 4호까지)   // 2분 기준
   SPROUT_PRICE_MULT: 1.25, SPROUT_GOAL: 2, SPROUT_TRUST: 2, SPROUT_SCORE: 80, SPROUT_GRAD_SCORE: 1000, SPROUT_GRAD_TRUST: 8,   // 2분 기준 실적 2건 (3분 때 3건)
   FAKE_BID: true,                   // 2026-11-03 다시 켬: 수상한 새 공방을 FAKE_BID_SEC초 안에 실사하지 않으면 그 업종 계약 하나를 부정 낙찰로 가로챔 (Space 연타 대신 '알아보고 실사'하게)
@@ -70,4 +73,4 @@ G.C = {
   GRADE: { S: [20000, 80], A: [13000, 60], B: [6000, 0] },   // 2026-11-03 덜어내기 뒤 2분 기준 (봇 0.7 ≈ 16,000~25,000 · 0.45 ≈ 10,000~19,000)
 };
 G.FONT = 'Galmuri11';
-G.VERSION = 'v6.2 · 하드 모드·마을 효과 표시';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)
+G.VERSION = 'v6.3 · 하드 난이도·혁신 공방 조정';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)

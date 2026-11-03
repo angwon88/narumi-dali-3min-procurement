@@ -15,7 +15,7 @@ G.broker = (() => {
       path: [], face: 1, stun: false, timer: 0, shown: false, freeze: 0, blockCD: 0 };
     Object.assign(S.stats, { brokerWon: 0, brokerBlocked: 0, brokerCaught: 0 });
   }
-  const speed = S => U.clamp(C.BROKER_SPEED[0] + (C.BROKER_SPEED[1] - C.BROKER_SPEED[0]) * (S.elapsed - C.BROKER_FIRST_AT) / (C.GAME_SECONDS - C.BROKER_FIRST_AT), C.BROKER_SPEED[0], C.BROKER_SPEED[1]);
+  const speed = S => U.clamp(C.BROKER_SPEED[0] + (C.BROKER_SPEED[1] - C.BROKER_SPEED[0]) * (S.elapsed - C.BROKER_FIRST_AT) / (C.GAME_SECONDS - C.BROKER_FIRST_AT), C.BROKER_SPEED[0], C.BROKER_SPEED[1]) * (S.hard ? C.HARD.brokerSpeed : 1);
 
   // 문 앞 → 길 → (조달청 건물 피해서) 아래 길 → 마을 앞마당
   function pathTo(bk, v) {
@@ -68,7 +68,7 @@ G.broker = (() => {
       if ((bk.wait -= dt) <= 0 && !plan(S)) bk.wait = 1;
       return;
     }
-    if (bk.state === 'caught') { if ((bk.timer += dt) >= 1.2) rest(S, C.BROKER_REST * 1.5); return; }
+    if (bk.state === 'caught') { if ((bk.timer += dt) >= 1.2) rest(S, C.BROKER_REST * 1.5 * (S.hard ? C.HARD.brokerRest : 1)); return; }
     // 그사이 페이퍼컴퍼니가 적발되면 계약이 무효 → 도망
     if ((bk.state === 'grab' || bk.state === 'run') && bk.shop && (bk.shop.status !== 'open' || !bk.shop.fake)) {
       S.stats.brokerBlocked++; flee(S, '들켰다! 브로커 도망', '#9be37a'); return;
@@ -107,7 +107,7 @@ G.broker = (() => {
       if (step(bk, dt, speed(S))) dumpGoods(S, r);
       return;
     }
-    if (bk.state === 'flee' && step(bk, dt, speed(S) * 1.3)) rest(S, S.elapsed > C.LATE_AT ? C.BROKER_REST * 0.6 : C.BROKER_REST);
+    if (bk.state === 'flee' && step(bk, dt, speed(S) * 1.3)) rest(S, (S.elapsed > C.LATE_AT ? C.BROKER_REST * 0.6 : C.BROKER_REST) * (S.hard ? C.HARD.brokerRest : 1));
   }
   // 부정 납품: 그 계약은 불량품으로 실패
   function dumpGoods(S, r) {

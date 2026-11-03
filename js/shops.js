@@ -144,7 +144,7 @@ G.shops = (() => {
     if (S.fakeClock > 0) return;
     const late = S.elapsed >= C.LATE_AT;                              // 후반부터 더 자주
     if (Math.random() < (late ? 0.7 : 0.6)) spawnFake(S);
-    S.fakeClock += late ? 11 : 14;   // 2분 기준
+    S.fakeClock += (late ? 11 : 14) * (S.hard ? C.HARD.fakeEvery : 1);   // 2분 기준 · 하드는 더 자주
   }
 
   // ---------- 구매 ----------

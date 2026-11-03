@@ -31,8 +31,8 @@ G.screens = (() => {
   const BTN_ULT = { x: W - 178, y: 86, w: 166, h: 30 }, BTN_ULTQ = { x: W - 214, y: 86, w: 30, h: 30 };
   const ultLabel = () => G.settings.ultAuto ? 'AI 조사: 자동 사용' : 'AI 조사: 직접 사용(Q)';
   const BTN_MODE = { x: W - 178, y: 122, w: 166, h: 30 };             // 2026-11-03 보통 / 하드 모드
-  const modeLabel = () => G.settings.hard ? '하드 모드 (힌트 끔)' : '보통 모드 (힌트 켬)';
-  const MODE_TIP = ['보통 / 하드 모드', '보통: 필요한 물건 초록 테두리 · 구매 발판 깜빡임 ·', '        남은 임무 알림 · 나르미 사용법 안내', '하드: 위 힌트 없이 직접 판단해요 (✔ 등록 · ★ 조건은 그대로)', '최고 기록은 모드별로 따로 저장돼요'];
+  const modeLabel = () => G.settings.hard ? '하드 모드' : '보통 모드';
+  const MODE_TIP = ['보통 / 하드 모드 (눌러서 바꾸기)', '보통: 필요한 물건 초록 테두리 · 구매 발판 깜빡임 · 남은 임무 알림', '하드: 힌트 없음 · 계약이 빡빡하고 브로커가 거세요', '      계약 시간 -32% · 브로커가 더 자주, 더 빠르게', '최고 기록은 모드별로 따로 저장돼요'];
   let ultTipOn = false;                                                // [?]를 누르면 설명을 켜고 끔 (휴대폰용)
   function titleUpdate() {
     if (ui.clicked(BTN_SOUND)) { G.audio.toggle(); return; }
