@@ -10,7 +10,7 @@ G.intro = (() => {
     t += dt;
     if (G.input.hit('escape')) { done(); return; }
     const adv = t > 0.3 && (G.input.taps.length || G.input.hit('enter') || G.input.hit(' '));
-    if (adv || t >= PANEL) { idx++; t = 0; G.audio.play('click'); if (idx >= 4) done(); }
+    if (adv || t >= PANEL) { idx++; t = 0; G.audio.play('click'); if (idx >= 5) done(); }
   }
   // ---------- 장면 그림 ----------
   function house(ctx, x, y, w, h, wall, roof, label) {
@@ -41,6 +41,11 @@ G.intro = (() => {
     ctx.fillStyle = '#3b2a1e'; ctx.fillRect(x + 118, y + 50, 22, 40);
     ctx.fillStyle = '#fffdf6'; ctx.fillRect(x + 8, y + 30, 100, 26);
     G.icons.draw(ctx, 'desk', x + 20, y + 43, 18); G.icons.stars(ctx, x + 32, y + 36, q, 3, 1); T(ctx, price + '만', x + 104, y + 44, 12, '#2a2416', 'right');
+  }
+  function reg(ctx, x, y, ok) {                       // 지붕의 나라장터 등록 표시 (게임과 같게)
+    ctx.fillStyle = '#1e2a3a'; ctx.beginPath(); ctx.arc(x, y, 8, 0, 7); ctx.fill();
+    ctx.fillStyle = ok ? '#2e9b3a' : '#8a8f99'; ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fill();
+    T(ctx, ok ? '✔' : '…', x, y + 1, 12, '#fff');
   }
   function stampBox(ctx, x, y, text, col, k) {        // 기울어진 도장 (k: 0~1 찍히는 정도)
     const sc = 1.8 - 0.8 * Math.min(1, k);
@@ -74,21 +79,56 @@ G.intro = (() => {
       shop(ctx, cx - 330, top + 30, '가구공방 A', '#6a4a2a', 1, 8, true, tt);
       shop(ctx, cx - 140, top + 30, '가구공방 B', '#6a4a2a', 2, 10, true, tt);
       shop(ctx, cx + 120, top + 30, '새 공방', '#6a4a2a', 3, 5, false, tt);
+      reg(ctx, cx - 320, top + 11, true); reg(ctx, cx - 130, top + 11, true); reg(ctx, cx + 130, top + 11, k > 0.78 ? false : false);   // 등록 업체 ✔ / 새 공방 = 심사 중
       card(ctx, cx - 48, top + 172, 'desk', 12, 2, false);
       if (k > 0.2) stampBox(ctx, cx - 270, top + 136, '조건 ✘', '#d9342b', (k - 0.2) * 5);
       if (k > 0.38) stampBox(ctx, cx - 80, top + 136, '가성비!', '#2e9b3a', (k - 0.38) * 5);
       const dk = Math.min(1, Math.max(0, (k - 0.38) / 0.3));                   // 달이: B로 걸어감
       G.spr.drawChar(ctx, 'dali', dk > 0 && dk < 1 ? 'walk' : 'rot', 'n', tt, cx - 200 + dk * 190, top + 258 - dk * 118, 1.05);   // B 공방 문 앞으로
-      // 나르미: 너무 싸고 너무 좋은 새 공방으로 → 데이터 분석 → 적발
+      // 나르미: 등록 심사 중인 새 공방(너무 싸고 너무 좋음)을 눌러 실사 → 실사 보고서 → 적발
       const nk = Math.min(1, Math.max(0, (k - 0.3) / 0.25));
       G.spr.drawChar(ctx, 'narmi', nk > 0 && nk < 1 ? 'walk' : 'rot', 'ne', tt, cx + 120 + nk * 75, top + 250 - nk * 108, 1.05);
-      if (k > 0.55) {
-        ctx.fillStyle = '#1e2a3a'; ctx.fillRect(cx + 240, top + 140, 84, 48);
-        [0.5, 0.9, 0.3, 0.7].forEach((h, j) => { const g = Math.min(1, (k - 0.55) * 4); ctx.fillStyle = j % 2 ? '#9be37a' : '#5ec8f2'; ctx.fillRect(cx + 250 + j * 17, top + 182 - 32 * h * g, 10, 32 * h * g); });
-        T(ctx, '실사·데이터 분석', cx + 282, top + 200, 12, '#fff');
+      if (k > 0.5) {
+        const bx = cx + 222, by = top + 132, f = Math.min(1, (k - 0.5) / 0.26);
+        ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(bx + 2, by + 3, 128, 70);
+        ctx.fillStyle = '#fffdf6'; ctx.fillRect(bx, by, 128, 70); ctx.fillStyle = '#1e2a3a'; ctx.fillRect(bx, by, 128, 16); T(ctx, '실사 보고서', bx + 64, by + 8, 12, '#fff');
+        [['사업장', true], ['생산 설비', false], ['납품 실적', false]].forEach(([n2, ok], j) => {
+          T(ctx, n2, bx + 10, by + 26 + j * 15, 12, '#4a3f2a', 'left');
+          T(ctx, f > 0.2 + j * 0.3 ? (ok ? '✔ 확인' : '✘ 없음') : '…', bx + 118, by + 26 + j * 15, 12, f > 0.2 + j * 0.3 ? (ok ? '#2e9b3a' : '#d9342b') : '#8a8f99', 'right');
+        });
       }
       if (k > 0.78) stampBox(ctx, cx + 195, top + 78, '적발!', '#d9342b', (k - 0.78) * 5);
-    } else if (i === 3) {                              // ④ 조달관 5대 임무 (missions.js)
+    } else if (i === 3) {                              // ④ 위기 대응: 아낀 세금으로 원자재 비축 → 폭등 때 공방 값 그대로 / 태풍 긴급조달
+      // 왼쪽: 아낀 세금 → 원자재 상자 → 폭등
+      ctx.fillStyle = '#1e2a3a'; ctx.fillRect(cx - 330, top + 6, 120, 30); T(ctx, '아낀 세금', cx - 300, top + 21, 12, '#8fa3b8'); T(ctx, Math.max(3, 12 - Math.min(3, Math.floor(k * 8)) * 3) + '만원', cx - 238, top + 21, 12, '#9be37a');
+      const crates = Math.min(3, Math.floor(k * 8));
+      for (let j = 0; j < 3; j++) { const x = cx - 300 + j * 26, y = top + 120; if (j < crates) { G.events.crate(ctx, x, y); G.events.crate(ctx, x + 6, y - 12); } else { ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.strokeRect(x + .5, y + .5, 13, 11); } }
+      if (crates < 3 && k < 0.4) { const f = (k * 8) % 1; ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.arc(cx - 260 + (cx - 300 + crates * 26 - (cx - 260)) * f, top + 36 + 84 * f - Math.sin(f * Math.PI) * 30, 5, 0, 7); ctx.fill(); }
+      T(ctx, '원자재가 쌀 때 비축', cx - 262, top + 150, 12, '#fff');
+      if (k > 0.45) {
+        const kk = Math.min(1, (k - 0.45) * 5);
+        ctx.fillStyle = '#d9342b'; ctx.fillRect(cx - 345, top + 164, 330, 22); T(ctx, '원자재 가격 폭등!', cx - 180, top + 175, 12, '#fff');
+        for (const [x, ic, price, col, lab, lc] of [[cx - 345, 'desk', '10만', '#2a2416', '비축 덕분 그대로', '#2e9b3a'], [cx - 175, 'tablet', Math.round(25 + 15 * kk) + '만', '#d9342b', '비축 없음 ×1.6', '#d9342b']]) {
+          ctx.fillStyle = '#fffdf6'; ctx.fillRect(x, top + 192, 160, 50);
+          G.icons.draw(ctx, ic, x + 40, top + 208, 20); T(ctx, price, x + 100, top + 208, 12, col);
+          ctx.fillStyle = lc; ctx.fillRect(x, top + 226, 160, 16); T(ctx, lab, x + 80, top + 234, 12, '#fff');
+        }
+      }
+      // 오른쪽: 태풍 → 긴급조달 (긴급 계약 ×2)
+      ctx.save(); ctx.beginPath(); ctx.rect(cx + 10, top - 20, 330, 300); ctx.clip();
+      ctx.fillStyle = 'rgba(20,32,60,.35)'; ctx.fillRect(cx + 10, top - 20, 330, 300);
+      ctx.strokeStyle = 'rgba(190,215,255,.6)'; ctx.beginPath(); for (let j = 0; j < 40; j++) { const rx = cx + 10 + ((j * 53 + tt * 260) % 340), ry = top - 20 + ((j * 97 + tt * 420) % 300); ctx.moveTo(rx, ry); ctx.lineTo(rx - 4, ry + 14); } ctx.stroke();
+      ctx.restore();
+      house(ctx, cx + 80, top + 150, 180, 80, '#d9574a', '#7a2a22', '소방서');
+      if (k > 0.15) {
+        const bx = cx + 128, by = top + 30;
+        ctx.fillStyle = '#d9342b'; ctx.fillRect(bx, by - 14, 56, 14); ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('긴급 ×2', bx + 28, by - 7);
+        ctx.fillStyle = '#fffdf6'; ctx.fillRect(bx, by, 84, 90); ctx.strokeStyle = '#e5533d'; ctx.lineWidth = 3; ctx.strokeRect(bx + 1.5, by + 1.5, 81, 87); ctx.lineWidth = 1;
+        G.icons.draw(ctx, 'helmet', bx + 42, by + 28, 34); T(ctx, '안전모', bx + 42, by + 56, 12, '#2a2416'); T(ctx, '예정 7만', bx + 42, by + 72, 12, '#6a5a3a');
+      }
+      if (k > 0.55) stampBox(ctx, cx + 175, top + 128, '긴급조달!', '#0f8a96', (k - 0.55) * 5);
+      G.spr.drawChar(ctx, 'dali', 'walk', 'e', tt, cx + 40 + Math.min(1, k * 1.4) * 60, top + 262, 1.0);
+    } else if (i === 4) {                              // ⑤ 조달관 5대 임무 (missions.js)
       G.missions.LIST.forEach((m, j) => {
         const y = top + 4 + j * 54, show = k > 0.06 + j * 0.1;
         if (!show) return;
@@ -118,7 +158,13 @@ G.intro = (() => {
       G.broker.raccoon(ctx, bk, null);
       const nk = Math.min(1, Math.max(0, (k - 0.35) / 0.25));
       G.spr.drawChar(ctx, 'narmi', 'walk', 'sw', tt, cx - 30 + (bk.x - cx + 30) * nk + 20, top + 120 + nk * 90 - 14, 1.0);
-      if (caught) stampBox(ctx, bk.x, top + 120, '브로커 차단!', '#7a3fb0', (k - 0.6) * 5);
+      if (caught) { stampBox(ctx, bk.x, top + 118, '브로커 차단!', '#7a3fb0', (k - 0.6) * 5); if (k > 0.66) stampBox(ctx, bk.x + 10, top + 156, '입찰참가자격 제한', '#d9342b', (k - 0.66) * 5); }
+      // AI 조사 칸: 브로커 1명 적발마다 한 칸 → 3칸이면 AI 데이터 일제 조사
+      { const ax = cx - 60, ay = top + 14, n2 = caught ? 3 : k > 0.3 ? 2 : 1;
+        ctx.fillStyle = n2 >= 3 && Math.floor(tt * 4) % 2 === 0 ? '#5ec8f2' : '#2a3646'; ctx.fillRect(ax, ay, 120, 34);
+        T(ctx, n2 >= 3 ? 'AI 조사 준비!' : 'AI 조사', ax + 60, ay + 10, 12, n2 >= 3 ? '#0b2a3a' : '#cfd8e3');
+        for (let j = 0; j < 3; j++) { ctx.fillStyle = j < n2 ? (n2 >= 3 ? '#0b2a3a' : '#7a3fb0') : '#3a4656'; ctx.fillRect(ax + 34 + j * 18, ay + 20, 14, 9); }
+        T(ctx, '브로커 3명 → 일제 조사', ax + 60, ay + 44, 12, '#fff'); }
       // 새싹 공방 → 혁신제품
       const gx = cx + 250, g = Math.min(1, Math.max(0, (k - 0.2) / 0.55));
       ctx.fillStyle = '#b9824f'; ctx.fillRect(gx - 70, top + 150, 140, 80);
@@ -133,8 +179,9 @@ G.intro = (() => {
   }
   const CAPS = [
     ['마을이 계약 조건과 함께 주문해요', '나라장터 주문 카드 맨 아래 별 = 꼭 지켜야 할 품질 조건이에요'],
-    ['조건을 맞추는 곳 중 가성비를 골라요', '제일 싼 곳이 정답은 아니에요 · 너무 싸고 좋은 새 공방은 나르미가 실사해요'],
-    ['검수 합격! 브로커는 막고, 새싹은 키워요', '브로커는 눌러서 나르미로 적발 · 새싹 공방을 사 주면 혁신제품으로 자라요'],
+    ['조건을 맞추는 곳 중 가성비를 골라요', '제일 싼 곳이 정답은 아니에요 · ✔ 없는 새 공방은 눌러서 나르미가 실사해요'],
+    ['검수 합격! 브로커는 막고, 새싹은 키워요', '브로커는 눌러서 적발 · 3명 잡으면 AI 조사 · 새싹 공방을 사 주면 혁신제품으로'],
+    ['위기 대응: 비축과 긴급조달', '아낀 세금으로 원자재를 쌀 때 비축 · 태풍이 오면 긴급 계약을 빨리 해결해요'],
     ['조달관 5대 임무', '다섯 가지를 모두 해내면 S등급! 화면 위 임무 칸에 도장이 찍혀요'],
   ];
   function draw(ctx) {
@@ -143,11 +190,11 @@ G.intro = (() => {
     const k = Math.min(1, t / PANEL);
     ctx.save(); ctx.beginPath(); ctx.rect(110, 100, W - 220, 300); ctx.clip(); scene(ctx, idx, k); ctx.restore();
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.strokeRect(110, 100, W - 220, 300); ctx.lineWidth = 1;
-    const [cap, sub] = CAPS[Math.min(idx, 3)];
+    const [cap, sub] = CAPS[Math.min(idx, 4)];
     T(ctx, cap, W / 2, 62, 24, '#ffd84a');
     T(ctx, sub, W / 2, 432, 16, '#fff');
-    for (let i = 0; i < 4; i++) { ctx.fillStyle = i === idx ? '#ffd84a' : '#4a5a70'; ctx.fillRect(W / 2 - 41 + i * 22, 470, 14, 6); }
-    if (idx === 3) T(ctx, '공방·마을 터치 = 이동  ·  새 공방 터치 = 나르미 실사  ·  브로커 터치(Space) = 적발  ·  브로커 3명 적발 → AI 조사 (자동 또는 Q)', W / 2, 496, 12, '#cfd8e3');
+    for (let i = 0; i < 5; i++) { ctx.fillStyle = i === idx ? '#ffd84a' : '#4a5a70'; ctx.fillRect(W / 2 - 52 + i * 22, 470, 14, 6); }
+    if (idx === 4) T(ctx, '공방·마을 터치 = 이동  ·  새 공방 터치 = 나르미 실사  ·  브로커 터치(Space) = 적발  ·  브로커 3명 적발 → AI 조사 (자동 또는 Q)', W / 2, 496, 12, '#cfd8e3');
     T(ctx, '클릭·Enter 다음  ·  Esc 건너뛰기', W - 16, H - 16, 12, '#8fa3b8', 'right');
   }
   return { start, update, draw, seen: () => G.store.get('introSeen', false) };

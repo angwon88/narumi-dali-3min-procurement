@@ -60,10 +60,21 @@ G.screens = (() => {
       ctx.font = '12px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = m.col; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(m.name, x + 54, y + 11);
     });
   }
+  // 타이틀 배경: 이미지 AI 일러스트를 한 번만 살짝 흐리게 만들어 둠 (간판 글자가 덜 보이게)
+  let bgCache = null;
+  function titleBg(ctx) {
+    const im = G.img.title_bg;
+    if (!im || !im.naturalWidth) { G.world.draw(ctx); return false; }
+    if (!bgCache) {
+      bgCache = document.createElement('canvas'); bgCache.width = W; bgCache.height = H;
+      const g = bgCache.getContext('2d'); g.filter = 'blur(2.5px)'; g.drawImage(im, -8, -8, W + 16, H + 16); g.filter = 'none';
+    }
+    ctx.drawImage(bgCache, 0, 0); return true;
+  }
   function titleDraw(ctx, t) {
-    G.world.draw(ctx);
+    const art = titleBg(ctx);
     const g = ctx.createLinearGradient(0, 0, W, 0);                     // 왼쪽은 어둡게(글자), 오른쪽은 밝게(마스코트)
-    g.addColorStop(0, 'rgba(16,24,36,.86)'); g.addColorStop(0.55, 'rgba(16,24,36,.6)'); g.addColorStop(1, 'rgba(30,60,100,.35)');
+    g.addColorStop(0, art ? 'rgba(16,24,36,.8)' : 'rgba(16,24,36,.86)'); g.addColorStop(0.5, art ? 'rgba(16,24,36,.45)' : 'rgba(16,24,36,.6)'); g.addColorStop(1, art ? 'rgba(30,60,100,.12)' : 'rgba(30,60,100,.35)');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     // 오른쪽: 빛 원 + 3D 마스코트 (둥실둥실)
     const im = G.img.mascot3d, bob = Math.sin(t * 2) * 4;
