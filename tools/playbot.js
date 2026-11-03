@@ -20,7 +20,6 @@ window.PlayBot = {
       target = null;
       // 나르미 실사 (개편): 실사할 수 있는 새 공방 중 수상해 보이는 곳 → 요청 있는 업종 순
       // 꼼수 브로커가 계약을 노리고 달리면 나르미로 적발 (chase:false면 안 쫓음)
-      if (ult && G.ult.ready(S) && !S.ultFx) { G.input.taps.push({ x: G.ult.BTN.x + 5, y: G.ult.BTN.y + 5 }); G.ult.input(S); G.input.taps.length = 0; }   // 필살기 준비되면 사용
       if (chase && S.bk && (S.bk.state === 'run' || S.bk.state === 'grab') && S.inspectCD <= 0 && !G.narmi.busy()) G.broker.request(S);
       else if (inspect && inspect !== 'never' && S.inspectCD <= 0 && !G.narmi.busy()) {
         const need = new Set(act.map(r => G.ITEM[r.item].cat));
