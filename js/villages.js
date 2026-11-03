@@ -76,6 +76,11 @@ G.villages = (() => {
       px(Math.floor(t * 4) % 2 ? '#5ec8f2' : '#e5533d', x + 26, y - 7, 4, 2);
     }
     if (v.id === 'library') for (let i = 0; i < 4; i++) { const x = b.x + 40 + i * 44; px('#6b4423', x, b.y + 47, 24, 4); ['#e86a5c', '#ffd84a', '#d18ad9'].forEach((c, k) => px(c, x + 3 + k * 8, b.y + 43, 4, 4)); }
+    // 2026-11-03 지금 받는 효과를 벽에 작은 배지로 (예전엔 단장할 때 한 번만 글자로 떠서 몰랐음)
+    { const txt = s.tier >= 2 ? '시간 +15% · 점수 ×' + C.VILLAGE_T2_SCORE : '계약 시간 +15%';
+      ctx.font = '12px ' + G.FONT; const w = ctx.measureText(txt).width + 14, x = b.x + 38, y = b.y + 55;
+      px('rgba(0,0,0,.25)', x + 1, y + 2, w, 13); px(s.tier >= 2 ? '#b08800' : '#2e7d3a', x, y, w, 13); px('rgba(255,255,255,.25)', x, y, w, 1);
+      G.world.text(ctx, txt, x + w / 2, y + 7, 12, '#fff'); }
     // 지붕 별 (단장 단계)
     for (let i = 0; i < s.tier; i++) G.icons.stars(ctx, b.x + b.w - 44 - i * 9, b.y + 7, 1, 1, 1);
     if (s.upT != null) for (let i = 0; i < 6; i++) {        // 공사 먼지

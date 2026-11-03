@@ -97,6 +97,8 @@ G.ui = (() => {
     ctx.fillStyle = r.state === 'expired' ? '#ffd6d0' : '#fffdf6'; ctx.beginPath(); ctx.moveTo(b.w / 2 - 6, b.h - 2); ctx.lineTo(b.w / 2, b.h + 7); ctx.lineTo(b.w / 2 + 6, b.h - 2); ctx.fill();   // 꼬리(아래 마을 쪽)
     const cx = b.w / 2, cy = 20;
     ctx.lineWidth = 4; ctx.strokeStyle = '#ddd6c4'; ctx.beginPath(); ctx.arc(cx, cy, 16, 0, Math.PI * 2); ctx.stroke();
+    const vt = G.S && G.S.vstate && G.S.vstate[r.vid] ? G.S.vstate[r.vid].tier : 0;   // 단장한 마을의 계약: 탭 오른쪽에 별 (시간 넉넉)
+    if (vt) { for (let i = 0; i < vt; i++) G.icons.stars(ctx, b.w - 12 - i * 10, -11, 1, 1, 1); }
     if (r.state === 'open' && G.S && G.S.smartBoard) { ctx.lineWidth = 2; ctx.strokeStyle = '#2e9b3a'; ctx.beginPath(); ctx.arc(cx, cy, 19.5, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 4; }   // 스마트 주문판: 계약 시간 +20%
     if (r.state === 'open') { ctx.strokeStyle = ringColor(f); ctx.beginPath(); ctx.arc(cx, cy, 16, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f); ctx.stroke(); }
     ctx.lineWidth = 1;

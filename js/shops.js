@@ -126,8 +126,8 @@ G.shops = (() => {
     return sh;
   }
   G.director.on('sprout', S => { spawnSprout(S); });
-  G.director.on('tipStock', () => G.narmi.say('아낀 세금으로 원자재를 쌀 때 사 둬요! (조달청 아래 비축칸)', 3.2));
-  G.director.on('tipReg', () => G.narmi.say('지붕의 ✔ = 나라장터 등록 업체! 등록된 곳과만 계약해요', 3.2));
+  G.director.on('tipStock', S => !S.hard && G.narmi.say('아낀 세금으로 원자재를 쌀 때 사 둬요! (조달청 아래 비축칸)', 3.2));
+  G.director.on('tipReg', S => !S.hard && G.narmi.say('지붕의 ✔ = 나라장터 등록 업체! 등록된 곳과만 계약해요', 3.2));
   // 실적을 다 채우면 혁신제품 지정: 혁신 공방(성공 판정 상태)으로, 품질 +1, 업종별 혁신제품 효과
   function graduate(S, sh) {
     sh.sprout = false; sh.innov = true; sh.mature = true; sh.growT = 0; sh.lonely = false; sh.isNew = false;
@@ -405,8 +405,8 @@ G.shops = (() => {
   // 구매 자리(문 앞 발판) 2026-11-03: 어디 서야 사는지 잘 안 보인다는 피드백 → 둥근 발판 + 필요한 물건이 있으면 깜빡이는 '구매' + 문 쪽 화살표
   function doorMat(ctx, S, sh) {
     const d = sh.w.door, x = d.x + 3, y = d.y + 4, w = d.w - 6, h = d.h - 8, t = S.elapsed || 0;
-    const here = S.buy && S.buy.shop === sh, check = sh.isNew && !sh.verified && !sh.innov;
-    const need = itemsOf(sh).some(it => needFits(S, sh, it.id));
+    const here = S.buy && S.buy.shop === sh, check = !S.hard && sh.isNew && !sh.verified && !sh.innov;
+    const need = !S.hard && itemsOf(sh).some(it => needFits(S, sh, it.id));   // 하드 모드: 빈 발판만
     const rr = () => { const r = 6; ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
     if (!need && !here) { rr(); ctx.fillStyle = 'rgba(255,248,225,.35)'; ctx.fill(); ctx.strokeStyle = 'rgba(120,90,40,.45)'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.lineWidth = 1; return; }
     const on = 0.5 + Math.sin(t * 6) * 0.5, col = check ? '#0f8a96' : '#2e9b3a';
@@ -441,7 +441,7 @@ G.shops = (() => {
         ctx.strokeStyle = on ? '#0f8a96' : '#ffd84a'; ctx.lineWidth = 2; ctx.strokeRect(tx + 1, y - 7, TAG_W - 2, 15); ctx.lineWidth = 1;
         ctx.fillStyle = '#0b5d68'; ctx.fillRect(tx + TAG_W - 28, y - 17, 28, 12); G.world.text(ctx, '대비', tx + TAG_W - 14, y - 11, 12, '#ffd84a');
       }
-      if (sh.status === 'open' && needFits(S, sh, it.id)) {   // 2026-11-03 필요 물건 표시: 진행 중 계약에 필요하고 ★ 조건을 맞추면 초록 체크 테두리 (가장 싼 곳 고르기는 그대로 플레이어 몫)
+      if (!S.hard && sh.status === 'open' && needFits(S, sh, it.id)) {   // 2026-11-03 필요 물건 표시: 진행 중 계약에 필요하고 ★ 조건을 맞추면 초록 체크 테두리 (가장 싼 곳 고르기는 그대로 플레이어 몫)
         const on = 0.75 + Math.sin(S.elapsed * 6) * 0.25;
         ctx.fillStyle = 'rgba(120,220,110,.28)'; ctx.fillRect(tx, y - 7, TAG_W, 15);
         ctx.strokeStyle = 'rgba(30,150,50,' + on.toFixed(2) + ')'; ctx.lineWidth = 2.5; ctx.strokeRect(tx - 1, y - 8, TAG_W + 2, 17); ctx.lineWidth = 1;

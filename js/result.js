@@ -146,9 +146,9 @@ G.result = (() => {
   function start(S) {
     t = 0; stamped = false;
     S.grade = grade(S);
-    const order = 'CBAS', best = G.store.get('bestGrade', 'C');
+    const gk = S.hard ? 'bestGrade_hard' : 'bestGrade', order = 'CBAS', best = G.store.get(gk, 'C');
     S.newBestGrade = order.indexOf(S.grade) > order.indexOf(best);
-    if (S.newBestGrade) G.store.set('bestGrade', S.grade);
+    if (S.newBestGrade) G.store.set(gk, S.grade);
     S.resFacts = pickFacts(S); S.resTitle = pickTitle(S);
   }
   function update(dt) {
@@ -167,6 +167,7 @@ G.result = (() => {
     const tg = ctx.createLinearGradient(0, 18, 0, 70); tg.addColorStop(0, '#fff17a'); tg.addColorStop(0.55, '#ffc93a'); tg.addColorStop(1, '#ff9a26');
     K.softShadow(ctx, 10, 5, .35); J(ctx, '작전 종료!', hx, 42, 50, '#fff', { stroke: [['#fff', 16]] }); K.noShadow(ctx);
     J(ctx, '작전 종료!', hx, 42, 50, tg, { stroke: [['#2f4f8a', 8]] });
+    if (S.hard) { K.rr(ctx, hx + 128, 16, 66, 24, 12); ctx.fillStyle = '#d9342b'; ctx.fill(); J(ctx, 'HARD', hx + 161, 29, 16, '#fff'); }
     J(ctx, '점수 ' + S.score.toLocaleString() + (S.newBest ? '  · 최고 기록!' : ''), hx, 86, 24, S.newBest ? '#fff3b0' : '#fff', { stroke: [['rgba(40,28,10,.6)', 5]] });
     if (S.resTitle && t >= 0.3) {                                    // 오늘의 칭호 리본(둥근 알약)
       const tl = S.resTitle, k = Math.min(1, (t - 0.3) / 0.25);
