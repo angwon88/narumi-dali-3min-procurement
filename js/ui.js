@@ -37,7 +37,7 @@ G.ui = (() => {
     T(ctx, '⏱', 20, 22, 16, '#fff');
     T(ctx, G.U.fmtTime(S.timeLeft), 64, 22, 24, low ? (Math.floor(S.timeLeft * 2) % 2 ? '#ff6b5b' : '#ffb3a8') : '#fff');
     T(ctx, '점수', 128, 22, 12, '#8fa3b8', 'left'); T(ctx, String(S.score), 160, 22, 18, '#ffe48a', 'left');
-    T(ctx, '아낀 세금', 262, 17, 12, '#8fa3b8', 'left'); T(ctx, S.saved + '만원', 322, 17, 16, '#9be37a', 'left');
+    T(ctx, '아낀 세금', 262, 17, 12, '#8fa3b8', 'left'); { const pop = Math.max(0, S.savedPop || 0) / 0.35; ctx.save(); ctx.translate(322, 17); ctx.scale(1 + pop * 0.35, 1 + pop * 0.35); T(ctx, S.saved + '만원', 0, 0, 16, pop > 0 ? '#d8ffb0' : '#9be37a', 'left'); ctx.restore(); }   // 동전이 닿으면 톡
     // 마을 신뢰도 게이지
     const gx = 452, gw = 112, f = S.trust / 100, danger = S.trust <= C.TRUST_DANGER;   // 2026-11-03 임무 칸 자리 때문에 170 → 112
     T(ctx, '마을 신뢰', gx - 6, 22, 12, '#8fa3b8', 'right');

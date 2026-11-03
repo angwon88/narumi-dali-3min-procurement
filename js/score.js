@@ -36,7 +36,15 @@ G.score = (() => {
     const star = (r.urgent ? '  긴급 ×' + C.STORM.mult : '') + (sh && sh.mature ? '  ★혁신 ×' + C.INNOV_MATURE_MULT : '');   // 성공 판정 뒤 혁신 납품은 금빛 파편과 함께
     G.fx.add(S, v.x + v.w / 2, v.y + 16, '+' + pts + star + (S.combo >= 2 ? '  콤보 ' + S.combo + '!' : ''), '#ffe48a', 16);
     if (star) G.fx.burst(S, v.x + v.w / 2, v.y + 10, true, 24);
-    if (saving > 0) G.fx.add(S, v.x + v.w / 2, v.y + 16, '세금 +' + saving + '만원', '#9be37a');
+    if (saving > 0) {                                            // 2026-11-04 손맛: 아낀 세금 동전이 위쪽 '아낀 세금' 칸으로 날아가 쌓임
+      G.fx.add(S, v.x + v.w / 2, v.y + 16, '세금 +' + saving + '만원', '#9be37a');
+      G.fx.coins(S, v.x + v.w / 2, v.y + 8, 340, 17, Math.min(6, 1 + Math.ceil(saving / 1.5)), () => { S.savedPop = 0.35; });
+    }
+    if (S.combo >= 5 && S.combo % 5 === 0) {                     // 5·10·15연속 납품: 크게 + 폭죽
+      S.comboPop = { n: S.combo, t: 0, x: v.x + v.w / 2 };
+      G.fx.burst(S, v.x + v.w / 2, v.y - 10, true, 40); G.fx.burst(S, v.x + v.w / 2 - 50, v.y - 30, true, 20); G.fx.burst(S, v.x + v.w / 2 + 50, v.y - 30, true, 20);
+      G.audio.play('gift'); S.shakeT = Math.max(S.shakeT || 0, 0.2);
+    }
     // 개편: 가성비 판정 (산 순간 기준, 조건을 맞춘 곳 중 가장 쌌나)
     if (bagItem.best === true) {
       S.score += C.VALUE_BONUS; S.stats.valueBest = (S.stats.valueBest || 0) + 1;

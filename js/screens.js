@@ -179,6 +179,7 @@ G.screens = (() => {
     G.gifts.update(S, dt);
     G.events.update(S, dt);
     S.comboT += dt; if (S.rush) S.rushT = (S.rushT || 0) + dt;
+    if (S.savedPop > 0) S.savedPop -= dt; if (S.comboPop && (S.comboPop.t += dt) > 1.4) S.comboPop = null;
     if (S.shakeT > 0) S.shakeT -= dt;
     if (S.flashT > 0) S.flashT -= dt;
     if (S.trust <= C.TRUST_DANGER) { S.warnT = (S.warnT || 0) - dt; if (S.warnT <= 0) { G.audio.play('warn'); S.warnT = 2; } } else S.warnT = 0;
@@ -187,7 +188,19 @@ G.screens = (() => {
     if (S.timeLeft <= 0) { S.timeLeft = 0; G.screen = 'end'; endT = C.END_HOLD; G.audio.play('end'); }
   }
   // 2026-11-04 결전(마지막 20초): 화면 가장자리 붉은 맥박 + 'RUSH' 띠, 마지막 5초는 가운데 큰 숫자
+  function comboPopDraw(ctx, S) {                                       // 2026-11-04 '5연속 납품!' 스티커 (마을 위)
+    const c = S.comboPop; if (!c) return;
+    const k = Math.min(1, c.t / 0.16), sc = 1.8 - 0.8 * k, a = c.t > 1.1 ? Math.max(0, (1.4 - c.t) / 0.3) : 1;
+    const x = Math.max(150, Math.min(W - 150, c.x)), y = 372 - c.t * 12;
+    const tg = ctx.createLinearGradient(0, -24, 0, 24); tg.addColorStop(0, '#fff17a'); tg.addColorStop(0.55, '#ffc93a'); tg.addColorStop(1, '#ff9a26');
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.rotate(-0.06); ctx.scale(sc, sc);
+    J(ctx, c.n + '연속 납품!', 0, 0, 40, '#fff', { stroke: [['#fff', 14]] });
+    J(ctx, c.n + '연속 납품!', 0, 0, 40, tg, { stroke: [['#c8461a', 7]] });
+    J(ctx, '콤보 ×' + G.score.comboMult(S).toFixed(1), 0, 32, 17, '#fff', { stroke: [['rgba(120,40,10,.8)', 5]] });
+    ctx.restore();
+  }
   function rushDraw(ctx, S) {
+    comboPopDraw(ctx, S);
     if (!S.rush || S.timeLeft <= 0) return;
     const pulse = 0.5 + 0.5 * Math.sin(S.rushT * (S.timeLeft <= 5 ? 9 : 5)), a = 0.18 + 0.22 * pulse;
     for (const [x, y, w, h, gx0, gy0, gx1, gy1] of [[0, C.HUD_H, W, 26, 0, C.HUD_H, 0, C.HUD_H + 26], [0, H - 26, W, 26, 0, H, 0, H - 26], [0, C.HUD_H, 26, H, 0, 0, 26, 0], [W - 26, C.HUD_H, 26, H, W, 0, W - 26, 0]]) {
