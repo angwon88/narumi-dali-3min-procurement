@@ -1,5 +1,6 @@
 /* 사건과 비축 (2026-11-02 추가, 기획서 4.3)
-   ① 원자재 비축: 조달청 건물 아래 '비축칸'에 0.5초 서 있으면 세금 저금통 STOCK_COST만원 → 원자재 1상자 (최대 STOCK_MAX)
+   ① 원자재 비축 (2026-11-03 단순화): 가격 폭등 '예보'가 뜬 동안 조달청 아래 '원자재 비축'칸에 서 있으면 0.5초마다 원자재 1상자 (최대 STOCK_MAX, 돈 안 듦).
+      전에는 아무 때나 저금통 3만원을 냈는데, 저금통이 안 보여 언제·왜 하는지 알기 어려웠음
    ② 원자재 가격 폭등(2:05~2:25): 공방 가격 ×SURGE.mult. 비축 상자가 있으면 요청이 많은 업종부터 1상자씩 방출 → 그 업종 가격 정상
       (실제: 조달청은 알루미늄·구리 등 비철금속을 비축했다가 가격 급등·수급 불안 때 중소기업에 방출·대여)
    ③ 미세먼지 경보: 화면이 뿌옇고, 마을마다 마스크 요청이 몰림
@@ -18,16 +19,18 @@ G.events = (() => {
   }
 
   // ---------- ① 비축 ----------
+  const stockOpen = S => S.forecasts.some(f => f.id === 'surge');   // 폭등 예보 동안만
   function stockUpdate(S, dt) {
     const d = G.dali, inZ = G.U.inRect(d.x, d.y, ZONE);
     if (!inZ) { S.stockDwell = 0; S.stockWarned = false; return; }
-    const why = S.surge || S.surgeDone ? '원자재 가격이 이미 올랐어요' : S.stock >= C.STOCK_MAX ? '비축 창고가 가득 찼어요' : S.bank < C.STOCK_COST ? '저금통 ' + C.STOCK_COST + '만원부터 비축할 수 있어요' : null;
+    const why = S.surge || S.surgeDone ? '원자재 가격이 이미 올랐어요' : S.stock >= C.STOCK_MAX ? '비축 창고가 가득 찼어요 (3/3)' : !stockOpen(S) ? '원자재 가격 폭등 예보가 뜨면 여기서 비축해요' : null;
     if (why) { S.stockDwell = 0; if (!S.stockWarned && !d.moving) { G.fx.add(S, ZONE.x + ZONE.w / 2, ZONE.y - 4, why, '#ffd6a0'); S.stockWarned = true; } return; }
     S.stockDwell += dt;
     if (S.stockDwell >= C.STOCK_DWELL) {
-      S.stockDwell = 0; S.bank = r1(S.bank - C.STOCK_COST); S.stock++;
+      S.stockDwell = 0; S.stock++;
       S.stats.stocked = (S.stats.stocked || 0) + 1;
       G.fx.add(S, ZONE.x + ZONE.w / 2, ZONE.y - 4, '원자재 비축 +1 (' + S.stock + '/' + C.STOCK_MAX + ')', '#9be37a', 16);
+      if (S.stock === 1) G.narmi.say('좋아요! 폭등 때 이 상자를 풀어 공방 값을 지켜요', 2.6);
       G.audio.play('buy');
     }
   }
@@ -64,14 +67,14 @@ G.events = (() => {
   const FORECAST = {
     dust:  { name: '미세먼지 예보', need: '마스크를 미리 준비해요', items: ['mask'], icon: 'mask' },
     storm: { name: '태풍 예보', need: '안전모·구급상자를 미리 준비해요', items: ['helmet', 'kit'], icon: 'helmet' },
-    surge: { name: '원자재 가격 폭등 예보', need: '조달청 아래 비축칸에 비축해요', items: [], icon: null },
+    surge: { name: '원자재 가격 폭등 예보', need: '조달청 아래 비축칸에 서 있기', items: [], icon: null },
   };
   G.director.on('forecast', (S, p) => {
     const f = FORECAST[p.id]; if (!f) return;
     S.forecasts.push({ id: p.id, at: p.at });
     f.items.forEach(it => S.prep.add(it));
     G.director.banner(S, f.name + ' · ' + C.FORECAST_SEC + '초 뒤', f.need + " · 지금 준비하면 '미리 대비' 임무!");
-    G.narmi.say(p.id === 'surge' ? '조달청 아래 비축칸에 서 있으면 비축돼요!' : "'대비' 표시 공방에서 미리 사 둬요!", 3);
+    G.narmi.say(p.id === 'surge' ? '조달청 아래 원자재 비축칸으로! 상자가 쌓여요' : "'대비' 표시 공방에서 미리 사 둬요!", 3);
     G.audio.play('warn');
   });
   function endForecast(S, id) {
@@ -152,15 +155,15 @@ G.events = (() => {
   }
   function drawWorld(ctx, S) {
     // 비축칸
-    const z = ZONE, can = !S.surge && !S.surgeDone && S.stock < C.STOCK_MAX && S.bank >= C.STOCK_COST;
-    if (S.forecasts.some(f => f.id === 'surge') && Math.floor(S.elapsed * 3) % 2 === 0) {   // 폭등 예보 중: 비축칸 깜빡임 + 안내
-      ctx.strokeStyle = '#5ec8f2'; ctx.lineWidth = 3; ctx.strokeRect(z.x - 3, z.y - 3, z.w + 6, z.h + 6); ctx.lineWidth = 1;
-      ctx.fillStyle = '#2f9bd0'; ctx.fillRect(z.x - 12, z.y + z.h + 4, z.w + 24, 14); T(ctx, can ? '지금 비축!' : '저금통 ' + C.STOCK_COST + '만원 모으면 비축', z.x + z.w / 2, z.y + z.h + 11, 12, '#fff');
-    }
-    ctx.fillStyle = can ? 'rgba(155,227,122,.35)' : 'rgba(0,0,0,.08)'; ctx.fillRect(z.x, z.y, z.w, z.h);
-    ctx.strokeStyle = can ? '#2e9b3a' : 'rgba(80,60,30,.5)'; ctx.setLineDash([3, 3]); ctx.strokeRect(z.x + .5, z.y + .5, z.w - 1, z.h - 1); ctx.setLineDash([]);
-    T(ctx, '비축 ' + C.STOCK_COST + '만원', z.x + z.w / 2, z.y + z.h / 2 + 1, 12, can ? '#1f5a1f' : '#6a5a3a');
-    if (S.stockDwell > 0) { ctx.fillStyle = '#2e9b3a'; ctx.fillRect(z.x, z.y + z.h - 3, Math.round(z.w * S.stockDwell / C.STOCK_DWELL), 3); }
+    // 비축칸 (2026-11-03): 예보 때만 진한 청록으로 깜빡이며 '지금 비축!', 평소엔 흐리게 '폭등 예보 때 비축'
+    const z = ZONE, open = stockOpen(S), can = open && !S.surge && !S.surgeDone && S.stock < C.STOCK_MAX, PREP = G.missions.BY.prep.col;
+    const on = Math.floor(S.elapsed * 3) % 2 === 0;
+    ctx.fillStyle = can ? (on ? PREP : '#0b5d68') : 'rgba(0,0,0,.08)'; ctx.fillRect(z.x, z.y, z.w, z.h);
+    ctx.strokeStyle = can ? '#fff' : 'rgba(80,60,30,.5)'; ctx.setLineDash([3, 3]); ctx.strokeRect(z.x + .5, z.y + .5, z.w - 1, z.h - 1); ctx.setLineDash([]);
+    crate(ctx, z.x + 4, z.y + 7);
+    T(ctx, '원자재 비축', z.x + z.w / 2 + 8, z.y + z.h / 2 + 1, 12, can ? '#fff' : '#6a5a3a');
+    if (S.stockDwell > 0) { ctx.fillStyle = '#ffd84a'; ctx.fillRect(z.x, z.y + z.h - 3, Math.round(z.w * S.stockDwell / C.STOCK_DWELL), 3); }
+    if (!can && !S.surgeDone && !S.surge) T(ctx, '폭등 예보 때 비축', z.x + z.w / 2, z.y + z.h + 10, 12, 'rgba(80,60,30,.6)');
     // 비축 창고 (조달청 오른쪽 옆): 상자 더미
     const sx = OB.x + OB.w + 6, sy = OB.y + OB.h - 14;
     for (let i = 0; i < C.STOCK_MAX; i++) {
@@ -178,6 +181,16 @@ G.events = (() => {
         T(ctx, ok ? '비축 방출' : '재료값 ×' + S.surgeMult, b.x + b.w / 2, ty + 7, 12, '#fff');
       }
     }
+  }
+  // 폭등 예보 중 비축 안내 (마을 말풍선보다 위층에 그림)
+  function drawCallout(ctx, S) {
+    const z = ZONE; if (!stockOpen(S) || S.surge || S.stock >= C.STOCK_MAX) return;
+    const w = 168, x = z.x + z.w / 2 - w / 2, y = z.y + z.h + 6;
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x + 2, y + 3, w, 20);
+    ctx.fillStyle = '#0b5d68'; ctx.fillRect(x, y, w, 20); ctx.fillStyle = '#ffd84a'; ctx.fillRect(x, y, w, 2);
+    T(ctx, '지금 비축! 여기 서 있기 (' + S.stock + '/' + C.STOCK_MAX + ')', x + w / 2, y + 11, 12, '#ffd84a');
+    const ay = z.y - 10 + Math.sin(S.elapsed * 6) * 3;
+    ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.moveTo(z.x + z.w / 2 - 7, ay - 6); ctx.lineTo(z.x + z.w / 2 + 7, ay - 6); ctx.lineTo(z.x + z.w / 2, ay + 2); ctx.fill();
   }
   function drawOverlay(ctx, S) {                       // 태풍 비 · 미세먼지 (HUD 아래 전체)
     if (S.storm) {
@@ -234,5 +247,5 @@ G.events = (() => {
       if (b.sub) T(ctx, b.sub, x + 32, y + 28, 12, '#cfe3f5', 'left');
     });
   }
-  return { init, update, drawWorld, drawOverlay, drawBoards, priceMult, crate, ZONE, FORECAST };
+  return { drawCallout, init, update, drawWorld, drawOverlay, drawBoards, priceMult, crate, ZONE, FORECAST };
 })();

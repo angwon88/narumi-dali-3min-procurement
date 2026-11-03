@@ -409,8 +409,8 @@ G.shops = (() => {
       T(ctx, String(price(sh, it.id)), tx + TAG_W - 2, y + 1, 12, sh.monopoly || dir > 0 ? '#d9342b' : dir < 0 ? '#2e9b3a' : '#2a2416', 'right');
       if (S.prep && S.prep.has(it.id) && !sh.fake && sh.status === 'open') {   // 예보 중 대비 물건 (2026-11-03: 처음 하는 사람도 알게)
         const on = Math.floor(S.elapsed * 4) % 2 === 0;
-        ctx.strokeStyle = on ? '#5ec8f2' : '#2f9bd0'; ctx.lineWidth = 2; ctx.strokeRect(tx + 1, y - 7, TAG_W - 2, 15); ctx.lineWidth = 1;
-        ctx.fillStyle = '#2f9bd0'; ctx.fillRect(tx + TAG_W - 26, y - 16, 26, 10); G.world.text(ctx, '대비', tx + TAG_W - 13, y - 11, 12, '#fff');
+        ctx.strokeStyle = on ? '#0f8a96' : '#ffd84a'; ctx.lineWidth = 2; ctx.strokeRect(tx + 1, y - 7, TAG_W - 2, 15); ctx.lineWidth = 1;
+        ctx.fillStyle = '#0b5d68'; ctx.fillRect(tx + TAG_W - 28, y - 17, 28, 12); G.world.text(ctx, '대비', tx + TAG_W - 14, y - 11, 12, '#ffd84a');
       }
       if (S.valueHint && !sh.fake && bestFor(S, sh, it.id)) { ctx.strokeStyle = '#2e9b3a'; ctx.lineWidth = 2; ctx.strokeRect(tx + 1, y - 7, TAG_W - 2, 15); ctx.lineWidth = 1; }
     });

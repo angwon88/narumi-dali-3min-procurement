@@ -27,7 +27,9 @@ window.PlayBot = {
         const pick = ok.sort((a, b) => (suspicious(b) - suspicious(a)) || (need.has(b.cat) - need.has(a.cat)))[0];
         if (pick) G.shops.request(S, pick);
       }
-      if (mode === 'buy') {
+      const Z = G.events.ZONE;
+      if (S.forecasts.some(f => f.id === 'surge') && S.stock < G.C.STOCK_MAX && !S.surge) target = { x: Z.x + Z.w / 2, y: Z.y + Z.h / 2 };   // 폭등 예보: 비축
+      else if (mode === 'buy') {
         for (const r of uncovered) {
           // 개편: 계약 조건(★minQ)을 맞추는 공방 중 가장 싼 곳. quality:false면 조건을 안 보고 제일 싼 곳(옛 전략 비교용)
           const cand = S.shops.filter(s => G.shops.isOpen(S, s) && s.cat === G.ITEM[r.item].cat && !(avoidFake && suspicious(s)) && (quality === false || s.q[r.item] >= r.minQ));

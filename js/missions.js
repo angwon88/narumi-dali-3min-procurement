@@ -19,7 +19,7 @@ G.missions = (() => {
     { id: 'sprout', desc: '새싹 공방을 사 줘서 실적 3건이면 혁신제품 지정!', name: '새싹을 혁신제품으로', short: '새싹 성장!', col: '#d39e00', icon: 'lamp',
       done: s => n(s.innov) > 0,
       real: '실제로도 조달청은 혁신제품의 첫 구매자가 되어 기술 기업의 성장을 도와요' },
-    { id: 'prep', desc: '예보를 보고 미리 사 두고, 원자재를 비축해요', name: '위기 미리 대비', short: '미리 대비!', col: '#2f9bd0', icon: 'mask',
+    { id: 'prep', desc: '예보를 보고 미리 사 두고, 원자재를 비축해요', name: '위기 미리 대비', short: '미리 대비!', col: '#0f8a96', icon: 'mask',
       done: s => n(s.prepared) > 0,
       real: '실제로도 조달청은 원자재를 비축하고, 재난 때는 긴급 물자를 더 빨리 살 수 있게 해요' },
   ];

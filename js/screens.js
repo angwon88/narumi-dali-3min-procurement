@@ -127,6 +127,7 @@ G.screens = (() => {
     G.dali.draw(ctx);
     ui.bubbles(ctx, G.S);
     ui.checks(ctx, G.S);
+    G.events.drawCallout(ctx, G.S);
     G.broker.draw(ctx, G.S);
     G.dali.drawOver(ctx, G.S);
     G.shops.drawDoorInfo(ctx, G.S);
