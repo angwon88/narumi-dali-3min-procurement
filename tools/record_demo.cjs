@@ -6,9 +6,11 @@
    사용: python3 -m http.server 8767 (저장소 폴더에서) → node tools/record_demo.cjs [출력.mp4] [시드] */
 'use strict';
 const fs = require('fs'), path = require('path'), { spawn } = require('child_process');
-const PW = process.env.PW || '/home/dksrnjs/.npm/_npx/9833c18b2d85bc59/node_modules/playwright';
-const CHROME = process.env.CHROME || '/home/dksrnjs/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell';
-const FFMPEG = process.env.FFMPEG || path.join(process.env.SP || '/tmp', 'ffm/node_modules/ffmpeg-static/ffmpeg');
+// 경로: 저장소 폴더에서 `npm i --no-save playwright ffmpeg-static` 후 `npx playwright install chromium` 하면 따로 지정할 필요 없음
+const tryReq = m => { try { return require.resolve(m, { paths: [process.cwd(), __dirname] }); } catch (e) { return null; } };
+const PW = process.env.PW || tryReq('playwright') || '/home/dksrnjs/.npm/_npx/9833c18b2d85bc59/node_modules/playwright';
+const CHROME = process.env.CHROME || undefined;                        // 없으면 playwright가 설치한 크로미움
+const FFMPEG = process.env.FFMPEG || (tryReq('ffmpeg-static') && require(tryReq('ffmpeg-static'))) || path.join(process.env.SP || '/tmp', 'ffm/node_modules/ffmpeg-static/ffmpeg');
 const OUT = path.resolve(process.argv[2] || 'demo.mp4'), SEED = +(process.argv[3] || 7), FPS = 30;
 const { chromium } = require(PW);
 
@@ -107,7 +109,7 @@ window.REC = (() => {
 })();`;
 
 (async () => {
-  const b = await chromium.launch({ executablePath: CHROME });
+  const b = await chromium.launch(CHROME ? { executablePath: CHROME } : {});
   const p = await b.newPage({ viewport: { width: 960, height: 540 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.addInitScript(INIT);
