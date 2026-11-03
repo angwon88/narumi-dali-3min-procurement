@@ -132,7 +132,9 @@ G.shops = (() => {
   function graduate(S, sh) {
     sh.sprout = false; sh.innov = true; sh.mature = true; sh.growT = 0; sh.lonely = false; sh.isNew = false;
     for (const it of itemsOf(sh)) { sh.q[it.id] = Math.min(3, sh.q[it.id] + 1); sh.mults[it.id] = rollMult(sh, it.id); }
-    const I = G.levelup.INNOV[sh.cat]; if (I && !S.innovCats.has(sh.cat)) { I.apply(S); S.innovCats.add(sh.cat); }
+    // 2026-11-03 혁신 보상은 업종이 아니라 순서대로: 1호 전동 킥보드(이동 +35%) → 2호 수납 카트(가방 +1) → 3호 스마트 주문판 (첫 혁신부터 체감되게)
+    const key = ['safety', 'furn', 'elec', 'health'].find(k => !S.innovCats.has(k)), I = key && G.levelup.INNOV[key];
+    if (I) { I.apply(S); S.innovCats.add(key); }
     S.stats.innov = (S.stats.innov || 0) + 1;
     return I;
   }
@@ -400,6 +402,11 @@ G.shops = (() => {
     ctx.fillStyle = '#6b4423'; ctx.fillRect(x + 12, up ? y + 6 : y + 10, 2, 6);   // 망치 자루
     ctx.fillStyle = '#7d7d7d'; ctx.fillRect(x + 11, up ? y + 4 : y + 9, 5, 3);    // 망치 머리
   }
+  function needFits(S, sh, itemId) {
+    const reqs = G.requests.active(S).filter(r => r.item === itemId);
+    if (!reqs.length || reqs.length <= G.dali.bag.filter(b => b.item === itemId).length) return false;
+    return reqs.some(r => sh.q[itemId] >= r.minQ);
+  }
   function priceTag(ctx, S, sh) {
     const b = sh.w.body, tx = sh.w.tagX, flash = sh.fx && Math.floor(sh.fx.t * 6) % 2 === 0;
     if (sh.fx) { ctx.fillStyle = flash ? '#ffd84a' : '#fff3b0'; ctx.fillRect(tx - 2, b.y + 23, TAG_W + 4, 38); }
@@ -415,6 +422,13 @@ G.shops = (() => {
         const on = Math.floor(S.elapsed * 4) % 2 === 0;
         ctx.strokeStyle = on ? '#0f8a96' : '#ffd84a'; ctx.lineWidth = 2; ctx.strokeRect(tx + 1, y - 7, TAG_W - 2, 15); ctx.lineWidth = 1;
         ctx.fillStyle = '#0b5d68'; ctx.fillRect(tx + TAG_W - 28, y - 17, 28, 12); G.world.text(ctx, '대비', tx + TAG_W - 14, y - 11, 12, '#ffd84a');
+      }
+      if (sh.status === 'open' && needFits(S, sh, it.id)) {   // 2026-11-03 필요 물건 표시: 진행 중 계약에 필요하고 ★ 조건을 맞추면 초록 체크 테두리 (가장 싼 곳 고르기는 그대로 플레이어 몫)
+        const on = 0.75 + Math.sin(S.elapsed * 6) * 0.25;
+        ctx.fillStyle = 'rgba(120,220,110,.28)'; ctx.fillRect(tx, y - 7, TAG_W, 15);
+        ctx.strokeStyle = 'rgba(30,150,50,' + on.toFixed(2) + ')'; ctx.lineWidth = 2.5; ctx.strokeRect(tx - 1, y - 8, TAG_W + 2, 17); ctx.lineWidth = 1;
+        G.icons.draw(ctx, it.id, tx + 8, y, 15); G.icons.stars(ctx, tx + 16, y - 4, sh.q[it.id], 3, 1);
+        T(ctx, String(price(sh, it.id)), tx + TAG_W - 2, y + 1, 12, sh.monopoly || (sh.fx && sh.fx.dirs[it.id] > 0) ? '#d9342b' : sh.fx && sh.fx.dirs[it.id] < 0 ? '#2e9b3a' : '#2a2416', 'right');
       }
       if (S.valueHint && !sh.fake && bestFor(S, sh, it.id)) { ctx.strokeStyle = '#2e9b3a'; ctx.lineWidth = 2; ctx.strokeRect(tx + 1, y - 7, TAG_W - 2, 15); ctx.lineWidth = 1; }
     });

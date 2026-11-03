@@ -124,7 +124,7 @@ G.broker = (() => {
   }
 
   // ---------- 나르미로 적발 ----------
-  const hit = (S, p) => { const bk = S.bk; return bk && (bk.state === 'grab' || bk.state === 'run') && Math.abs(p.x - bk.x) < 26 && p.y > bk.y - 92 && p.y < bk.y + 10; };   // 보따리·이름표까지 눌러도 됨
+  const hit = (S, p) => { const bk = S.bk, t = p.touch ? 1 : 0; return bk && (bk.state === 'grab' || bk.state === 'run') && Math.abs(p.x - bk.x) < 26 + t * 22 && p.y > bk.y - 92 - t * 16 && p.y < bk.y + 10 + t * 24; };   // 터치는 손가락 크기만큼 넓게   // 보따리·이름표까지 눌러도 됨
   function request(S) {
     const bk = S.bk;
     if (G.narmi.busy() || S.inspectCD > 0) { G.fx.add(S, bk.x, bk.y - 50, '나르미가 숨 고르는 중 (' + Math.ceil(S.inspectCD) + '초)', '#ffd6a0'); return false; }

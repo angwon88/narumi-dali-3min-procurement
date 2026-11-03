@@ -30,7 +30,7 @@ G.levelup = (() => {
     furn:   { product: '접이식 수납 카트', icon: 'cart',    effect: '가방 +1칸',             apply: S => { S.bagCap = Math.min(C.BAG_MAX, S.bagCap + 1); } },
     elec:   { product: '스마트 주문판',    icon: 'board',   effect: '새 요청 제한 시간 +15%', apply: S => { S.limitMult *= 1.15; } },
     health: { product: '보온 배송 상자',   icon: 'box',     effect: '시간 보너스 2배',        apply: S => { S.timeBonusMult = 2; } },
-    safety: { product: '전동 킥보드',      icon: 'scooter', effect: '킥보드 타고 이동 속도 +35%', apply: S => { S.speedMult *= 1.35; S.scooter = true; } },
+    safety: { product: '전동 킥보드',      icon: 'scooter', effect: '이동 속도 +35%', apply: S => { S.speedMult *= 1.35; S.scooter = true; } },
   };
   function innovCard(S) {
     const cand = S.shops.filter(sh => G.shops.isOpen(S, sh) && !sh.fake && !sh.innov && !S.innovCats.has(sh.cat));

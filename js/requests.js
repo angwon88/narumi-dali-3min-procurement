@@ -182,7 +182,7 @@ G.requests = (() => {
         const I = G.shops.graduate(S, sh);
         S.score += C.SPROUT_GRAD_SCORE; G.score.trust(S, C.SPROUT_GRAD_TRUST);
         G.fx.add(S, y.x + y.w / 2, y.y - 4, '혁신 성장 보너스 +' + C.SPROUT_GRAD_SCORE + ' · 신뢰 +' + C.SPROUT_GRAD_TRUST, '#ffd84a', 16);
-        G.director.banner(S, '새싹 ' + who + ', 혁신제품 지정!', (I ? I.product + ': ' + I.effect + ' · ' : '') + '공공기관 첫 구매로 성장 · 납품 점수 ×' + C.INNOV_MATURE_MULT);
+        G.director.banner(S, '새싹 ' + who + ', 혁신제품 지정!', (I ? '혁신 보상 ' + I.product + ': ' + I.effect + ' · ' : '') + '공공기관 첫 구매로 성장 · 납품 점수 ×' + C.INNOV_MATURE_MULT);
       } else G.director.banner(S, who + ' 혁신제품 성공 판정!', '시범 사용 통과 · 공공기관 판로 열림 · 이제 납품 점수 ×' + C.INNOV_MATURE_MULT);
       sh.mature = true; sh.stampT = 0;
       G.audio.play('gift'); setTimeout(() => G.audio.play('levelup'), 250);

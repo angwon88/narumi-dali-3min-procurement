@@ -25,6 +25,8 @@ G.input = (() => {
     let pend = null;
     cv.addEventListener('pointerdown', e => {
       const p = toGame(e);
+      // 2026-11-03 모바일: 달리는 브로커는 손을 뗄 때가 아니라 누른 순간에 판정(그새 도망가지 않게) + 넓은 판정
+      if (e.pointerType !== 'mouse' && G.screen === 'play' && G.S && G.broker.hit(G.S, { ...p, touch: true })) { taps.push({ ...p, touch: true }); e.preventDefault(); return; }
       if (e.pointerType !== 'mouse' && G.screen === 'play' && p.y > G.C.HUD_H && !joy.active) {
         pend = { id: e.pointerId, x: p.x, y: p.y }; try { cv.setPointerCapture(e.pointerId); } catch (_) {}
       } else taps.push(p);
@@ -37,7 +39,7 @@ G.input = (() => {
       if (joy.active && e.pointerId === joy.id) { joy.x = p.x; joy.y = p.y; }
     });
     const up = e => {
-      if (pend && e.pointerId === pend.id) { if (e.type === 'pointerup') taps.push({ x: pend.x, y: pend.y }); pend = null; }
+      if (pend && e.pointerId === pend.id) { if (e.type === 'pointerup') taps.push({ x: pend.x, y: pend.y, touch: true }); pend = null; }
       if (joy.active && e.pointerId === joy.id) { joy.active = false; joy.id = null; }
     };
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);

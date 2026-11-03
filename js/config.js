@@ -5,7 +5,7 @@ G.C = {
   VIEW: { w: 960, h: 540 }, HUD_H: 44, DT: 1 / 60,
   GAME_SECONDS: 120, END_HOLD: 1.5,   // 2026-11-03 3분 → 2분 (앞쪽 대기 시간을 줄이고 일정 전체를 당김)
   LATE_AT: 60,                        // 이 시각부터 '후반'(수상한 공방 더 자주·동시 2곳, 브로커 쉬는 시간 짧게)
-  DALI_SPEED: 170, NARMI_SPEED: 420, CHAR_SCALE: 0.75,
+  DALI_SPEED: 185, NARMI_SPEED: 420, CHAR_SCALE: 0.75,
   INSPECT_TIME: 1.3, INSPECT_COOLDOWN: 3.5,   // 2026-11-03 실사 보고서를 읽을 수 있게 1.0 → 1.3   // 인증제 도입으로 6 → 3.5
   BUY_DWELL: 0.4, BAG_START: 2, BAG_MAX: 4,
   TRUST_START: 50, TRUST_DANGER: 25,
@@ -70,4 +70,4 @@ G.C = {
   GRADE: { S: [20000, 80], A: [13000, 60], B: [6000, 0] },   // 2026-11-03 덜어내기 뒤 2분 기준 (봇 0.7 ≈ 16,000~25,000 · 0.45 ≈ 10,000~19,000)
 };
 G.FONT = 'Galmuri11';
-G.VERSION = 'v5.3 · 가방 막힘 수정';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)
+G.VERSION = 'v5.4 · 필요 물건 표시·킥보드·모바일 터치';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)
