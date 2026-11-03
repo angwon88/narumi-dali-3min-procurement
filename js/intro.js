@@ -47,11 +47,13 @@ G.intro = (() => {
     ctx.fillStyle = ok ? '#2e9b3a' : '#8a8f99'; ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fill();
     T(ctx, ok ? '✔' : '…', x, y + 1, 12, '#fff');
   }
-  function stampBox(ctx, x, y, text, col, k) {        // 기울어진 도장 (k: 0~1 찍히는 정도)
-    const sc = 1.8 - 0.8 * Math.min(1, k);
+  function stampBox(ctx, x, y, text, col, k) {        // 기울어진 도장 (k: 0~1 찍히는 정도) — 2026-11-03 둥근 판·Jua
+    const K = G.soft, sc = 1.8 - 0.8 * Math.min(1, k);
     ctx.save(); ctx.translate(x, y); ctx.rotate(-0.12); ctx.scale(sc, sc); ctx.globalAlpha = Math.min(1, k * 2);
-    ctx.font = '16px ' + G.FONT; const w = ctx.measureText(text).width + 20;
-    ctx.fillStyle = col; ctx.fillRect(-w / 2, -14, w, 28); T(ctx, text, 0, 1, 16, '#fff'); ctx.restore(); ctx.globalAlpha = 1;
+    ctx.font = '19px "Jua", sans-serif'; const w = ctx.measureText(text).width + 26;
+    K.softShadow(ctx, 6, 3, .3); K.rr(ctx, -w / 2, -16, w, 32, 10); ctx.fillStyle = col; ctx.fill(); K.noShadow(ctx);
+    ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2; K.rr(ctx, -w / 2 + 3, -13, w - 6, 26, 8); ctx.stroke(); ctx.lineWidth = 1;
+    K.J(ctx, text, 0, 1, 19, '#fff'); ctx.restore(); ctx.globalAlpha = 1;
   }
   function sprout(ctx, x, y, g) {                     // 새싹 → 자라는 나무 (g: 0~1)
     const h = 8 + g * 34, lf = 4 + g * 10;
@@ -129,16 +131,16 @@ G.intro = (() => {
       if (k > 0.55) stampBox(ctx, cx + 175, top + 128, '긴급조달!', '#0f8a96', (k - 0.55) * 5);
       G.spr.drawChar(ctx, 'dali', 'walk', 'e', tt, cx + 40 + Math.min(1, k * 1.4) * 60, top + 262, 1.0);
     } else if (i === 4) {                              // ⑤ 조달관 5대 임무 (missions.js)
+      const K = G.soft;
       G.missions.LIST.forEach((m, j) => {
         const y = top + 4 + j * 54, show = k > 0.06 + j * 0.1;
         if (!show) return;
-        ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(cx - 300 + 3, y + 4, 600, 46);
-        ctx.fillStyle = '#fffdf6'; ctx.fillRect(cx - 300, y, 600, 46);
-        ctx.fillStyle = m.col; ctx.fillRect(cx - 300, y, 46, 46);
-        T(ctx, String(j + 1), cx - 277, y + 24, 24, '#fff');
-        G.icons.draw(ctx, m.icon, cx - 226, y + 23, 28);
-        ctx.font = '16px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = m.col; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(m.name, cx - 200, y + 14);
-        T(ctx, m.desc, cx - 200, y + 33, 12, '#4a3f2a', 'left');
+        K.softShadow(ctx, 8, 3, .25); K.rr(ctx, cx - 300, y, 600, 46, 14); ctx.fillStyle = 'rgba(255,251,240,.97)'; ctx.fill(); K.noShadow(ctx);
+        ctx.fillStyle = m.col; ctx.beginPath(); ctx.arc(cx - 274, y + 23, 15, 0, 7); ctx.fill();
+        K.J(ctx, String(j + 1), cx - 274, y + 25, 20, '#fff');
+        G.icons.draw(ctx, m.icon, cx - 230, y + 23, 28);
+        K.J(ctx, m.name, cx - 204, y + 15, 19, m.col, { align: 'left' });
+        K.J(ctx, m.desc, cx - 204, y + 34, 14, '#5a4e36', { align: 'left' });
       });
     } else {                                           // ③ 검수 합격 · 브로커 차단 · 새싹 성장
       house(ctx, cx - 330, top + 150, 160, 80, '#e8d27a', '#8a7a40', '학교');
@@ -184,18 +186,29 @@ G.intro = (() => {
     ['위기 대응: 비축과 긴급조달', '아낀 세금으로 원자재를 쌀 때 비축 · 태풍이 오면 긴급 계약을 빨리 해결해요'],
     ['조달관 5대 임무', '다섯 가지를 모두 해내면 S등급! 화면 위 임무 칸에 도장이 찍혀요'],
   ];
+  // 2026-11-03 타이틀·결과와 같은 톤: 일러스트 배경 + 둥근 장면 액자 + 스티커 제목 + 크림색 설명 알약
   function draw(ctx) {
-    ctx.fillStyle = '#1e2a3a'; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#6fae4a'; ctx.fillRect(110, 100, W - 220, 300); ctx.fillStyle = '#d9c38f'; ctx.fillRect(110, 330, W - 220, 70);
+    const K = G.soft, J = K.J, PX = 110, PY = 100, PW = W - 220, PH = 300;
+    K.bg(ctx); ctx.fillStyle = 'rgba(40,30,20,.52)'; ctx.fillRect(0, 0, W, H);
     const k = Math.min(1, t / PANEL);
-    ctx.save(); ctx.beginPath(); ctx.rect(110, 100, W - 220, 300); ctx.clip(); scene(ctx, idx, k); ctx.restore();
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.strokeRect(110, 100, W - 220, 300); ctx.lineWidth = 1;
+    K.softShadow(ctx, 22, 8, .45); K.rr(ctx, PX, PY, PW, PH, 20); ctx.fillStyle = '#6fae4a'; ctx.fill(); K.noShadow(ctx);
+    ctx.save(); K.rr(ctx, PX, PY, PW, PH, 20); ctx.clip();
+    ctx.fillStyle = '#d9c38f'; ctx.fillRect(PX, 330, PW, 70);
+    scene(ctx, idx, k); ctx.restore();
+    ctx.strokeStyle = '#fffbf0'; ctx.lineWidth = 5; K.rr(ctx, PX - 1, PY - 1, PW + 2, PH + 2, 21); ctx.stroke(); ctx.lineWidth = 1;
     const [cap, sub] = CAPS[Math.min(idx, 4)];
-    T(ctx, cap, W / 2, 62, 24, '#ffd84a');
-    T(ctx, sub, W / 2, 432, 16, '#fff');
-    for (let i = 0; i < 5; i++) { ctx.fillStyle = i === idx ? '#ffd84a' : '#4a5a70'; ctx.fillRect(W / 2 - 52 + i * 22, 470, 14, 6); }
-    if (idx === 4) T(ctx, '공방·마을 터치 = 이동  ·  새 공방 터치 = 나르미 실사  ·  브로커 터치(Space) = 적발  ·  브로커 3명 적발 → AI 조사 (자동 또는 Q)', W / 2, 496, 12, '#cfd8e3');
-    T(ctx, '클릭·Enter 다음  ·  Esc 건너뛰기', W - 16, H - 16, 12, '#8fa3b8', 'right');
+    const tg = ctx.createLinearGradient(0, 42, 0, 80); tg.addColorStop(0, '#fff17a'); tg.addColorStop(0.55, '#ffc93a'); tg.addColorStop(1, '#ff9a26');
+    K.softShadow(ctx, 8, 4, .35); J(ctx, cap, W / 2, 58, 34, '#fff', { stroke: [['#fff', 14]] }); K.noShadow(ctx);
+    J(ctx, cap, W / 2, 58, 34, tg, { stroke: [['#2f4f8a', 7]] });
+    ctx.font = '17px "Jua", sans-serif'; const sw = ctx.measureText(sub).width + 40;
+    K.softShadow(ctx, 10, 4, .3); K.rr(ctx, W / 2 - sw / 2, 416, sw, 36, 18); ctx.fillStyle = 'rgba(255,251,240,.96)'; ctx.fill(); K.noShadow(ctx);
+    J(ctx, sub, W / 2, 435, 17, '#3a3022');
+    for (let i = 0; i < 5; i++) {                                   // 진행 점: 지금 장면은 길쭉한 금색
+      const on = i === idx, x = W / 2 - 62 + i * 26 + (i > idx ? 18 : 0);
+      K.rr(ctx, x, 470, on ? 30 : 12, 12, 6); ctx.fillStyle = on ? '#ffc93a' : i < idx ? 'rgba(255,251,240,.9)' : 'rgba(255,251,240,.4)'; ctx.fill();
+    }
+    if (idx === 4) J(ctx, '공방·마을 터치 = 이동  ·  새 공방 터치 = 나르미 실사  ·  브로커 터치(Space) = 적발  ·  브로커 3명 → AI 조사 (자동 또는 Q)', W / 2, 503, 13, '#fff', { stroke: [['rgba(40,28,10,.6)', 4]] });
+    J(ctx, '클릭·Enter 다음  ·  Esc 건너뛰기', W - 18, H - 16, 14, '#fff6dc', { align: 'right', stroke: [['rgba(40,28,10,.6)', 4]] });
   }
   return { start, update, draw, seen: () => G.store.get('introSeen', false) };
 })();
