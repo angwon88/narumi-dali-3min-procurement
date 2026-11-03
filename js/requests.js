@@ -85,8 +85,23 @@ G.requests = (() => {
       } else r.endT += dt;
     }
     S.requests = S.requests.filter(r => r.state === 'open' || r.endT < 0.6);   // 끝난 요청은 0.6초 연출 뒤 제거
+    dropOrphans(S);
     for (const c of S.checks) c.t += dt;
     S.checks = S.checks.filter(c => c.t < C.CHECK_SEC);
+  }
+  // 2026-11-03 가방 막힘 방지: 계약이 시간 초과·부정 낙찰로 사라져 가방 속 물건을 낼 곳이 없으면 바로 반품(계약 해지).
+  // 낸 돈은 돌려받지 못하므로 낭비된 세금으로 기록 → '늦으면 손해'가 결과에 남음
+  function dropOrphans(S) {
+    const d = G.dali; if (!d.bag.length) return;
+    const act = active(S);
+    for (let i = d.bag.length - 1; i >= 0; i--) {
+      const b = d.bag[i];
+      if (d.bag.filter(x => x.item === b.item).length <= act.filter(r => r.item === b.item).length) continue;
+      d.bag.splice(i, 1);
+      S.wasted = Math.round((S.wasted + b.paid) * 10) / 10;
+      S.stats.returned = (S.stats.returned || 0) + 1;
+      G.fx.add(S, d.x, d.y - 96, '계약이 끝나 ' + G.ITEM[b.item].name + ' 반품 · 세금 ' + b.paid + '만원 낭비', '#ffd6a0');
+    }
   }
   // 시간 초과: 신뢰도 감소 + 마을 피해 8초
   function onExpire(S, r) {
