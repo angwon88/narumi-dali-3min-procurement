@@ -91,24 +91,39 @@ G.world = (() => {
     for (let i = 0; i < 4; i++) ctx.fillRect(b.x + 40 + i * 44, b.y + 30, 24, 16);
     ctx.fillStyle = '#3b2a1e'; ctx.fillRect(b.x + 6, b.y + 34, 22, 36);
   }
-  function drawOffice(ctx) {
-    const b = office.body;
-    house(ctx, b, '#eef1f5', '#2f4f8a', '');
-    ctx.fillStyle = '#fff'; ctx.fillRect(b.x + 10, b.y + 24, b.w - 20, 30);
+  // 조달청 (2026-11-03 다시 그림): 박공지붕 · 큰 CI 간판 · 업적 메달 자리 · 기둥 · 유리문 · 계단 · 깃대. 충돌 영역(office.body)은 그대로
+  function drawOffice(ctx, t) {
+    const b = office.body, x = b.x, y = b.y, w = b.w, px = (c, X, Y, W, H) => { ctx.fillStyle = c; ctx.fillRect(Math.round(X), Math.round(Y), W, H); };
+    px('rgba(0,0,0,.18)', x + 4, y + b.h - 2, w, 6);                                   // 그림자
+    px('#e9edf3', x, y + 10, w, b.h - 10);                                            // 돌벽
+    px('#d5dce6', x, y + 10, w, 3);
+    for (let i = 0; i < 9; i++) px('#2f4f8a', x - 6 + i * 2, y + 10 - i * 2, w + 12 - i * 4, 2);   // 계단식 박공지붕
+    px('#3f64a8', x + 10, y - 6, w - 20, 2); px('#ffd84a', x - 6, y + 10, w + 12, 2);
+    px('#fff', x + 12, y + 16, w - 24, 28); px('#c9d2de', x + 12, y + 43, w - 24, 1);   // 큰 간판
     const ci = G.img.ci_h;
     if (ci && ci.naturalWidth) {
-      const h = 24, w = Math.min(b.w - 24, ci.naturalWidth * h / ci.naturalHeight);
-      ctx.imageSmoothingEnabled = true; ctx.drawImage(ci, b.x + (b.w - w) / 2, b.y + 27, w, w * ci.naturalHeight / ci.naturalWidth);
-      ctx.imageSmoothingEnabled = false;
+      const h = 22, cw = Math.min(w - 32, ci.naturalWidth * h / ci.naturalHeight);
+      ctx.imageSmoothingEnabled = true; ctx.drawImage(ci, x + (w - cw) / 2, y + 19, cw, cw * ci.naturalHeight / ci.naturalWidth); ctx.imageSmoothingEnabled = false;
     }
-    ctx.fillStyle = '#9fd3ff'; ctx.fillRect(b.x + 14, b.y + 62, 30, 18); ctx.fillRect(b.x + b.w - 44, b.y + 62, 30, 18);
-    ctx.fillStyle = '#3b2a1e'; ctx.fillRect(b.x + b.w / 2 - 14, b.y + 64, 28, 36);
+    px('#cfd6e0', x + 10, y + 46, w - 20, 16);                                         // 업적 메달 게시판 (메달은 missions.js)
+    px('#b9c2cf', x + 10, y + 61, w - 20, 1);
+    [x + 8, x + 30, x + w - 38, x + w - 16].forEach(cx => { px('#ffffff', cx, y + 64, 8, 24); px('#c9d2de', cx + 6, y + 64, 2, 24); px('#dfe5ee', cx - 1, y + 63, 10, 2); });   // 기둥
+    px('#7fb6e0', x + 42, y + 66, 18, 18); px('#7fb6e0', x + w - 60, y + 66, 18, 18);   // 창
+    px('#3a5f8f', x + w / 2 - 15, y + 64, 30, 26); px('#9fd3ff', x + w / 2 - 13, y + 66, 12, 24); px('#9fd3ff', x + w / 2 + 1, y + 66, 12, 24);   // 유리문
+    px('#c7ced8', x - 2, y + 88, w + 4, 4); px('#b4bcc8', x - 6, y + 92, w + 12, 4);    // 계단
+    const wave = Math.sin((t || 0) * 4) * 1.5;                                         // 깃대 (조달청 파랑 깃발)
+    [[x - 12, 1], [x + w + 10, -1]].forEach(([fx, d]) => {
+      px('#8a8f99', fx, y - 26, 2, 56); px('#ffd84a', fx - 1, y - 28, 4, 3);
+      ctx.fillStyle = '#2f6fb5'; ctx.beginPath(); ctx.moveTo(fx + (d > 0 ? 2 : 0), y - 24); ctx.lineTo(fx + d * 18, y - 22 + wave); ctx.lineTo(fx + d * 18, y - 12 + wave); ctx.lineTo(fx + (d > 0 ? 2 : 0), y - 12); ctx.fill();
+      px('#fff', fx + (d > 0 ? 4 : -14), y - 18 + wave * 0.6, 10, 2);
+    });
   }
+
   function draw(ctx) {
     drawGround(ctx);
     shops.forEach(s => drawShop(ctx, s));
     villages.forEach(v => drawVillage(ctx, v));
-    drawOffice(ctx);
+    drawOffice(ctx, performance.now() / 1000);
   }
   return { shade, CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, roofPerch: { x: 480, y: 242 } };
 })();

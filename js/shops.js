@@ -407,6 +407,11 @@ G.shops = (() => {
       G.icons.stars(ctx, tx + 16, y - 4, sh.q[it.id], 3, 1);         // 품질 ★ (개편)
       const dir = sh.fx && sh.fx.dirs[it.id];
       T(ctx, String(price(sh, it.id)), tx + TAG_W - 2, y + 1, 12, sh.monopoly || dir > 0 ? '#d9342b' : dir < 0 ? '#2e9b3a' : '#2a2416', 'right');
+      if (S.prep && S.prep.has(it.id) && !sh.fake && sh.status === 'open') {   // 예보 중 대비 물건 (2026-11-03: 처음 하는 사람도 알게)
+        const on = Math.floor(S.elapsed * 4) % 2 === 0;
+        ctx.strokeStyle = on ? '#5ec8f2' : '#2f9bd0'; ctx.lineWidth = 2; ctx.strokeRect(tx + 1, y - 7, TAG_W - 2, 15); ctx.lineWidth = 1;
+        ctx.fillStyle = '#2f9bd0'; ctx.fillRect(tx + TAG_W - 26, y - 16, 26, 10); G.world.text(ctx, '대비', tx + TAG_W - 13, y - 11, 12, '#fff');
+      }
       if (S.valueHint && !sh.fake && bestFor(S, sh, it.id)) { ctx.strokeStyle = '#2e9b3a'; ctx.lineWidth = 2; ctx.strokeRect(tx + 1, y - 7, TAG_W - 2, 15); ctx.lineWidth = 1; }
     });
   }
@@ -425,29 +430,47 @@ G.shops = (() => {
     T(ctx, text, 0, 1, 12, '#fff'); ctx.restore();
   }
   // 새싹 공방: 연두 지붕 + 자라는 새싹 + 공방 아래 '실적 n/3' 칸
-  // 성장 모습: 지붕 위 증축 띠(작업장 = 반폭, 공장 = 전체 폭 + 불 켜진 창 + 깃발) + 굴뚝 하나 더
+  // 성장 모습 (2026-11-03 다시 그림: 건물 모양이 바뀌게)
+  //   작업장: 줄무늬 차양(창·문 위), 지붕 위 노란 '작업장' 현판, 굴뚝 하나 더, 문 옆 원자재 상자
+  //   공장: 지붕 전체가 톱니 지붕(채광창)으로 솟고, 줄무늬 큰 굴뚝·짙은 연기, 금빛 '공장' 현판, 깃발, 창에 불빛
   function tierLook(ctx, sh) {
     if (!sh.tier) return;
-    const b = sh.w.body, g = sh.tierT == null ? 1 : Math.min(1, sh.tierT / 0.5), up = Math.round((sh.tier >= 2 ? 14 : 11) * g);
+    const b = sh.w.body, A = sh.w.side === 'A', g = sh.tierT == null ? 1 : Math.min(1, sh.tierT / 0.5);
     if (sh.tierT != null) sh.tierT += 1 / 60;
-    const roof = sh.innov ? '#d9a800' : sh.sprout ? '#5aa43c' : G.world.shade(sh.w.cat.col, 0.45);
-    const A = sh.w.side === 'A';                                          // 굴뚝은 A 공방 오른쪽·B 공방 왼쪽 → 글자는 반대쪽에
+    const px = (c, x, y, w, h) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); };
+    const cat = sh.w.cat.col, dark = G.world.shade(cat, 0.45), mid = G.world.shade(cat, 0.7);
+    // 공통: 줄무늬 차양 (창문~문 위)
+    const ax = Math.min(sh.w.wndX, sh.w.doorGfx) - 4, aw = Math.abs(sh.w.wndX - sh.w.doorGfx) + 28;
+    for (let k = 0; k < aw; k += 6) px(k % 12 ? '#fffdf6' : (sh.tier >= 2 ? '#d9342b' : mid), ax + k, b.y + 23, 6, 5);
+    px('rgba(0,0,0,.18)', ax, b.y + 28, aw, 2);
+    // 문 옆 원자재 상자 (길 쪽)
+    const bx = A ? b.x + b.w - 50 : b.x + 26;
+    G.events.crate(ctx, bx, b.y + 52); if (sh.tier >= 2) { G.events.crate(ctx, bx + (A ? -14 : 14), b.y + 52); G.events.crate(ctx, bx + (A ? -7 : 7), b.y + 41); }
     if (sh.tier >= 2) {
-      ctx.fillStyle = roof; ctx.fillRect(b.x - 1, b.y - up, b.w + 2, up);
-      ctx.fillStyle = '#fff6b0'; for (let x = b.x + 6; x < b.x + b.w - 10; x += 12) if ((x / 12 + Math.floor(sh.t)) % 3) ctx.fillRect(x, b.y - up + 4, 5, 5);
-      const fx = b.x + b.w - 8, wave = Math.sin(sh.t * 6) * 1.5;
-      ctx.fillStyle = '#5a5a5a'; ctx.fillRect(fx, b.y - up - 14, 2, 14);
-      ctx.fillStyle = '#2f6fb5'; ctx.fillRect(fx + 2, b.y - up - 14 + wave, 12, 7);
-      G.world.text(ctx, '공장', A ? b.x + 22 : b.x + 74, b.y - up / 2, 12, '#fff');
-    } else {
-      const bx = A ? b.x + 4 : b.x + 54;
-      ctx.fillStyle = roof; ctx.fillRect(bx, b.y - up, 54, up);
-      G.world.text(ctx, '작업장', bx + 27, b.y - up / 2 + 1, 12, '#fff');
+      const up = Math.round(18 * g);                                     // 톱니 지붕
+      for (let k = 0; k < 4; k++) {
+        const tx = b.x - 2 + k * 29;
+        ctx.fillStyle = dark; ctx.beginPath(); ctx.moveTo(tx, b.y); ctx.lineTo(tx + 22, b.y - up); ctx.lineTo(tx + 22, b.y); ctx.fill();
+        px('#9fd3ff', tx + 22, b.y - up + 2, 4, up - 2); px(Math.floor(sh.t * 2 + k) % 3 ? '#fff6b0' : '#ffe48a', tx + 9, b.y - up / 2, 4, 3);
+      }
+      const cx = A ? b.x + 6 : b.x + b.w - 14;                           // 줄무늬 큰 굴뚝 + 짙은 연기
+      px('#8a8f99', cx, b.y - 30, 9, 30); px('#d9342b', cx, b.y - 26, 9, 3); px('#d9342b', cx, b.y - 18, 9, 3);
+      for (let i = 0; i < 3; i++) { const k = ((sh.t / 1.1) + i / 3) % 1; ctx.globalAlpha = 0.75 * (1 - k); ctx.fillStyle = '#e1e4e8'; ctx.beginPath(); ctx.arc(cx + 4 + Math.sin(k * 4) * 4, b.y - 34 - k * 12, 3 + k * 5, 0, 7); ctx.fill(); }
+      ctx.globalAlpha = 1;
+      const fx = A ? b.x + b.w - 6 : b.x + 22, wave = Math.sin(sh.t * 6) * 1.5;   // 깃발
+      px('#5a5a5a', fx, b.y - up - 12, 2, 12); px('#2f6fb5', fx + 2, b.y - up - 12 + wave, 11, 7);
     }
-    const cx = sh.w.wndX + 18, cy = b.y - 8;                              // 굴뚝 하나 더 (원래 굴뚝 바로 옆, 연기)
-    ctx.fillStyle = '#7a3b2e'; ctx.fillRect(cx, cy, 8, 10);
-    for (let i = 0; i < 2; i++) { const k = ((sh.t / 1.3) + i / 2) % 1; ctx.globalAlpha = 0.7 * (1 - k); ctx.fillStyle = '#f4f6f8'; ctx.beginPath(); ctx.arc(cx + 4 + Math.sin(k * 5) * 3, cy - 3 - k * 14, 2 + k * 3, 0, Math.PI * 2); ctx.fill(); }
-    ctx.globalAlpha = 1;
+    // 지붕 위 현판 (작업장 = 노랑, 공장 = 금빛 + 별)
+    const label = sh.tier >= 2 ? '★ 공장' : '작업장', lw = sh.tier >= 2 ? 46 : 42, lx = A ? b.x + (sh.tier >= 2 ? 20 : 6) : b.x + b.w - lw - (sh.tier >= 2 ? 18 : 4);   // 굴뚝을 피해서
+    const ly = b.y - (sh.tier >= 2 ? 26 : 12) * g;
+    px('#3a3a3a', lx - 1, ly - 1, lw + 2, 13); px(sh.tier >= 2 ? '#ffd84a' : '#fff3a0', lx, ly, lw, 11);
+    G.world.text(ctx, label, lx + lw / 2, ly + 6, 12, sh.tier >= 2 ? '#7a4a00' : '#5a4a00');
+    if (sh.tier === 1) {                                                   // 작업장: 굴뚝 하나 더
+      const cx = sh.w.wndX + 18, cy = b.y - 8;
+      px('#7a3b2e', cx, cy, 8, 10);
+      for (let i = 0; i < 2; i++) { const k = ((sh.t / 1.3) + i / 2) % 1; ctx.globalAlpha = 0.7 * (1 - k); ctx.fillStyle = '#f4f6f8'; ctx.beginPath(); ctx.arc(cx + 4 + Math.sin(k * 5) * 3, cy - 3 - k * 14, 2 + k * 3, 0, 7); ctx.fill(); }
+      ctx.globalAlpha = 1;
+    }
   }
   function sproutLook(ctx, sh) {
     const b = sh.w.body, done = C.SPROUT_GOAL - sh.trial, g = Math.min(1, (sh.growT || 0) / 0.6), pulse = g < 1 ? Math.sin(g * Math.PI) * 3 : 0;

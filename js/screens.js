@@ -121,6 +121,7 @@ G.screens = (() => {
     G.villages.draw(ctx, G.S);
     G.gifts.draw(ctx, G.S);
     G.events.drawWorld(ctx, G.S);
+    G.missions.drawOffice(ctx, G.S);                                    // 조달청 업적 메달
     G.narmi.draw(ctx);
     G.nav.draw(ctx);
     G.dali.draw(ctx);

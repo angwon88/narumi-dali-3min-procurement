@@ -70,7 +70,8 @@ G.events = (() => {
     const f = FORECAST[p.id]; if (!f) return;
     S.forecasts.push({ id: p.id, at: p.at });
     f.items.forEach(it => S.prep.add(it));
-    G.director.banner(S, f.name + ' · ' + C.FORECAST_SEC + '초 뒤', f.need);
+    G.director.banner(S, f.name + ' · ' + C.FORECAST_SEC + '초 뒤', f.need + " · 지금 준비하면 '미리 대비' 임무!");
+    G.narmi.say(p.id === 'surge' ? '조달청 아래 비축칸에 서 있으면 비축돼요!' : "'대비' 표시 공방에서 미리 사 둬요!", 3);
     G.audio.play('warn');
   });
   function endForecast(S, id) {
@@ -152,6 +153,10 @@ G.events = (() => {
   function drawWorld(ctx, S) {
     // 비축칸
     const z = ZONE, can = !S.surge && !S.surgeDone && S.stock < C.STOCK_MAX && S.bank >= C.STOCK_COST;
+    if (S.forecasts.some(f => f.id === 'surge') && Math.floor(S.elapsed * 3) % 2 === 0) {   // 폭등 예보 중: 비축칸 깜빡임 + 안내
+      ctx.strokeStyle = '#5ec8f2'; ctx.lineWidth = 3; ctx.strokeRect(z.x - 3, z.y - 3, z.w + 6, z.h + 6); ctx.lineWidth = 1;
+      ctx.fillStyle = '#2f9bd0'; ctx.fillRect(z.x - 12, z.y + z.h + 4, z.w + 24, 14); T(ctx, can ? '지금 비축!' : '저금통 ' + C.STOCK_COST + '만원 모으면 비축', z.x + z.w / 2, z.y + z.h + 11, 12, '#fff');
+    }
     ctx.fillStyle = can ? 'rgba(155,227,122,.35)' : 'rgba(0,0,0,.08)'; ctx.fillRect(z.x, z.y, z.w, z.h);
     ctx.strokeStyle = can ? '#2e9b3a' : 'rgba(80,60,30,.5)'; ctx.setLineDash([3, 3]); ctx.strokeRect(z.x + .5, z.y + .5, z.w - 1, z.h - 1); ctx.setLineDash([]);
     T(ctx, '비축 ' + C.STOCK_COST + '만원', z.x + z.w / 2, z.y + z.h / 2 + 1, 12, can ? '#1f5a1f' : '#6a5a3a');

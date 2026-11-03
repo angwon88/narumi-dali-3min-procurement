@@ -33,7 +33,7 @@ G.missions = (() => {
   function achieve(S, m) {
     const k = count(S);
     S.mStamp = { m, t: 0, k };
-    G.director.banner(S, '임무 ' + k + '/5 달성 · ' + m.name, m.real, { queue: true, dur: 3.4, col: m.col });
+    G.director.banner(S, '임무 ' + k + '/5 달성 · ' + m.name + (k === 5 ? ' · 조달청에 금별!' : ''), m.real, { queue: true, dur: 3.4, col: m.col });
     G.audio.play('levelup');
   }
   // HUD: '임무' + 5칸 (달성하면 그 임무 색 + ✔)
@@ -60,5 +60,31 @@ G.missions = (() => {
     ctx.font = '16px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = st.m.col; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('✔ ' + st.m.short, 0, 7);
     ctx.restore();
   }
-  return { LIST, BY, init, update, count, drawHud, drawStamp };
+  // 조달청 정면 업적 메달 (2026-11-03): 임무를 달성할 때마다 메달이 하나씩 걸리고, 다 모으면 지붕 꼭대기에 금빛 별
+  function drawOffice(ctx, S) {
+    const b = G.world.office.body, t = S.elapsed || 0;
+    LIST.forEach((m, i) => {
+      const cx = b.x + 26 + i * 22, cy = b.y + 54, at = S.missions && S.missions[m.id];
+      if (at == null) { ctx.strokeStyle = 'rgba(80,90,110,.5)'; ctx.setLineDash([2, 2]); ctx.beginPath(); ctx.arc(cx, cy, 7, 0, 7); ctx.stroke(); ctx.setLineDash([]); return; }
+      const k = Math.min(1, (t - at) / 0.4), sc = k < 1 ? 1 + Math.sin(k * Math.PI) * 0.8 : 1;
+      ctx.save(); ctx.translate(cx, cy); ctx.scale(sc, sc);
+      ctx.fillStyle = '#d9342b'; ctx.fillRect(-5, 2, 3, 8); ctx.fillStyle = '#2f6fb5'; ctx.fillRect(2, 2, 3, 8);   // 리본
+      ctx.fillStyle = '#b08800'; ctx.beginPath(); ctx.arc(0, 0, 8, 0, 7); ctx.fill();
+      ctx.fillStyle = m.col; ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, 7); ctx.fill();
+      T(ctx, String(i + 1), 0, 1, 12, '#fff');
+      ctx.restore();
+    });
+    if (count(S) === 5) {                                              // 다섯 개를 다 모으면 금별 + 반짝임
+      const p = 1 + Math.sin(t * 4) * 0.08;                            // 지붕 양쪽(가운데는 나르미 자리)
+      for (const sx of [b.x + 34, b.x + b.w - 34]) {
+        const sy = b.y - 1;
+        ctx.save(); ctx.translate(sx, sy); ctx.scale(p, p);
+        ctx.fillStyle = '#ffd84a'; ctx.beginPath();
+        for (let i = 0; i < 10; i++) { const r = i % 2 ? 4.5 : 11, a = -Math.PI / 2 + i * Math.PI / 5; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+        ctx.fill(); ctx.strokeStyle = '#7a5a00'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.lineWidth = 1; ctx.restore();
+        for (let i = 0; i < 2; i++) { const k = ((t * 0.8) + i / 2) % 1; ctx.globalAlpha = 1 - k; ctx.fillStyle = '#fff6b0'; ctx.fillRect(sx - 10 + i * 20, sy - 10 - k * 10, 2, 2); ctx.globalAlpha = 1; }
+      }
+    }
+  }
+  return { LIST, BY, init, update, count, drawHud, drawStamp, drawOffice };
 })();
