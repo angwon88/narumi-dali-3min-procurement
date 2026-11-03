@@ -130,47 +130,117 @@ G.world = (() => {
     for (const x of [8, 952]) lamp(ctx, x, SY + 98);
     for (const x of [240, 480, 720]) tree(ctx, x, VY + 104);           // 마을 사이 나무
   }
+  // ---------- 2026-11-03 그래픽 상향 3: 건물에 깊이감 (경사 지붕·처마·주춧돌·꽃 화분·창 불빛·부드러운 그림자) ----------
+  // 업종별 모양: 가구 = 나무 판자 + 붉은 기와 / 전자 = 파란 사이딩 + 남색 금속 지붕 / 보건 = 흰 타일 + 초록 지붕 / 안전 = 노란 벽돌 + 주황 지붕
+  const LOOK = {
+    furn:   { wall: '#c08a55', roof: '#a8432f', kind: 'plank' },
+    elec:   { wall: '#6f9fcb', roof: '#2f4f8a', kind: 'siding' },
+    health: { wall: '#eef1ee', roof: '#3f9a6a', kind: 'tile' },
+    safety: { wall: '#e2b34e', roof: '#d8632a', kind: 'brick' },
+  };
+  function softShade(ctx, x, y, w) {                                    // 건물 밑 부드러운 그림자
+    const g = ctx.createLinearGradient(0, y, 0, y + 9); g.addColorStop(0, 'rgba(40,30,15,.32)'); g.addColorStop(1, 'rgba(40,30,15,0)');
+    ctx.fillStyle = g; ctx.fillRect(x - 2, y, w + 6, 9);
+  }
+  // 경사 지붕: 아래가 넓은 사다리꼴 + 기와 줄 + 용마루 빛 + 처마 그림자
+  function slopeRoof(ctx, x, y, w, h, base, over, inset) {
+    const x0 = x - over, x1 = x + w + over;
+    ctx.save(); ctx.beginPath(); ctx.moveTo(x0, y + h); ctx.lineTo(x1, y + h); ctx.lineTo(x1 - inset, y); ctx.lineTo(x0 + inset, y); ctx.closePath();
+    ctx.fillStyle = base; ctx.fill(); ctx.clip();
+    for (let ry = y + 4, r = 0; ry < y + h; ry += 5, r++) {
+      px(ctx, 'rgba(0,0,0,.2)', x0, ry, x1 - x0, 1);
+      for (let rx = x0 + (r % 2 ? 5 : 0); rx < x1; rx += 10) px(ctx, 'rgba(0,0,0,.13)', rx, ry - 4, 1, 4);
+      px(ctx, 'rgba(255,255,255,.07)', x0, ry + 1, x1 - x0, 1);
+    }
+    const sh = ctx.createLinearGradient(x0, 0, x1, 0); sh.addColorStop(0, 'rgba(255,255,255,.12)'); sh.addColorStop(0.5, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(0,0,0,.14)');
+    ctx.fillStyle = sh; ctx.fillRect(x0, y, x1 - x0, h);
+    ctx.restore();
+    px(ctx, shade(base, 1.35), x0 + inset, y, x1 - x0 - inset * 2, 2);            // 용마루
+    px(ctx, shade(base, 0.6), x0, y + h - 2, x1 - x0, 2);                          // 처마 끝
+    px(ctx, 'rgba(0,0,0,.3)', x, y + h, w, 3); px(ctx, 'rgba(0,0,0,.12)', x, y + h + 3, w, 2);   // 처마 그림자
+  }
+  function wallPattern(ctx, kind, x, y, w, h, wall) {
+    const d = shade(wall, 0.8), l = shade(wall, 1.12);
+    px(ctx, wall, x, y, w, h);
+    if (kind === 'plank') for (let yy = y + 5; yy < y + h; yy += 6) { px(ctx, d, x, yy, w, 1); px(ctx, l, x, yy + 1, w, 1); for (let xx = x + ((yy - y) % 12 ? 12 : 3); xx < x + w; xx += 20) px(ctx, d, xx, yy - 5, 1, 5); }
+    else if (kind === 'siding') for (let yy = y + 4; yy < y + h; yy += 5) { px(ctx, d, x, yy, w, 1); px(ctx, l, x, yy - 3, w, 1); }
+    else if (kind === 'tile') { for (let yy = y + 6; yy < y + h; yy += 7) px(ctx, '#d5dbd6', x, yy, w, 1); for (let xx = x + 7; xx < x + w; xx += 7) px(ctx, '#dfe4df', xx, y, 1, h); px(ctx, '#3f9a6a', x, y + 2, w, 2); }
+    else if (kind === 'brick') for (let yy = y + 1, r = 0; yy < y + h; yy += 5, r++) { px(ctx, d, x, yy + 4, w, 1); for (let xx = x + (r % 2 ? 6 : 0); xx < x + w; xx += 12) px(ctx, d, xx, yy, 1, 4); }
+    const g = ctx.createLinearGradient(x, 0, x + w, 0); g.addColorStop(0, 'rgba(255,255,255,.14)'); g.addColorStop(0.6, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,0,.16)');
+    ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+  }
+  function flowerBox(ctx, x, y, w) {                                    // 창 밑 꽃 화분
+    px(ctx, '#7a4a2a', x, y, w, 4); px(ctx, '#9a6236', x, y, w, 1);
+    const cols = ['#ff7a9a', '#ffd84a', '#ffffff', '#ff9a4a'];
+    for (let i = 0; i < w - 2; i += 4) { px(ctx, '#3f8a35', x + 1 + i, y - 2, 3, 2); px(ctx, cols[(i / 4 + x) % 4 | 0], x + 2 + i, y - 4, 2, 2); }
+  }
+  function glassWindow(ctx, x, y, w, h, frame) {                        // 창: 틀 + 하늘빛 유리 + 반사 + 창턱
+    px(ctx, frame, x - 2, y - 2, w + 4, h + 4);
+    const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, '#cdeaff'); g.addColorStop(1, '#8cc4ec');
+    ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+    px(ctx, 'rgba(255,255,255,.55)', x + 2, y + 2, 3, h - 6); px(ctx, 'rgba(255,255,255,.35)', x + 6, y + 2, 2, h / 2);
+  }
   function drawShop(ctx, s) {
-    const b = s.body, cat = s.cat, wall = shade(cat.col, 1), dark = shade(cat.col, 0.72);
-    px(ctx, 'rgba(0,0,0,.2)', b.x + 4, b.y + b.h - 2, b.w, 6);
-    px(ctx, wall, b.x, b.y + 18, b.w, b.h - 18);                       // 벽 + 판자 무늬
-    for (let y = b.y + 24; y < b.y + b.h; y += 6) { px(ctx, dark, b.x, y, b.w, 1); for (let x = b.x + ((y - b.y) % 12 ? 10 : 2); x < b.x + b.w; x += 18) px(ctx, dark, x, y - 5, 1, 5); }
-    px(ctx, 'rgba(255,255,255,.15)', b.x, b.y + 18, 3, b.h - 18); px(ctx, 'rgba(0,0,0,.15)', b.x + b.w - 3, b.y + 18, 3, b.h - 18);
-    roofTiles(ctx, b.x - 3, b.y, b.w + 6, 20, shade(cat.col, 0.55));
+    const b = s.body, L = LOOK[s.cat.id] || { wall: s.cat.col, roof: shade(s.cat.col, 0.55), kind: 'plank' };
+    softShade(ctx, b.x, b.y + b.h - 1, b.w);
+    wallPattern(ctx, L.kind, b.x, b.y + 18, b.w, b.h - 22, L.wall);
+    px(ctx, '#9a9184', b.x - 1, b.y + b.h - 5, b.w + 2, 5); px(ctx, '#b5ad9f', b.x - 1, b.y + b.h - 5, b.w + 2, 1);   // 주춧돌
+    for (let xx = b.x + 8; xx < b.x + b.w; xx += 14) px(ctx, '#857c70', xx, b.y + b.h - 4, 1, 4);
     outline(ctx, b.x, b.y + 18, b.w, b.h - 18);
-    label(ctx, cat.name + '공방 ' + s.side, b.x + b.w / 2, b.y + 10);
-    px(ctx, '#2a1d14', s.doorGfx - 2, b.y + 32, 24, 32); px(ctx, '#4a3022', s.doorGfx, b.y + 34, 20, 30);   // 문틀 + 문
-    px(ctx, '#5c3c2a', s.doorGfx + 2, b.y + 36, 7, 12); px(ctx, '#5c3c2a', s.doorGfx + 11, b.y + 36, 7, 12); px(ctx, '#ffd84a', s.doorGfx + 15, b.y + 50, 2, 2);
-    px(ctx, '#3b2a1e', s.wndX - 2, b.y + 28, 22, 22); px(ctx, '#9fd3ff', s.wndX, b.y + 30, 18, 18); px(ctx, '#6b4423', s.wndX - 3, b.y + 49, 24, 3);   // 창틀·창턱
+    slopeRoof(ctx, b.x, b.y - 2, b.w, 22, L.roof, 4, 7);
+    label(ctx, s.cat.name + '공방 ' + s.side, b.x + b.w / 2, b.y + 10);
+    // 문: 틀 + 판자 문 + 위 채광창 + 손잡이 + 계단
+    px(ctx, '#2a1d14', s.doorGfx - 2, b.y + 30, 24, 31); px(ctx, '#5a3826', s.doorGfx, b.y + 32, 20, 29);
+    px(ctx, '#ffe9a8', s.doorGfx + 2, b.y + 33, 16, 4); px(ctx, '#2a1d14', s.doorGfx + 9, b.y + 33, 2, 4);
+    px(ctx, '#6e4630', s.doorGfx + 2, b.y + 39, 7, 9); px(ctx, '#6e4630', s.doorGfx + 11, b.y + 39, 7, 9); px(ctx, '#6e4630', s.doorGfx + 2, b.y + 50, 16, 8);
+    px(ctx, '#ffd84a', s.doorGfx + 15, b.y + 48, 2, 2);
+    px(ctx, '#bdb3a3', s.doorGfx - 4, b.y + b.h - 2, 28, 3);
+    // 일꾼 창 (일꾼 그림은 shops.js가 위에 그림) + 꽃 화분
+    glassWindow(ctx, s.wndX, b.y + 30, 18, 18, '#3b2a1e');
+    flowerBox(ctx, s.wndX - 3, b.y + 50, 24);
     px(ctx, '#c4aa72', s.door.x + 6, s.door.y + 2, s.door.w - 12, 3);   // 문 앞 디딤돌
-    ctx.strokeStyle = 'rgba(80,60,30,.35)'; ctx.setLineDash([3, 3]); ctx.strokeRect(s.door.x + .5, s.door.y + .5, s.door.w - 1, s.door.h - 1); ctx.setLineDash([]);
   }
   // 마을: 위치(창 4개 x=40+i*44, 문 x=6)는 피해·단장 연출과 맞추고, 모양은 마을마다 다르게
+  const VLOOK = {
+    school:  { roof: '#b8452f', kind: 'plank' },
+    clinic:  { roof: '#3f9a6a', kind: 'tile' },
+    fire:    { roof: '#5a2a24', kind: 'brick' },
+    library: { roof: '#4a3a78', kind: 'stone' },
+  };
   function drawVillage(ctx, v) {
-    const y = v.yard, b = v.body, wall = shade(v.col, 1), dark = shade(v.col, 0.78), roof = shade(v.col, 0.5);
-    px(ctx, '#8cc56a', y.x, y.y, y.w, y.h); px(ctx, '#9bd277', y.x, y.y, y.w, 2);   // 앞마당 잔디
+    const y = v.yard, b = v.body, wall = shade(v.col, 1), VL = VLOOK[v.id] || { roof: shade(v.col, 0.5), kind: 'plank' };
+    // 앞마당: 잔디 + 가장자리 꽃밭 + 디딤돌 길
+    px(ctx, '#8cc56a', y.x, y.y, y.w, y.h); px(ctx, '#9bd277', y.x, y.y, y.w, 2);
     for (let x = y.x + 6; x < y.x + y.w; x += 12) px(ctx, '#7ab35a', x, y.y + 4, 2, y.h - 8);
-    px(ctx, 'rgba(0,0,0,.2)', b.x + 4, b.y + b.h - 2, b.w, 6);
-    px(ctx, wall, b.x, b.y + 18, b.w, b.h - 18);
-    if (v.id === 'fire') for (let yy = b.y + 22; yy < b.y + b.h; yy += 5) for (let xx = b.x + ((yy - b.y) % 10 ? 0 : 6); xx < b.x + b.w; xx += 12) px(ctx, dark, xx, yy, 1, 5), px(ctx, dark, xx, yy + 4, 12, 1);   // 벽돌
-    else if (v.id === 'library') { for (let xx = b.x + 34; xx < b.x + b.w - 10; xx += 44) px(ctx, '#d8cce8', xx, b.y + 22, 4, b.h - 22); }   // 돌기둥
-    else for (let yy = b.y + 26; yy < b.y + b.h; yy += 8) px(ctx, dark, b.x, yy, b.w, 1);      // 가로 줄눈
-    px(ctx, 'rgba(255,255,255,.15)', b.x, b.y + 18, 3, b.h - 18);
-    roofTiles(ctx, b.x - 3, b.y, b.w + 6, 20, roof);
-    if (v.id === 'school' || v.id === 'library') {                      // 가운데 박공
-      ctx.fillStyle = roof; ctx.beginPath(); ctx.moveTo(b.x + b.w / 2 - 34, b.y + 2); ctx.lineTo(b.x + b.w / 2, b.y - 12); ctx.lineTo(b.x + b.w / 2 + 34, b.y + 2); ctx.fill();
-    }
+    for (let k = 0; k < 7; k++) { px(ctx, '#d8c9a0', b.x + 8 + (k % 2) * 3, y.y + 3 + k * 5, 14, 3); }
+    for (const fx of [y.x + 3, y.x + y.w - 9]) for (let k = 0; k < 4; k++) { px(ctx, '#3f8a35', fx, y.y + 6 + k * 8, 6, 3); px(ctx, ['#ff7a9a', '#ffd84a', '#fff', '#ff9a4a'][(k + fx) % 4 | 0], fx + 1, y.y + 4 + k * 8, 3, 3); }
+    softShade(ctx, b.x, b.y + b.h - 1, b.w);
+    if (VL.kind === 'stone') { px(ctx, wall, b.x, b.y + 18, b.w, b.h - 18); for (let yy = b.y + 22, r = 0; yy < b.y + b.h; yy += 8, r++) { px(ctx, shade(v.col, 0.85), b.x, yy + 7, b.w, 1); for (let xx = b.x + (r % 2 ? 10 : 0); xx < b.x + b.w; xx += 20) px(ctx, shade(v.col, 0.85), xx, yy, 1, 8); } for (let xx = b.x + 34; xx < b.x + b.w - 10; xx += 44) { px(ctx, '#e6def0', xx, b.y + 22, 5, b.h - 26); px(ctx, '#c8bcd8', xx + 4, b.y + 22, 1, b.h - 26); } }
+    else wallPattern(ctx, VL.kind, b.x, b.y + 18, b.w, b.h - 22, wall);
+    px(ctx, '#9a9184', b.x - 1, b.y + b.h - 4, b.w + 2, 4); px(ctx, '#b5ad9f', b.x - 1, b.y + b.h - 4, b.w + 2, 1);   // 주춧돌
     outline(ctx, b.x, b.y + 18, b.w, b.h - 18);
-    label(ctx, v.name, b.x + b.w / 2, b.y + 10);
-    for (let i = 0; i < 4; i++) {                                      // 창 (불 켜짐) + 창틀
-      const wx = b.x + 40 + i * 44, wy = b.y + 30;
-      px(ctx, '#3b2a1e', wx - 2, wy - 2, 28, 20); px(ctx, '#fff6b0', wx, wy, 24, 16); px(ctx, '#e8d880', wx + 11, wy, 2, 16); px(ctx, '#e8d880', wx, wy + 7, 24, 2);
-      if (v.id === 'library') { ctx.fillStyle = '#3b2a1e'; ctx.beginPath(); ctx.arc(wx + 12, wy, 13, Math.PI, 0); ctx.fill(); ctx.fillStyle = '#fff6b0'; ctx.beginPath(); ctx.arc(wx + 12, wy, 11, Math.PI, 0); ctx.fill(); }
+    // 굴뚝 (지붕 뒤)
+    if (v.id !== 'fire') { px(ctx, '#7a5a4a', b.x + b.w - 44, b.y - 10, 12, 16); px(ctx, '#5a4034', b.x + b.w - 46, b.y - 12, 16, 3); }
+    slopeRoof(ctx, b.x, b.y - 2, b.w, 22, VL.roof, 5, 9);
+    if (v.id === 'school' || v.id === 'library') {                      // 가운데 박공
+      ctx.fillStyle = shade(VL.roof, 1.1); ctx.beginPath(); ctx.moveTo(b.x + b.w / 2 - 38, b.y + 4); ctx.lineTo(b.x + b.w / 2, b.y - 16); ctx.lineTo(b.x + b.w / 2 + 38, b.y + 4); ctx.fill();
+      ctx.strokeStyle = shade(VL.roof, 0.6); ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1;
     }
-    if (v.id === 'fire') { px(ctx, '#3a3f48', b.x + 2, b.y + 26, 30, 44); for (let k = 0; k < 6; k++) px(ctx, '#6a7179', b.x + 4, b.y + 30 + k * 7, 26, 3); }   // 차고 문
-    else { px(ctx, '#2a1d14', b.x + 4, b.y + 32, 26, 38); px(ctx, '#4a3022', b.x + 6, b.y + 34, 22, 36); px(ctx, '#ffd84a', b.x + 23, b.y + 52, 2, 2); }
-    if (v.id === 'clinic') { px(ctx, '#fff', b.x + 6, b.y + 22, 20, 8); px(ctx, '#e5533d', b.x + 14, b.y + 22, 4, 8); px(ctx, '#e5533d', b.x + 12, b.y + 24, 8, 4); }   // 보건 표시
-    if (v.id === 'school') px(ctx, '#fff', b.x + b.w / 2 - 6, b.y - 6, 12, 6);   // 박공 창
+    if (v.id === 'fire') { px(ctx, '#3a3f48', b.x + b.w / 2 - 6, b.y - 18, 12, 18); px(ctx, '#e5533d', b.x + b.w / 2 - 4, b.y - 16, 8, 6); px(ctx, '#2a2e36', b.x + b.w / 2 - 8, b.y - 20, 16, 3); }   // 망루
+    label(ctx, v.name, b.x + b.w / 2, b.y + 10);
+    for (let i = 0; i < 4; i++) {                                      // 창 (불 켜짐) + 덧문 + 꽃 화분
+      const wx = b.x + 40 + i * 44, wy = b.y + 30;
+      px(ctx, '#3b2a1e', wx - 2, wy - 2, 28, 20);
+      const g = ctx.createLinearGradient(0, wy, 0, wy + 16); g.addColorStop(0, '#fff8c8'); g.addColorStop(1, '#ffe08a'); ctx.fillStyle = g; ctx.fillRect(wx, wy, 24, 16);
+      px(ctx, '#d8c070', wx + 11, wy, 2, 16); px(ctx, '#d8c070', wx, wy + 7, 24, 2); px(ctx, 'rgba(255,255,255,.6)', wx + 2, wy + 2, 2, 4);
+      if (v.id === 'library') { ctx.fillStyle = '#3b2a1e'; ctx.beginPath(); ctx.arc(wx + 12, wy, 13, Math.PI, 0); ctx.fill(); ctx.fillStyle = '#fff8c8'; ctx.beginPath(); ctx.arc(wx + 12, wy, 11, Math.PI, 0); ctx.fill(); }
+      if (v.id === 'school' || v.id === 'clinic') flowerBox(ctx, wx - 1, wy + 19, 26);
+      else px(ctx, '#6b4423', wx - 3, wy + 18, 30, 3);
+    }
+    if (v.id === 'fire') { px(ctx, '#2a2e36', b.x + 1, b.y + 24, 32, 46); px(ctx, '#c9342b', b.x + 3, b.y + 26, 28, 44); for (let k = 0; k < 7; k++) px(ctx, '#a8281f', b.x + 3, b.y + 29 + k * 6, 28, 2); px(ctx, '#fff', b.x + 9, b.y + 30, 16, 3); }   // 빨간 차고 문
+    else { px(ctx, '#2a1d14', b.x + 4, b.y + 30, 26, 40); px(ctx, '#5a3826', b.x + 6, b.y + 32, 22, 38); px(ctx, '#ffe9a8', b.x + 8, b.y + 33, 18, 5); px(ctx, '#6e4630', b.x + 8, b.y + 41, 8, 12); px(ctx, '#6e4630', b.x + 18, b.y + 41, 8, 12); px(ctx, '#ffd84a', b.x + 23, b.y + 54, 2, 2); }
+    if (v.id === 'clinic') { px(ctx, '#fff', b.x + 6, b.y + 20, 22, 9); px(ctx, '#e5533d', b.x + 15, b.y + 21, 4, 7); px(ctx, '#e5533d', b.x + 12, b.y + 23, 10, 3); }   // 보건 표시
+    if (v.id === 'school') { px(ctx, '#fff', b.x + b.w / 2 - 6, b.y - 8, 12, 8); px(ctx, '#3b2a1e', b.x + b.w / 2 - 1, b.y - 8, 2, 8); }   // 박공 창
   }
   // 캐시: 바닥 + 공방·마을 바탕 (글꼴이 준비된 뒤 한 번)
   let cache = null;
