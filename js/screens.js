@@ -33,12 +33,13 @@ G.screens = (() => {
   const BTN_MODE = { x: W - 178, y: 122, w: 166, h: 30 };             // 2026-11-03 보통 / 하드 모드
   const modeLabel = () => G.settings.hard ? '하드 모드' : '보통 모드';
   const MODE_TIP = ['보통 / 하드 모드 (눌러서 바꾸기)', '보통: 필요한 물건 초록 테두리 · 구매 발판 깜빡임 · 남은 임무 알림', '하드: 힌트 없음 · 계약이 빡빡하고 브로커가 거세요', '      계약 시간 -32% · 브로커가 더 자주, 더 빠르게', '최고 기록은 모드별로 따로 저장돼요'];
-  let ultTipOn = false;                                                // [?]를 누르면 설명을 켜고 끔 (휴대폰용)
+  let ultTipOn = false, thanksTipOn = false;                                                // [?]를 누르면 설명을 켜고 끔 (휴대폰용)
   function titleUpdate() {
     if (ui.clicked(BTN_SOUND)) { G.audio.toggle(); return; }
     if (ui.clicked(BTN_MUSIC)) { G.music.toggle(); return; }
     if (ui.clicked(BTN_ULT)) { G.ult.toggleAuto(); return; }
     if (ui.clicked(BTN_ULTQ)) { ultTipOn = !ultTipOn; return; }
+    if (ui.clicked(G.thanks.BTN)) { thanksTipOn = !thanksTipOn; return; }
     if (ui.clicked(BTN_MODE)) { G.settings.hard = !G.settings.hard; G.store.set('hard', G.settings.hard); return; }
     if (ui.clicked(BTN_INTRO)) { G.intro.start(() => { G.screen = 'title'; }); return; }
     if (ui.clicked(BTN_START) || G.input.hit('enter') || G.input.hit(' ')) { if (G.intro.seen()) newGame(); else G.intro.start(newGame); }
@@ -142,6 +143,8 @@ G.screens = (() => {
     pill(ctx, BTN_ULT, ultLabel(), 'ult', t);
     pill(ctx, BTN_ULTQ, '?', 'q', t);
     pill(ctx, BTN_MODE, modeLabel(), G.settings.hard ? 'hard' : 'sub', t);
+    pill(ctx, G.thanks.BTN, '감사 선물 ' + G.thanks.got().length + '/' + G.thanks.LIST.length, 'sub', t);
+    if (thanksTipOn || ui.hover(G.thanks.BTN)) ui.tip(ctx, 14, G.thanks.BTN.y + G.thanks.BTN.h + 6, G.thanks.tipLines());
     if (ui.hover(BTN_MODE)) ui.tip(ctx, BTN_MODE.x - 150, BTN_MODE.y + BTN_MODE.h + 6, MODE_TIP);
     if (ultTipOn || ui.hover(BTN_ULT) || ui.hover(BTN_ULTQ)) ui.tip(ctx, BTN_ULTQ.x - 170, BTN_ULT.y + BTN_ULT.h + 6, ui.ULT_TIP);
     const hk = G.settings.hard ? '_hard' : '', best = G.store.get('best' + hk, 0);
@@ -226,6 +229,7 @@ G.screens = (() => {
     G.villages.draw(ctx, G.S);
     G.gifts.draw(ctx, G.S);
     G.events.drawWorld(ctx, G.S);
+    G.thanks.drawWorld(ctx, G.S);                                       // 마을의 감사 선물 (그림만, 충돌 없음)
     G.missions.drawOffice(ctx, G.S);                                    // 조달청 업적 메달
     G.narmi.draw(ctx);
     G.nav.draw(ctx);

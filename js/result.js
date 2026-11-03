@@ -151,6 +151,7 @@ G.result = (() => {
     S.newBestGrade = order.indexOf(S.grade) > order.indexOf(best);
     if (S.newBestGrade) G.store.set(gk, S.grade);
     S.resFacts = pickFacts(S); S.resTitle = pickTitle(S);
+    G.thanks.check(S);                                                  // 마을의 감사 선물 (새로 받으면 S.thanksNew)
   }
   function update(dt) {
     t += dt;
@@ -251,6 +252,21 @@ G.result = (() => {
       y += 19 + lines.length * LH + 8;
     });
 
+    // 5. 새로 받은 마을의 감사 선물 (2초부터 하나씩 2.6초)
+    const nw = S.thanksNew || [], gi = Math.floor((t - 2) / 2.6);
+    if (nw.length && t >= 2 && gi < nw.length) {
+      const g = nw[gi], lt = (t - 2) - gi * 2.6, p = Math.min(1, lt / 0.2), a = lt > 2.2 ? Math.max(0, (2.6 - lt) / 0.4) : 1;
+      ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, 352); ctx.scale(0.85 + 0.15 * p, 0.85 + 0.15 * p);
+      K.softShadow(ctx, 22, 8, .5); K.rr(ctx, -210, -78, 420, 150, 22); ctx.fillStyle = 'rgba(255,251,240,.99)'; ctx.fill(); K.noShadow(ctx);
+      ctx.strokeStyle = '#ffc93a'; ctx.lineWidth = 3; K.rr(ctx, -206, -74, 412, 142, 19); ctx.stroke(); ctx.lineWidth = 1;
+      K.rr(ctx, -110, -92, 220, 30, 15); ctx.fillStyle = '#c8461a'; ctx.fill(); J(ctx, '마을의 감사 선물!', 0, -76, 18, '#fff');
+      ctx.save(); ctx.translate(-130, 30); ctx.scale(2.2, 2.2); G.thanks.drawOne(ctx, g.id, 0, 0, t); ctx.restore();
+      J(ctx, g.name, 40, -24, 24, '#c8461a');
+      J(ctx, g.how + ' 달성', 40, 8, 15, '#6a5a3a');
+      J(ctx, '다음 판부터 조달청 앞 광장에 놓여요', 40, 36, 14, '#2f4f8a');
+      if (nw.length > 1) J(ctx, (gi + 1) + '/' + nw.length, 180, 54, 13, '#9a8a6a');
+      ctx.restore();
+    }
     // 4. 고정 문구
     J(ctx, '필요한 것을, 공정하게, 효율적으로, 필요한 곳에 제때 — 그게 조달입니다.', W / 2, 457, 17, '#fff', { stroke: [['rgba(40,28,10,.65)', 5]] });
   }
