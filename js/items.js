@@ -46,8 +46,15 @@ G.icons = (() => {
     const img = g.getImageData(0, 0, N + 2, N + 2), d = img.data, out = new Uint8ClampedArray(d);
     const A = (x, y) => (x < 0 || y < 0 || x > N + 1 || y > N + 1) ? 0 : d[(y * (N + 2) + x) * 4 + 3];
     for (let y = 0; y < N + 2; y++) for (let x = 0; x < N + 2; x++) {
-      if (A(x, y)) continue;
-      if (A(x - 1, y) || A(x + 1, y) || A(x, y - 1) || A(x, y + 1)) { const i = (y * (N + 2) + x) * 4; out[i] = 40; out[i + 1] = 34; out[i + 2] = 28; out[i + 3] = 230; }
+      const i = (y * (N + 2) + x) * 4;
+      if (!A(x, y)) {
+        if (A(x - 1, y) || A(x + 1, y) || A(x, y - 1) || A(x, y + 1)) { out[i] = 40; out[i + 1] = 34; out[i + 2] = 28; out[i + 3] = 230; }
+        continue;
+      }
+      // 2026-11-03 입체 음영: 위·왼쪽이 비어 있으면 밝게(빛), 아래·오른쪽이 비어 있으면 어둡게(그림자)
+      const lit = !A(x, y - 1) || !A(x - 1, y), shade = !A(x, y + 1) || !A(x + 1, y);
+      const f = lit && !shade ? 1.22 : shade && !lit ? 0.72 : 1;
+      if (f !== 1) for (let k = 0; k < 3; k++) out[i + k] = Math.min(255, d[i + k] * f + (f > 1 ? 18 : 0));
     }
     g.putImageData(new ImageData(out, N + 2, N + 2), 0, 0);
     return (cache[id] = c);

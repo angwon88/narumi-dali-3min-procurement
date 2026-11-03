@@ -150,43 +150,66 @@ G.broker = (() => {
 
   // ---------- 그리기: 너구리 (중절모 + 검은 눈 띠 + 줄무늬 꼬리 + 보따리) ----------
   function px(ctx, col, x, y, w, h) { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); }
+  // 2026-11-03 그래픽 상향: 픽셀 단위 너구리 브로커 (중절모·눈 띠·트렌치코트·빨간 넥타이·서류가방·줄무늬 꼬리), 걷기 2프레임. 오른쪽을 보는 그림 → 왼쪽은 뒤집기
+  const PAL = { k: '#1e1a17', h: '#3a3a44', H: '#55566a', r: '#c0392b', g: '#9a8d7d', G: '#7d7062', w: '#efe6d6', m: '#2b2622', e: '#ffffff', p: '#111111', n: '#2b2622',
+    c: '#8a6a44', C: '#6a4f32', s: '#f4f0e6', t: '#d9342b', l: '#3a2f28', o: '#1e1a17', b: '#5a3a22', B: '#8a5a30', y: '#c9bca8', z: '#3a332d', q: '#ffd84a' };
+  const TOP = [
+    '.......kkkkkkk........',
+    '......khHhhhhhk.......',
+    '......khhhhhhhk.......',
+    '......krrrrrrrk.......',
+    '....kkhhhhhhhhhkk.....',
+    '.....kGggggggggGk.....',
+    '....kgmmmmmmmmmmgk....',
+    '....kgmepmmmmepmgk....',
+    '....kgmmmmmmmmmmgk....',
+    '....kggwwwwwwwwwnnk...',
+    '.....kgwwwwwwwwwk.....',
+    '......kkgggggggk......',
+    '.....kcCsstssCck......',
+    '....kccCcstscCcck.....',
+    'zy.kcccCcsttcCccck.kk.',
+    'yzykccccCcttCcccckbbbk',
+    '.zyzkcccCccCccccckBbbk',
+    '..zzkcccCccCcccckbbbbk',
+    '....kCCCCCCCCCCCkkkkk.',
+  ];
+  const LEGS = [
+    ['.....kllk...kllk......', '.....kllk...kllk......', '....kooook.kooook.....'],
+    ['......kllkkllk........', '.......kllkllk........', '......koookooook......'],
+  ];
+  const frames = [];
+  function frame(i) {
+    if (frames[i]) return frames[i];
+    const rows = TOP.concat(LEGS[i]), u = 2, c = document.createElement('canvas'); c.width = 22 * u; c.height = rows.length * u;
+    const g = c.getContext('2d');
+    rows.forEach((row, y) => [...row.padEnd(22, '.')].forEach((ch, x) => { if (PAL[ch]) { g.fillStyle = PAL[ch]; g.fillRect(x * u, y * u, u, u); } }));
+    return (frames[i] = c);
+  }
   function raccoon(ctx, bk, S) {
     const moving = bk.state === 'run' || bk.state === 'flee', step2 = moving ? Math.floor(bk.t * 10) % 2 : 0;
     const bob = moving ? step2 : Math.round(Math.sin(bk.t * 3));
-    G.spr.shadow(ctx, bk.x, bk.y - 1, 11);
-    ctx.save(); ctx.translate(Math.round(bk.x), Math.round(bk.y) - bob); ctx.scale(bk.face * 1.3, 1.3);   // 1.3배 (지도에서 잘 보이게)
-    if (bk.state === 'caught') { const k = Math.min(1, bk.timer / 0.2); ctx.translate(bk.face * -bk.timer * 60, 0); ctx.rotate(-bk.face * bk.timer * 6); ctx.scale(1 + 0.3 * k, 1 - 0.55 * k); }   // 납작해져 데굴데굴 굴러 나감
+    const fr = frame(step2), RS = 1.3, W = fr.width * RS, H = fr.height * RS;   // 1.3배 (달이·나르미와 비슷한 크기)
+    G.spr.shadow(ctx, bk.x, bk.y - 1, 14);
+    ctx.save(); ctx.translate(Math.round(bk.x), Math.round(bk.y) - bob); ctx.scale(bk.face, 1);
+    if (bk.state === 'caught') { const k = Math.min(1, bk.timer / 0.2); ctx.translate(-bk.timer * 70, 0); ctx.rotate(-bk.timer * 6); ctx.scale(1 + 0.3 * k, 1 - 0.55 * k); }   // 납작해져 데굴데굴 굴러 나감
     else if (bk.freeze > 0) ctx.translate(Math.sin(bk.t * 40) * 1.5, 0);   // 멈칫: 부르르
-    // 꼬리 (뒤쪽, 줄무늬)
-    for (let i = 0; i < 4; i++) px(ctx, i % 2 ? '#2b2622' : '#8c7f70', -14 - i * 2, -16 + i * 2, 5, 5);
-    // 다리
-    px(ctx, '#2b2622', -6, -6 + (step2 ? -1 : 0), 4, 6); px(ctx, '#2b2622', 3, -6 + (step2 ? 0 : -1), 4, 6);
-    // 몸 + 배 + 나비넥타이
-    px(ctx, '#7d7062', -9, -22, 18, 17); px(ctx, '#d9ccb3', -5, -18, 10, 12);
-    px(ctx, '#d9342b', -3, -22, 6, 3);
-    // 머리
-    px(ctx, '#9a8d7d', -10, -38, 20, 16); px(ctx, '#d9ccb3', -4, -28, 10, 6);
-    px(ctx, '#2b2622', -10, -33, 20, 5);                               // 검은 눈 띠
-    px(ctx, '#fff', 0, -32, 3, 3); px(ctx, '#fff', 6, -32, 3, 3);      // 눈
-    px(ctx, '#111', 1, -31, 2, 2); px(ctx, '#111', 7, -31, 2, 2);
-    px(ctx, '#2b2622', 7, -27, 3, 2);                                  // 코
-    px(ctx, '#6b5f52', -9, -41, 5, 4); px(ctx, '#6b5f52', 5, -41, 5, 4); // 귀
-    // 중절모
-    px(ctx, '#3a3a44', -12, -42, 24, 3); px(ctx, '#3a3a44', -7, -50, 14, 8); px(ctx, '#d9342b', -7, -44, 14, 2);
-    if (bk.state === 'caught') { T(ctx, '@', -4, -34, 12, '#fff'); }
-    if ((bk.freeze > 0 && bk.state === 'run') || (bk.state === 'grab' && Math.floor(bk.t * 6) % 2 === 0)) { ctx.scale(bk.face, 1); T(ctx, '!', 0, -60, 16, '#ffd84a'); }
+    ctx.drawImage(fr, -W / 2, -H, W, H);
+    if (bk.state === 'caught') { ctx.fillStyle = '#fff'; ctx.fillRect(-6, -H + 14, 3, 3); ctx.fillRect(6, -H + 14, 3, 3); }   // 눈이 빙글
+    if ((bk.freeze > 0 && bk.state === 'run') || (bk.state === 'grab' && Math.floor(bk.t * 6) % 2 === 0)) { ctx.scale(bk.face, 1); T(ctx, '!', 0, -H - 6, 16, '#ffd84a'); }
     ctx.restore();
     // 불량품 보따리 (머리 위): 물건 아이콘 + 금 간 표시
     if (bk.item && (bk.state === 'run' || bk.state === 'grab')) {
-      const ix = Math.round(bk.x), iy = Math.round(bk.y) - 80 - bob;
+      const ix = Math.round(bk.x), iy = Math.round(bk.y) - H - 16 - bob;
       px(ctx, '#3a3a3a', ix - 12, iy - 12, 24, 24); px(ctx, '#e8dcc0', ix - 11, iy - 11, 22, 22);
       G.icons.draw(ctx, bk.item, ix, iy, 18);
       ctx.strokeStyle = '#d9342b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ix + 4, iy - 11); ctx.lineTo(ix, iy - 3); ctx.lineTo(ix + 5, iy + 3); ctx.stroke(); ctx.lineWidth = 1;
     }
     // 이름표
-    const ny = Math.round(bk.y) - (bk.item && bk.state !== 'flee' && bk.state !== 'caught' ? 101 : 76) - bob;
+    const ny = Math.round(bk.y) - (bk.item && bk.state !== 'flee' && bk.state !== 'caught' ? H + 38 : H + 10) - bob;
     px(ctx, '#7a3fb0', Math.round(bk.x) - 22, ny - 7, 44, 14); T(ctx, '브로커', bk.x, ny, 12, '#fff');
   }
+
   function draw(ctx, S) {
     const bk = S.bk; if (!bk || bk.state === 'off') return;
     // 노리는 계약까지 빨간 점선 (얼마나 가까운지 한눈에)
