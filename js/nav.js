@@ -1,6 +1,6 @@
 /* 터치·클릭 조작 (개편 2026-11-02): 누른 곳으로 달이가 길을 찾아 이동.
    공방 → 문 앞으로 가서 구매 (새 공방이면 나르미가 자동으로 먼저 실사)
-   마을·말풍선 → 앞마당으로 가서 납품 / 조달청 → 비축칸 / 꼼수 브로커 → 나르미 출동 / 빈 곳 → 그 자리로
+   마을·말풍선 → 앞마당으로 가서 납품 / 조달청 → 비축칸 / 브로커 → 나르미 출동 / 빈 곳 → 그 자리로
    길 찾기: 바로 갈 수 있으면 직선, 막히면 조달청 건물 네 모서리를 거쳐 가는 가장 짧은 길 */
 'use strict';
 G.nav = (() => {
@@ -47,7 +47,7 @@ G.nav = (() => {
       if (G.broker.hit(S, p)) { G.broker.request(S); return; }
       const t = targetOf(S, p); if (t) { go(S, t); return; }
     }
-    if (G.input.hit(' ')) {                                           // 키보드: 꼼수가 달리면 나르미 출동, 아니면 가장 가까운 새 공방 실사
+    if (G.input.hit(' ')) {                                           // 키보드: 브로커가 달리면 나르미 출동, 아니면 가장 가까운 새 공방 실사
       if (S.bk && (S.bk.state === 'run' || S.bk.state === 'grab')) { G.broker.request(S); return; }
       const d = G.dali; let best = null, bd = 1e9;
       for (const sh of S.shops) {

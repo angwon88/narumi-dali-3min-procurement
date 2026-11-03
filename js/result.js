@@ -5,8 +5,16 @@ G.result = (() => {
   const C = G.C, W = C.VIEW.w, T = (...a) => G.world.text(...a);
   let t = 0, stamped = false;
 
+  // S등급은 점수·신뢰 + 조달관 5대 임무를 모두 해야 (2026-11-03). 점수는 S인데 임무가 모자라면 A + 안내
   function grade(S) {
-    for (const g of ['S', 'A', 'B']) { const [sc, tr] = C.GRADE[g]; if (S.score >= sc && S.trust >= tr) return g; }
+    S.gradeNote = '';
+    for (const g of ['S', 'A', 'B']) {
+      const [sc, tr] = C.GRADE[g];
+      if (S.score >= sc && S.trust >= tr) {
+        if (g === 'S' && G.missions.count(S) < 5) { S.gradeNote = '임무 5개를 다 하면 S!'; continue; }
+        return g;
+      }
+    }
     return 'C';
   }
   const GRADE_COL = { S: '#e0a800', A: '#2e9b3a', B: '#2f6fb0', C: '#8a7a6a' };
@@ -20,7 +28,7 @@ G.result = (() => {
   const FACTS = [
     { key: 'broker', tag: '브로커 · 페이퍼컴퍼니', col: '#d9342b', when: (S, s) => brokerAny(s),
       weight: (S, s) => (n(s.brokerCaught) + n(s.brokerWon) * 1.5 + n(s.brokerBlocked)) / 4,
-      me: (S, s) => s.brokerCaught ? '꼼수 브로커를 ' + s.brokerCaught + '번 적발했어요' + (s.brokerWon ? ' (뺏긴 계약 ' + s.brokerWon + '건)' : '') : s.brokerWon ? '꼼수에게 계약 ' + s.brokerWon + '건을 뺏겼어요' : '꼼수를 ' + n(s.brokerBlocked) + '번 막아 냈어요',
+      me: (S, s) => s.brokerCaught ? '브로커를 ' + s.brokerCaught + '번 차단했어요' + (s.brokerWon ? ' (뺏긴 계약 ' + s.brokerWon + '건)' : '') : s.brokerWon ? '브로커에게 계약 ' + s.brokerWon + '건을 뺏겼어요' : '브로커를 ' + n(s.brokerBlocked) + '번 막아 냈어요',
       facts: ['조달청은 데이터로 페이퍼컴퍼니 의심 업체를 골라 입찰보증금을 물려요. 낙찰만 노리는 입찰을 막기 위해서예요.',
               '직접 만든다고 해 놓고 몰래 맡겨 만든 물건을 납품한 업체는 계약 해지와 입찰참가자격 제한을 받아요.',
               '외국산을 국산으로 원산지를 속여 관공서에 납품한 업체도 적발돼 입찰참가자격 제한을 받았어요.'] },
@@ -92,7 +100,7 @@ G.result = (() => {
   // 오늘의 칭호: 이번 판에서 가장 두드러진 플레이
   const n0 = v => v || 0;
   const TITLES = [
-    { name: '꼼수 사냥꾼', sub: '브로커를 놓치지 않는 눈', score: (S, s) => n0(s.brokerCaught) >= 3 ? n0(s.brokerCaught) / 5 : 0 },
+    { name: '브로커 사냥꾼', sub: '브로커를 놓치지 않는 눈', score: (S, s) => n0(s.brokerCaught) >= 3 ? n0(s.brokerCaught) / 5 : 0 },
     { name: '철벽 수비대', sub: '계약을 하나도 안 뺏겼어요', score: (S, s) => brokerAny(s) && !s.brokerWon && n0(s.brokerCaught) + n0(s.brokerBlocked) >= 3 ? 0.95 : 0 },
     { name: '가성비 장인', sub: '조건 맞춘 곳 중 늘 가장 싸게', score: (S, s) => n0(s.valueBest) >= 12 && n0(s.valueMiss) <= 1 ? n0(s.valueBest) / 22 : 0 },
     { name: '새싹 키우미', sub: '스타트업을 혁신제품으로', score: (S, s) => n0(s.innov) ? 0.8 + n0(s.innov) * 0.3 : 0 },
@@ -162,7 +170,7 @@ G.result = (() => {
       ctx.fillStyle = '#ffd84a'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(tl.name, rx + 14 + ctx.measureText('오늘의 칭호  ').width, ry + 12);
       ctx.font = '12px ' + G.FONT; ctx.fillStyle = '#fff'; ctx.fillText('오늘의 칭호', rx + 14, ry + 12);
       ctx.restore();
-      T(ctx, tl.sub + '  ·  마을 신뢰 ' + Math.round(S.trust), W / 2 - 80, 128, 12, '#cfe3f5');
+      T(ctx, tl.sub + '  ·  신뢰 ' + Math.round(S.trust) + '  ·  아낀 세금 ' + S.saved + '만원', W / 2 - 80, 127, 12, '#cfe3f5');
     }
     const gx = W / 2 + 190, gy = 66, col = GRADE_COL[S.grade];
     G.spr.drawChar(ctx, 'narmi', t < 0.9 ? 'act' : 'rot', 'sw', t, gx + 92, gy + 38, 1.1);
@@ -173,18 +181,35 @@ G.result = (() => {
       ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 28, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1;
       ctx.font = '40px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(S.grade, 0, 2);
       ctx.restore(); ctx.globalAlpha = 1;
-      if (t >= 0.8) T(ctx, GRADE_MSG[S.grade] + (S.newBestGrade ? ' (최고 등급!)' : ''), gx, gy + 52, 12, '#ffe48a');
+      if (t >= 0.8) T(ctx, S.gradeNote || (GRADE_MSG[S.grade] + (S.newBestGrade ? ' (최고 등급!)' : '')), gx, gy + 52, 12, S.gradeNote ? '#ffb3a8' : '#ffe48a');
     }
 
-    // 2. 기록 카드 4장
-    const cw = 168, ch = 64, gap = 10, cx0 = (W - (cw * 5 + gap * 4)) / 2, cy = 144;
-    const late = s.reqExpired || 0, cheat = (s.scammed || 0) + (s.stolen || 0), qf = s.qFail || 0;
-    card(ctx, cx0, cy, cw, ch, '검수 합격 납품', S.delivered + '건', '#2a2416', qf || late ? '불합격 ' + qf + '건 · 늦음 ' + late + '건' : '불합격·늦음 없음!');
-    card(ctx, cx0 + (cw + gap), cy, cw, ch, '아낀 국민 세금', '+' + S.saved + '만원', '#2e9b3a', S.wasted > 0 ? '낭비한 세금 ' + S.wasted + '만원' : '낭비 없음!');
-    card(ctx, cx0 + (cw + gap) * 2, cy, cw, ch, '가성비 최고 선택', (s.valueBest || 0) + '번', '#2f6fb0', s.valueMiss ? '더 싼 적합 업체 놓침 ' + s.valueMiss + '번' : '늘 최고의 선택!');
-    const stop = (s.brokerBlocked || 0) + (s.brokerCaught || 0);
-    card(ctx, cx0 + (cw + gap) * 4, cy, cw, ch, '함께 성장', '공방 ' + (s.shopGrow || 0) + ' · 마을 ' + (s.villageUp || 0), (s.shopGrow || 0) + (s.villageUp || 0) ? '#b08800' : '#9a9080', '혁신제품 ' + (s.innov || 0) + '곳 · 새싹 실적 ' + (s.sproutBuy || 0));
-    card(ctx, cx0 + (cw + gap) * 3, cy, cw, ch, '꼼수 브로커', '막음 ' + stop + '번', '#d9342b', s.brokerWon ? '뺏긴 계약 ' + s.brokerWon + '건' : cheat ? '속은 횟수 ' + cheat + '번' : '한 번도 안 뺏김!');
+    // 2. 조달관 5대 임무 카드 (2026-11-03): 임무 색 머리 + 이번 판 숫자, 달성하면 ✔ 도장
+    const cw = 168, ch = 62, gap = 10, cx0 = (W - (cw * 5 + gap * 4)) / 2, cy = 150;
+    const late = s.reqExpired || 0, qf = s.qFail || 0, stop = (s.brokerBlocked || 0) + (s.brokerCaught || 0);
+    const info = {
+      value: ['가성비 ' + (s.valueBest || 0) + '번', '검수 합격 ' + S.delivered + '건' + (qf || late ? ' · 불합격 ' + qf + ' · 늦음 ' + late : '')],
+      paper: ['적발 ' + (s.caught || 0) + '곳', '실사 ' + ((s.certified || 0) + (s.caught || 0)) + '번'],
+      broker: ['차단 ' + stop + '번', s.brokerWon ? '뺏긴 계약 ' + s.brokerWon + '건' : '한 번도 안 뺏김!'],
+      sprout: ['혁신제품 ' + (s.innov || 0) + '곳', '새싹 실적 ' + (s.sproutBuy || 0) + ' · 공방 성장 ' + (s.shopGrow || 0)],
+      prep: ['대비 ' + (s.prepared || 0) + '번', '긴급 해결 ' + (s.urgentDone || 0) + ' · 비축 ' + (s.stocked || 0)],
+    };
+    G.missions.LIST.forEach((m, i) => {
+      const x = cx0 + (cw + gap) * i, on = S.missions && S.missions[m.id] != null, [main, sub] = info[m.id];
+      ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x + 3, cy + 4, cw, ch);
+      ctx.fillStyle = on ? '#fffdf6' : '#d8d2c4'; ctx.fillRect(x, cy, cw, ch);
+      ctx.fillStyle = on ? m.col : '#7d8590'; ctx.fillRect(x, cy, cw, 22);
+      T(ctx, (i + 1) + ' ' + m.name, x + cw / 2, cy + 11, 12, '#fff');
+      T(ctx, main, x + cw / 2 - (on ? 14 : 0), cy + 37, 16, on ? m.col : '#6a6a6a');
+      T(ctx, sub, x + cw / 2, cy + 55, 12, '#6a5a3a');
+      if (on) {                                                       // ✔ 도장
+        ctx.save(); ctx.translate(x + cw - 24, cy + 38); ctx.rotate(-0.2);
+        ctx.strokeStyle = m.col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 12, 0, 7); ctx.stroke(); ctx.lineWidth = 1;
+        T(ctx, '✔', 0, 1, 16, m.col); ctx.restore();
+      }
+    });
+    const mk = G.missions.count(S);
+    T(ctx, mk === 5 ? '★ 5대 임무 완수! 완벽한 조달관 ★' : '조달관 5대 임무 ' + mk + '/5', W / 2, cy - 9, 12, mk === 5 ? '#ffd84a' : '#cfe3f5');
 
     // 3. 오늘 한 일, 실제로는?
     const bx = cx0, by = 228, bw = W - cx0 * 2, bh = 192;

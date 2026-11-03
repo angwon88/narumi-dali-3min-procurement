@@ -8,7 +8,7 @@ G.screens = (() => {
 
   function newGame() {
     G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, floats: [], bagCap: C.BAG_START, scoreMult: 1 };
-    G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S); G.gifts.init(G.S); G.events.init(G.S); G.broker.init(G.S);
+    G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S); G.gifts.init(G.S); G.events.init(G.S); G.broker.init(G.S); G.missions.init(G.S);
     G.dali.reset(); G.narmi.reset(); G.input.reset();
     G.screen = 'play';
   }
@@ -40,13 +40,15 @@ G.screens = (() => {
     ctx.imageSmoothingEnabled = true; ctx.drawImage(im, cx - w / 2, y, w, h); ctx.imageSmoothingEnabled = false;
   }
   // 이 게임에 담긴 조달청 제도 (2026-11-02 주제 가시성): 결과 화면 '실제로는?' 태그와 같은 색
-  const BADGES = [['계약 조건 · 검수', '#2f4f8a'], ['가성비 따지기', '#2e9b3a'], ['페이퍼컴퍼니 실사', '#d9342b'], ['혁신제품 시범구매', '#e0a800']];
+  // 2026-11-03: 조달관 5대 임무 (missions.js의 이름·색)
+  const BADGES = () => G.missions.LIST.map((m, i) => [(i + 1) + ' ' + m.name, m.col]);
   function titleBadges(ctx) {
     ctx.font = '12px ' + G.FONT;
-    const pad = 12, gap = 8, ws = BADGES.map(([s]) => Math.ceil(ctx.measureText(s).width) + pad * 2);
+    const bs = BADGES(), pad = 10, gap = 6, ws = bs.map(([s]) => Math.ceil(ctx.measureText(s).width) + pad * 2);
     let x = W / 2 - (ws.reduce((a, b) => a + b, 0) + gap * (ws.length - 1)) / 2;
-    const y = 232;
-    BADGES.forEach(([s, col], i) => {
+    const y = 236;
+    T(ctx, '조달관 5대 임무', W / 2, y - 12, 12, '#ffe48a');
+    bs.forEach(([s, col], i) => {
       ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x + 2, y + 3, ws[i], 22);
       ctx.fillStyle = col; ctx.fillRect(x, y, ws[i], 22);
       ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(x, y, ws[i], 2);
@@ -97,6 +99,7 @@ G.screens = (() => {
     G.requests.update(S, dt);
     G.narmi.update(dt, S);
     G.broker.update(S, dt);
+    G.missions.update(S, dt);
     G.shops.update(S, dt);
     G.requests.deliver(S);
     G.villages.update(S, dt);
@@ -129,6 +132,7 @@ G.screens = (() => {
     G.shops.drawHover(ctx, G.S);
     G.fx.draw(ctx, G.S);
     G.events.drawOverlay(ctx, G.S);
+    G.missions.drawStamp(ctx, G.S);
     ctx.restore();
     if (S0.flashT > 0) { ctx.fillStyle = 'rgba(255,216,74,' + (S0.flashT * 0.9).toFixed(2) + ')'; ctx.fillRect(0, 0, W, H); }   // 혁신 성공 판정 금빛 번쩍임
     G.villages.dangerEdge(ctx, G.S);

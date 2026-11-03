@@ -32,10 +32,10 @@ G.C = {
   TIER_SCORE: 100, TIER_TRUST: 2,
   // 새싹 공방 (개편 2단계): 실적 없는 스타트업. 품질은 좋지만 처음엔 조금 비쌈. 정상 납품 실적 SPROUT_GOAL건 → 혁신제품 지정
   SPROUT_AT: [35, 70, 105], SPROUT_PRICE_MULT: 1.25, SPROUT_GOAL: 3, SPROUT_TRUST: 2, SPROUT_SCORE: 80, SPROUT_GRAD_SCORE: 1000, SPROUT_GRAD_TRUST: 8,
-  FAKE_BID: false,                  // 부정 낙찰 끔 (개편: 바쁨 완화) → 꼼수 브로커가 대신함
-  // 꼼수 브로커 (개편): 계약을 가로채 불량품을 납품하려는 AI 라이벌
+  FAKE_BID: false,                  // 부정 낙찰 끔 (개편: 바쁨 완화) → 브로커가 대신함
+  // 브로커 (개편): 계약을 가로채 불량품을 납품하려는 AI 라이벌
   BROKER: true, BROKER_FIRST_AT: 45, BROKER_SPEED: [115, 165], BROKER_GRAB: 1.5, BROKER_REST: 5,   // 2026-11-02 강화: 0:55→0:45, 100~145→115~165, 쉬는 시간 7→5 / 11-03 BROKER_GRAB: 등장 뒤 두리번(알아챌 틈) 1.0→1.5
-  TRUST_BROKER: -12, BROKER_BLOCK_SCORE: 150, BROKER_CATCH_BONUS: 300, BROKER_CATCH_TIME: 0.5, BROKER_BLOCK_SEC: 1.0, BROKER_BLOCK_CD: 2.5,   // 달이가 닿으면 꼼수 1초 멈칫(검거 아님), 2.5초에 한 번
+  TRUST_BROKER: -12, BROKER_BLOCK_SCORE: 150, BROKER_CATCH_BONUS: 300, BROKER_CATCH_TIME: 0.5, BROKER_BLOCK_SEC: 1.0, BROKER_BLOCK_CD: 2.5,   // 달이가 닿으면 브로커 1초 멈칫(검거 아님), 2.5초에 한 번
   REQ_FIRST_AT: 2, REQ_INTERVAL: 6.0, REQ_LIMIT: 35, REQ_EMPTY_FILL: 1,   // 기본값. 실제 구간별 값은 director.js
   COMBO_STEP: 0.1, COMBO_MAX_MULT: 2.0,   // 제때 연속 납품마다 점수 +10%, 최대 ×2
   // 인증제 (2026-11-02): 인증된 공방에서만 구매. 인증은 CERT_SEC초 뒤 만료, 남은 시간이 CERT_RENEW_AT초 이하면 재검증 가능
@@ -59,4 +59,4 @@ G.C = {
   GRADE: { S: [28000, 80], A: [18000, 60], B: [9000, 0] },   // 2026-11-03 성장 보상 추가 후 (봇 0.7 ≈ 31,000 · 0.45 ≈ 19,500)   // 개편(2026-11-02): 가성비 보너스로 점수 규모가 커져 다시 맞춤 (브로커 추가 후 봇 0.7 쫓음 ≈ 23,800 · 안 쫓음 ≈ 21,400 · 0.45 ≈ 13,200)
 };
 G.FONT = 'Galmuri11';
-G.VERSION = 'v2.8 · 새 배경음악';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)
+G.VERSION = 'v3.0 · 조달관 5대 임무';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)

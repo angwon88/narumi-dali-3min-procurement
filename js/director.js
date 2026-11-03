@@ -56,7 +56,12 @@ G.director = (() => {
     let i = 0; while (i + 1 < SEGMENTS.length && S.elapsed >= SEGMENTS[i + 1].from) i++;
     if (i !== S.segIdx) { S.segIdx = i; S.reqInterval = SEGMENTS[i].interval * C.REQ_INTERVAL_MULT; S.reqLimit = Math.round(SEGMENTS[i].limit * C.REQ_LIMIT_MULT); }
   }
-  function banner(S, text, sub) { S.banner = { text, sub: sub || '', t: 0 }; }
+  // opt.queue: 다른 배너가 떠 있으면 끝난 뒤에 (임무 배너가 사건 배너를 덮지 않게), opt.dur: 보여 줄 시간, opt.col: 띠 색
+  function banner(S, text, sub, opt = {}) {
+    const b = { text, sub: sub || '', t: 0, dur: opt.dur || 2.2, col: opt.col };
+    if (opt.queue && S.banner && S.banner.t < S.banner.dur - 0.3) { (S.bannerQ = S.bannerQ || []).push(b); return; }
+    S.banner = b;
+  }
   function fire(S, ev) {
     if (ev.flag && C.EVENTS[ev.flag] === false) return;            // 꺼진 사건은 건너뜀
     if (ev.open) {
@@ -71,18 +76,19 @@ G.director = (() => {
   function update(S, dt) {
     apply(S);
     while (S.evIdx < S.evList.length && S.elapsed >= S.evList[S.evIdx].at) fire(S, S.evList[S.evIdx++]);
-    if (S.banner && (S.banner.t += dt) > 2.2) S.banner = null;
+    if (S.banner && (S.banner.t += dt) > S.banner.dur) S.banner = null;
+    if (!S.banner && S.bannerQ && S.bannerQ.length) S.banner = S.bannerQ.shift();
   }
   // 화면 위 가운데 배너 (2초)
   function draw(ctx, S) {
     const b = S.banner; if (!b) return;
-    const k = b.t < 0.2 ? b.t / 0.2 : b.t > 1.9 ? Math.max(0, (2.2 - b.t) / 0.3) : 1;
+    const k = b.t < 0.2 ? b.t / 0.2 : b.t > b.dur - 0.3 ? Math.max(0, (b.dur - b.t) / 0.3) : 1;
     ctx.font = '12px ' + G.FONT; const sw = ctx.measureText(b.sub || '').width; ctx.font = '16px ' + G.FONT;
     const W = C.VIEW.w, w = Math.max(308, ctx.measureText(b.text).width + 32, sw + 32), h = b.sub ? 50 : 36, x = (W - w) / 2, y = 184 - (1 - k) * 20;
     ctx.globalAlpha = k;
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x + 3, y + 4, w, h);
     ctx.fillStyle = '#2f4f8a'; ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = '#ffd84a'; ctx.fillRect(x, y, w, 3);
+    ctx.fillStyle = b.col || '#ffd84a'; ctx.fillRect(x, y, w, b.col ? 6 : 3);
     G.world.text(ctx, b.text, W / 2, y + 17, 16, '#fff');
     if (b.sub) G.world.text(ctx, b.sub, W / 2, y + 37, 12, '#cfe3f5');
     ctx.globalAlpha = 1;

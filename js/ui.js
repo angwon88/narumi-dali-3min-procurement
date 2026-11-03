@@ -29,7 +29,7 @@ G.ui = (() => {
     T(ctx, '아낀 세금', 262, 17, 12, '#8fa3b8', 'left'); T(ctx, S.saved + '만원', 322, 17, 16, '#9be37a', 'left');
     G.gifts.hudBar(ctx, S, 262, 29, 128);                       // 다음 마을 선물까지
     // 마을 신뢰도 게이지
-    const gx = 452, gw = 170, f = S.trust / 100, danger = S.trust <= C.TRUST_DANGER;
+    const gx = 452, gw = 112, f = S.trust / 100, danger = S.trust <= C.TRUST_DANGER;   // 2026-11-03 임무 칸 자리 때문에 170 → 112
     T(ctx, '마을 신뢰', gx - 6, 22, 12, '#8fa3b8', 'right');
     ctx.fillStyle = '#0f1620'; ctx.fillRect(gx, 14, gw, 16);
     const blink = danger && Math.floor(S.elapsed * 3) % 2 === 0;
@@ -45,9 +45,10 @@ G.ui = (() => {
     ctx.lineWidth = 1;
     ctx.save(); ctx.beginPath(); ctx.arc(nx, ny, 13, 0, Math.PI * 2); ctx.clip();
     G.spr.drawChar(ctx, 'narmi', 'rot', 's', 0, nx, ny + 30, 0.6); ctx.restore();
-    T(ctx, ready ? '검증 OK' : Math.ceil(cd) + '초', nx + 22, 14, 12, ready ? '#9be37a' : '#8fa3b8', 'left');
+    T(ctx, ready ? '실사 OK' : Math.ceil(cd) + '초', nx + 22, 14, 12, ready ? '#9be37a' : '#8fa3b8', 'left');
     const nextLv = C.DATA_LV[S.dataLv || 0];                         // 나르미 데이터: 다음 단계까지
     T(ctx, '데이터 ' + (S.data || 0) + (nextLv ? '/' + nextLv : ' MAX'), nx + 22, 31, 12, '#cfa8ff', 'left');
+    G.missions.drawHud(ctx, S, 572);                                  // 조달관 5대 임무 칸
     T(ctx, '‖', C.VIEW.w - 22, 22, 18, '#fff');
   }
   // 콤보 배지 (HUD 바로 아래 왼쪽)

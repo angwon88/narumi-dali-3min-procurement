@@ -131,7 +131,7 @@ G.narmi = {
   x: 0, y: 0, face: 's', t: 0, state: 'perch', target: null, timer: 0, talk: null,
   reset() { const p = G.world.roofPerch; Object.assign(this, { x: p.x, y: p.y, face: 's', t: 0, state: 'perch', target: null, timer: 0, talk: null }); },
   say(text, sec) { this.talk = { text, left: sec }; },
-  spot(sh) { if (sh.isBroker) return { x: sh.x, y: sh.y - 10 }; const b = sh.w.body; return { x: b.x + b.w / 2, y: b.y + 62 }; },   // 공방 앞(HUD에 가리지 않게) / 꼼수 브로커 위치
+  spot(sh) { if (sh.isBroker) return { x: sh.x, y: sh.y - 10 }; const b = sh.w.body; return { x: b.x + b.w / 2, y: b.y + 62 }; },   // 공방 앞(HUD에 가리지 않게) / 브로커 위치
   send(S, sh) { this.target = sh; this.state = 'fly'; S.inspectCD = G.C.INSPECT_COOLDOWN * (S.inspectCDMult || 1); S.inspectCDMax = S.inspectCD; },
   moveTo(p, dt) {
     const dx = p.x - this.x, dy = p.y - this.y, d = Math.hypot(dx, dy), step = G.C.NARMI_SPEED * dt;

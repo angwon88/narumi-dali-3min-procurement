@@ -29,7 +29,7 @@ G.score = (() => {
     G.villages.onSuccess(S, r.vid);
     if (bagItem.prep && (S.dust || S.storm)) {                     // 예보 보고 미리 준비한 물건을 사건 중 납품
       S.score += C.PREP_BONUS; trust(S, C.PREP_TRUST); S.stats.prepared = (S.stats.prepared || 0) + 1;
-      const yd = r.vill.yard; G.fx.add(S, yd.x + yd.w / 2, yd.y + 16, '미리 대비했어요! +' + C.PREP_BONUS, '#9be37a', 16);
+      const yd = r.vill.yard; G.fx.add(S, yd.x + yd.w / 2, yd.y + 16, '미리 대비! +' + C.PREP_BONUS, '#9be37a', 16);
     }
     G.audio.play('deliver', S.combo);
     const v = r.vill.yard;

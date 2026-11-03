@@ -42,7 +42,7 @@ G.events = (() => {
     const n = Math.min(S.stock, cats.length), pick = cats.slice(0, n);
     S.stock -= n; S.stats.released = n;
     if (n) { S.score += C.PREP_BONUS * n; G.score.trust(S, C.PREP_TRUST); S.stats.prepared = (S.stats.prepared || 0) + n;
-      G.fx.add(S, OB.x + OB.w / 2, OB.y + OB.h + 50, '미리 대비했어요! +' + C.PREP_BONUS * n, '#ffe48a', 16); }
+      G.fx.add(S, OB.x + OB.w / 2, OB.y + OB.h + 50, '미리 대비! +' + C.PREP_BONUS * n, '#ffe48a', 16); }
     if (n) G.director.banner(S, '원자재 가격 폭등! 비축 원자재 방출', pick.map(c => catNames[c]).join('·') + ' 공방 가격을 지켰어요 · 나머지 ×' + C.SURGE.mult);
     else G.director.banner(S, '원자재 가격 폭등! 공방 가격 ×' + C.SURGE.mult, '비축해 둔 원자재가 없어요… (조달청 아래 비축칸)');
     G.audio.play(n ? 'gift' : 'warn');

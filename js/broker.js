@@ -1,9 +1,9 @@
-/* 꼼수 브로커 (개편 2026-11-02): 계약을 가로채 불량품을 납품하려는 AI 라이벌 너구리.
+/* 브로커 (개편 2026-11-02): 계약을 가로채 불량품을 납품하려는 AI 라이벌 너구리.
    실제 근거: 낙찰만 노리는 페이퍼컴퍼니·입찰 브로커, 계약과 다른 물건 납품 → 조달청은 데이터로 의심 업체를 골라
    입찰보증금 부과(2026-11부터), 계약 해지·입찰참가자격 제한. 게임에서는 '입찰 경쟁'을 '납품 경주'로 보여 준다.
    흐름: off(쉬는 중) → grab(페이퍼컴퍼니 문 앞에서 불량품 챙김) → run(노린 마을로) → 도착하면 부정 납품
          · 달이가 먼저 납품하면 다른 같은 물건 계약으로 갈아타거나 허탕 → flee
-         · 꼼수를 누르면 나르미가 쫓아가 적발(caught), 그 페이퍼컴퍼니도 함께 드러남 */
+         · 브로커를 누르면 나르미가 쫓아가 적발(caught), 그 페이퍼컴퍼니도 함께 드러남 */
 'use strict';
 G.broker = (() => {
   const C = G.C, U = G.U, T = (...a) => G.world.text(...a);
@@ -26,7 +26,7 @@ G.broker = (() => {
   function fleePath(bk) { const left = bk.x < 480; return [{ x: bk.x, y: Math.min(bk.y, LOW_Y) }, { x: bk.x, y: ROAD_Y }, { x: left ? -40 : 1000, y: ROAD_Y }]; }
 
   // 노릴 계약 고르기: 아직 안 노린 열린 계약 중 비싼 것부터. 불량품을 들고 가까운 화면 가장자리 길에서 달려 들어옴
-  // (2026-11-02 조정: 페이퍼컴퍼니 공방에 들르게 했더니 공방 실사로 너무 쉽게 막혀 분리. 막는 법 = 먼저 납품 / 꼼수를 눌러 적발)
+  // (2026-11-02 조정: 페이퍼컴퍼니 공방에 들르게 했더니 공방 실사로 너무 쉽게 막혀 분리. 막는 법 = 먼저 납품 / 브로커를 눌러 적발)
   function plan(S) {
     const bk = S.bk;
     const reqs = G.requests.active(S).filter(r => !r.broker && r.left > 8).sort((a, b) => b.price - a.price);
@@ -37,7 +37,7 @@ G.broker = (() => {
       r.broker = true;
       if (!bk.shown) {
         bk.shown = true;
-        G.director.banner(S, '꼼수 브로커 등장!', '계약을 가로채 불량품을 넣으려 해요 · 먼저 납품하거나, 꼼수를 눌러 나르미로 적발!');
+        G.director.banner(S, '브로커 등장!', '계약을 가로채 불량품을 넣으려 해요 · 먼저 납품하거나, 브로커를 눌러 나르미로 적발!');
         G.narmi.say('저 너구리, 수상해요!', 2.4);
       }
       G.audio.play('whoosh');
@@ -71,7 +71,7 @@ G.broker = (() => {
     if (bk.state === 'caught') { if ((bk.timer += dt) >= 1.2) rest(S, C.BROKER_REST * 1.5); return; }
     // 그사이 페이퍼컴퍼니가 적발되면 계약이 무효 → 도망
     if ((bk.state === 'grab' || bk.state === 'run') && bk.shop && (bk.shop.status !== 'open' || !bk.shop.fake)) {
-      S.stats.brokerBlocked++; flee(S, '들켰다! 꼼수 도망', '#9be37a'); return;
+      S.stats.brokerBlocked++; flee(S, '들켰다! 브로커 도망', '#9be37a'); return;
     }
     if (bk.state === 'grab') {                                         // 두리번 (등장 예고)
       if (bk.req.state !== 'open') { flee(S, '쳇, 벌써 납품했네…', '#ffd6a0'); return; }
@@ -80,7 +80,7 @@ G.broker = (() => {
     }
     if (bk.state === 'run') {
       const r = bk.req;
-      // 달이가 길을 막으면 1초 멈칫 (검거는 나르미만). 같은 꼼수는 2.5초에 한 번만
+      // 달이가 길을 막으면 1초 멈칫 (검거는 나르미만). 같은 브로커는 2.5초에 한 번만
       bk.blockCD = Math.max(0, (bk.blockCD || 0) - dt);
       if (bk.freeze > 0) { bk.freeze -= dt; return; }
       const d = G.dali;
@@ -89,7 +89,7 @@ G.broker = (() => {
         S.stats.brokerBumped = (S.stats.brokerBumped || 0) + 1;
         G.fx.add(S, bk.x, bk.y - 60, '멈칫! 달이가 길을 막았어요', '#ffe48a', 16);
         G.audio.play('ok');
-        if (!S.bumpTip) { S.bumpTip = true; G.narmi.say('지금이에요! 꼼수를 눌러요 (Space)', 2.4); }
+        if (!S.bumpTip) { S.bumpTip = true; G.narmi.say('지금이에요! 브로커를 눌러요 (Space)', 2.4); }
         return;
       }
       if (r.state !== 'open') {                                       // 달이가 먼저 납품했거나 시간 초과
@@ -117,9 +117,9 @@ G.broker = (() => {
     G.villages.onFail(S, r.vid);
     G.audio.play('scam'); S.shakeT = Math.max(S.shakeT || 0, 0.2);
     const y = r.vill.yard;
-    G.fx.add(S, y.x + y.w / 2, y.y + 10, '부정 납품! 꼼수가 불량품을 넣었어요', '#ff8a7a', 16);
+    G.fx.add(S, y.x + y.w / 2, y.y + 10, '부정 납품! 브로커가 불량품을 넣었어요', '#ff8a7a', 16);
     G.fx.add(S, y.x + y.w / 2, y.y + 10, '신뢰 ' + C.TRUST_BROKER, '#ff8a7a');
-    if (!S.firstBrokerWin) { S.firstBrokerWin = true; G.narmi.say('계약을 뺏겼어요! 꼼수를 눌러 막아요', 2.8); }
+    if (!S.firstBrokerWin) { S.firstBrokerWin = true; G.narmi.say('계약을 뺏겼어요! 브로커를 눌러 막아요', 2.8); }
     S.bk.req = null; flee(S, '히히, 낙찰!', '#ff8a7a');
   }
 
@@ -138,9 +138,9 @@ G.broker = (() => {
     S.stats.brokerCaught++;
     S.score += C.BROKER_CATCH_BONUS; G.score.trust(S, C.TRUST_CATCH);
     S.hitStop = 0.15; S.shakeT = 0.35; G.fx.burst(S, bk.x, bk.y - 20);
-    G.fx.add(S, bk.x, bk.y - 60, '꼼수 브로커 적발! +' + C.BROKER_CATCH_BONUS, '#ffe48a', 16);
+    G.fx.add(S, bk.x, bk.y - 60, '브로커 차단! +' + C.BROKER_CATCH_BONUS, '#ffe48a', 16);
     G.audio.play('catch');
-    G.narmi.say('브로커 적발! 입찰 참가 제한이에요', 2.2);
+    G.narmi.say('브로커 차단! 입찰참가자격 제한이에요', 2.2);
     if (bk.shop && bk.shop.status === 'open' && bk.shop.fake) G.shops.inspected(S, bk.shop);   // 뒤에 있던 페이퍼컴퍼니도 드러남
     Object.assign(bk, { state: 'caught', timer: 0, req: null, path: [] });
   }
@@ -182,7 +182,7 @@ G.broker = (() => {
     }
     // 이름표
     const ny = Math.round(bk.y) - (bk.item && bk.state !== 'flee' && bk.state !== 'caught' ? 101 : 76) - bob;
-    px(ctx, '#d9342b', Math.round(bk.x) - 17, ny - 7, 34, 14); T(ctx, '꼼수', bk.x, ny, 12, '#fff');
+    px(ctx, '#7a3fb0', Math.round(bk.x) - 22, ny - 7, 44, 14); T(ctx, '브로커', bk.x, ny, 12, '#fff');
   }
   function draw(ctx, S) {
     const bk = S.bk; if (!bk || bk.state === 'off') return;
@@ -200,12 +200,12 @@ G.broker = (() => {
     }
     raccoon(ctx, bk, S);
   }
-  // 말풍선에 '꼼수!' 표시 (ui.bubble에서 호출)
+  // 말풍선에 '브로커!' 표시 (ui.bubble에서 호출)
   function bubbleMark(ctx, r, b) {
     if (!r.broker || r.state !== 'open') return;
     const blink = Math.floor(r.t * 4) % 2 === 0;
-    px(ctx, blink ? '#e5533d' : '#a8231b', b.w - 38, -11, 38, 11);
-    ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('꼼수!', b.w - 19, -5);
+    px(ctx, blink ? '#9a5ad0' : '#5a2a8a', b.w - 44, -11, 44, 11);
+    ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('브로커!', b.w - 22, -5);
     ctx.strokeStyle = blink ? '#e5533d' : 'rgba(229,83,61,.5)'; ctx.lineWidth = 2; ctx.strokeRect(-2, -2, b.w + 4, b.h + 4); ctx.lineWidth = 1;
   }
   return { init, update, draw, hit, request, caught, bubbleMark, raccoon };
