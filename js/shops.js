@@ -420,10 +420,18 @@ G.shops = (() => {
       ctx.beginPath(); ctx.moveTo(ax - 5, ay); ctx.lineTo(ax + 5, ay); ctx.lineTo(ax, ay - 5); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
     }
   }
+  // 11-04 성능: 진행 중 계약·가방을 한 프레임에 한 번만 세어 둠 (공방 8곳 × 물건마다 다시 세던 것)
+  let needMemo = null, needAt = -1;
+  function needMap(S) {
+    if (needAt === S.elapsed && needMemo) return needMemo;
+    const m = {};
+    for (const r of G.requests.active(S)) (m[r.item] = m[r.item] || { n: 0, minQ: 9 }).n++, m[r.item].minQ = Math.min(m[r.item].minQ, r.minQ);
+    for (const b of G.dali.bag) if (m[b.item]) m[b.item].n--;
+    needAt = S.elapsed; return (needMemo = m);
+  }
   function needFits(S, sh, itemId) {
-    const reqs = G.requests.active(S).filter(r => r.item === itemId);
-    if (!reqs.length || reqs.length <= G.dali.bag.filter(b => b.item === itemId).length) return false;
-    return reqs.some(r => sh.q[itemId] >= r.minQ);
+    const e = needMap(S)[itemId];
+    return !!e && e.n > 0 && sh.q[itemId] >= e.minQ;
   }
   function priceTag(ctx, S, sh) {
     const b = sh.w.body, tx = sh.w.tagX, flash = sh.fx && Math.floor(sh.fx.t * 6) % 2 === 0;

@@ -26,5 +26,14 @@
     requestAnimationFrame(frame);
   }
   ctx.fillStyle = '#1e2a3a'; ctx.fillRect(0, 0, C.VIEW.w, C.VIEW.h);
-  G.loadAssets(() => { G.screen = 'title'; requestAnimationFrame(frame); });
+  // 11-04 성능: 처음 게임 시작 때 한 번 끊기지 않게, 캐시 그림(바닥·건물·별·아이콘·브로커)을 로딩 때 미리 그려 둠
+  function prewarm() {
+    try {
+      const c = document.createElement('canvas'); c.width = C.VIEW.w; c.height = C.VIEW.h; const g = c.getContext('2d');
+      G.screen = 'play'; G.world.draw(g); G.screen = 'boot';
+      for (const it of G.ITEMS) G.icons.draw(g, it.id, 20, 20, 24);
+      G.icons.stars(g, 0, 0, 2, 3, 1); G.icons.stars(g, 0, 0, 2, 3, 2); G.icons.draw(g, 'raccoon', 20, 20, 18);
+    } catch (e) { /* 미리 그리기는 실패해도 그만 */ }
+  }
+  G.loadAssets(() => { prewarm(); G.screen = 'title'; requestAnimationFrame(frame); });
 })();

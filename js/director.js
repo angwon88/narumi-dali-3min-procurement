@@ -62,7 +62,8 @@ G.director = (() => {
   // opt.queue: 다른 배너가 떠 있으면 끝난 뒤에 (임무 배너가 사건 배너를 덮지 않게), opt.dur: 보여 줄 시간, opt.col: 띠 색
   function banner(S, text, sub, opt = {}) {
     const b = { text, sub: sub || '', t: 0, dur: opt.dur || 2.2, col: opt.col };
-    if (opt.queue && S.banner && S.banner.t < S.banner.dur - 0.3) { (S.bannerQ = S.bannerQ || []).push(b); return; }
+    // 11-04 AI 조사 연출 중엔 끝난 뒤로
+    if ((S.ultFx || S.ultCut) || (opt.queue && S.banner && S.banner.t < S.banner.dur - 0.3)) { (S.bannerQ = S.bannerQ || []).push(b); return; }
     S.banner = b;
   }
   function fire(S, ev) {
@@ -84,12 +85,13 @@ G.director = (() => {
   function update(S, dt) {
     apply(S);
     while (S.evIdx < S.evList.length && S.elapsed >= S.evList[S.evIdx].at) fire(S, S.evList[S.evIdx++]);
-    if (S.banner && (S.banner.t += dt) > S.banner.dur) S.banner = null;
-    if (!S.banner && S.bannerQ && S.bannerQ.length) S.banner = S.bannerQ.shift();
+    const ult = S.ultFx || S.ultCut;                                  // AI 조사 연출 중엔 배너를 숨기고 멈춤
+    if (S.banner && !ult && (S.banner.t += dt) > S.banner.dur) S.banner = null;
+    if (!S.banner && !ult && S.bannerQ && S.bannerQ.length) S.banner = S.bannerQ.shift();
   }
   // 화면 위 가운데 배너 (2초)
   function draw(ctx, S) {
-    const b = S.banner; if (!b) return;
+    const b = S.banner; if (!b || S.ultFx || S.ultCut) return;
     const k = b.t < 0.2 ? b.t / 0.2 : b.t > b.dur - 0.3 ? Math.max(0, (b.dur - b.t) / 0.3) : 1;
     ctx.font = '12px ' + G.FONT; const sw = ctx.measureText(b.sub || '').width; ctx.font = '16px ' + G.FONT;
     const W = C.VIEW.w, w = Math.max(308, ctx.measureText(b.text).width + 32, sw + 32), h = b.sub ? 50 : 36, x = (W - w) / 2, y = 184 - (1 - k) * 20;

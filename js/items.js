@@ -61,16 +61,20 @@ G.icons = (() => {
   }
   // 품질 별 (개편): 7×7 픽셀 별을 u배로. (x, y) 왼쪽 위부터 max칸, n칸만 금색(나머지는 옅은 회색). 한 칸 = 7u + u 간격
   const STAR = ['...#...', '..###..', '#######', '.#####.', '..###..', '.##.##.', '.#...#.'];
+  // 11-04 성능: 별 한 개를 칸마다 그리던 것(27번)을 미리 그린 그림 1장으로 (휴대폰에서 공방 그리기 시간 절반 이하로)
+  const starCache = {};
+  function starImg(on, u) {
+    const k = (on ? 1 : 0) + ':' + u; if (starCache[k]) return starCache[k];
+    const c = document.createElement('canvas'); c.width = c.height = 7 * u; const g = c.getContext('2d');
+    for (let r = 0; r < 7; r++) for (let col = 0; col < 7; col++) {
+      if (STAR[r][col] !== '#') continue;
+      g.fillStyle = on ? (r < 3 ? '#ffc21a' : '#e09a00') : '#d6cdb6'; g.fillRect(col * u, r * u, u, u);
+    }
+    return (starCache[k] = c);
+  }
   function stars(ctx, x, y, n, max, u) {
     u = u || 1;
-    for (let i = 0; i < (max || 3); i++) {
-      const ox = Math.round(x + i * 8 * u), on = i < n;
-      for (let r = 0; r < 7; r++) for (let c = 0; c < 7; c++) {
-        if (STAR[r][c] !== '#') continue;
-        ctx.fillStyle = on ? (r < 3 ? '#ffc21a' : '#e09a00') : '#d6cdb6';
-        ctx.fillRect(ox + c * u, y + r * u, u, u);
-      }
-    }
+    for (let i = 0; i < (max || 3); i++) ctx.drawImage(starImg(i < n, u), Math.round(x + i * 8 * u), Math.round(y));
   }
   // 가운데 (cx, cy), 크기 size
   function draw(ctx, id, cx, cy, size) {

@@ -27,7 +27,7 @@ G.missions = (() => {
   function init(S) { S.missions = {}; S.mStamp = null; }
   const count = S => LIST.filter(m => S.missions && S.missions[m.id] != null).length;
   function update(S, dt) {
-    for (const m of LIST) if (S.missions[m.id] == null && m.done(S.stats || {}, S)) { S.missions[m.id] = S.elapsed; achieve(S, m); }
+    if (!(S.ultFx || S.ultCut)) for (const m of LIST) if (S.missions[m.id] == null && m.done(S.stats || {}, S)) { S.missions[m.id] = S.elapsed; achieve(S, m); }
     if (S.mStamp && (S.mStamp.t += dt) > 1.8) S.mStamp = null;
     // 2026-11-03 S등급 안내: 남은 시간 45초에 아직 못 한 임무를 나르미가 알려 줌 (한 번)
     if (!S.hard && !S.mRemind && S.elapsed >= G.C.GAME_SECONDS - 45 && count(S) < 5) {

@@ -61,6 +61,7 @@ G.broker = (() => {
   }
 
   function update(S, dt) {
+    if (S.sanction && (S.sanction.t += dt) > 1.1) S.sanction = null;   // 제재 도장 시간은 게임 시간으로
     const bk = S.bk; if (!bk) return;
     bk.t += dt;
     if (bk.stun) return;                                              // 나르미가 붙잡는 중
@@ -140,7 +141,7 @@ G.broker = (() => {
     S.score += C.BROKER_CATCH_BONUS; G.score.trust(S, C.TRUST_CATCH);
     // 2026-11-03 통쾌한 제재 연출: 한순간 멈춤 + 큰 흔들림 + 거대한 '입찰참가자격 제한' 도장 + 가짜 서류 폭죽 (피·폭력 없이)
     S.hitStop = 0.28; S.shakeT = 0.5; G.fx.burst(S, bk.x, bk.y - 20); G.fx.burst(S, bk.x, bk.y - 30, 'paper', 34);
-    S.sanction = { x: bk.x, y: bk.y - 40, t: 0, n: S.stats.brokerCaught };
+    S.sanction = S.ultFx ? null : { x: bk.x, y: bk.y - 40, t: 0, n: S.stats.brokerCaught };   // AI 조사 중엔 '브로커 적발!' 도장이 대신
     G.fx.add(S, bk.x, bk.y - 60, '브로커 차단! +' + C.BROKER_CATCH_BONUS, '#ffe48a', 16);
     G.audio.play('catch'); setTimeout(() => G.audio.play('end'), 120);
     if (!S.ultLock) G.ult.charge(S);                                    // 필살기 충전 (필살기로 잡은 건 빼고)
@@ -241,8 +242,8 @@ G.broker = (() => {
   // 제재 도장 (브로커가 사라져도 남아서 찍힘)
   function drawSanction(ctx, S) {
     const st = S.sanction; if (!st) return;
-    st.t += 1 / 60; if (st.t > 1.4) { S.sanction = null; return; }
-    const k = Math.min(1, st.t / 0.12), sc = (3 - 2 * k) * (1 + Math.min(0.4, (st.n - 1) * 0.1)), a = st.t > 1.1 ? (1.4 - st.t) / 0.3 : 1;
+    if (st.t > 1.1) return;                                             // 11-04 1.4초 → 1.1초, 크기 커지는 것 상한 ×1.4 → ×1.1 (공방을 오래 가리지 않게)
+    const k = Math.min(1, st.t / 0.12), sc = (2.2 - 1.2 * k) * (1 + Math.min(0.1, (st.n - 1) * 0.03)), a = st.t > 0.8 ? (1.1 - st.t) / 0.3 : 1;
     const x = Math.max(110, Math.min(C.VIEW.w - 110, st.x)), y = Math.max(90, st.y);
     ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.rotate(-0.18); ctx.scale(sc, sc);
     ctx.font = '16px "Galmuri11 Bold", ' + G.FONT; const w = ctx.measureText('입찰참가자격 제한').width + 24;
