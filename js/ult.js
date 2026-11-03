@@ -13,21 +13,21 @@ G.ult = (() => {
     if (S.ultLock || ready(S)) return;
     S.ultCharge++;
     if (ready(S)) {
-      G.narmi.say(G.settings.ultAuto ? '데이터가 모였어요! 수상한 곳이 보이면 바로 일제 조사!' : '필살기 준비! Q 또는 위쪽 [AI 조사] 버튼', 2.6);
+      G.narmi.say(G.settings.ultAuto ? '데이터가 모였어요! 수상한 곳이 보이면 바로 일제 조사!' : 'AI 조사 준비! Q 또는 위쪽 [AI 조사] 버튼', 2.6);
       G.audio.play('gift');
     }
   }
   function input(S) {
     if (!(G.ui.clicked(BTN) || G.input.hit('q'))) return;
     if (S.ultFx) return;
-    if (!ready(S)) { G.fx.add(S, BTN.x + BTN.w / 2, 60, '브로커를 ' + (C.ULT_NEED - S.ultCharge) + '명 더 적발하면 필살기!', '#cfd8e3'); return; }
+    if (!ready(S)) { G.fx.add(S, BTN.x + BTN.w / 2, 60, '브로커를 ' + (C.ULT_NEED - S.ultCharge) + '명 더 적발하면 AI 조사!', '#cfd8e3'); return; }
     fire(S);
   }
   function fire(S) {
     S.ultCharge = 0; S.ultLock = true; S.ultFx = { t: 0, done: new Set() };
     S.stats.ult = (S.stats.ult || 0) + 1;
     S.score += C.ULT_SCORE; S.shakeT = 0.5;
-    G.director.banner(S, '필살기! AI 데이터 일제 조사', '실제로도 조달청은 데이터로 페이퍼컴퍼니 의심 업체를 골라내요', { dur: 3, col: '#5ec8f2' });
+    G.director.banner(S, 'AI 데이터 일제 조사!', '실제로도 조달청은 데이터로 페이퍼컴퍼니 의심 업체를 골라내요', { dur: 3, col: '#5ec8f2' });
     G.narmi.say('데이터 일제 조사 시작!', 1.6);
     G.audio.play('levelup'); G.audio.play('whoosh');
     const bk = S.bk;
@@ -69,6 +69,7 @@ G.ult = (() => {
     ctx.restore();
   }
   // HUD 버튼: 브로커 적발 칸 3개, 다 차면 반짝
+  function drawTip(ctx) { if (G.ui.hover(BTN)) G.ui.tip(ctx, BTN.x - 220, BTN.y + BTN.h + 6, G.ui.ULT_TIP); }
   function drawHud(ctx, S) {
     const r = ready(S), on = r && Math.floor((S.elapsed || 0) * 4) % 2 === 0;
     ctx.fillStyle = r ? (on ? '#5ec8f2' : '#2f9bd0') : '#2a3646'; ctx.fillRect(BTN.x, BTN.y, BTN.w, BTN.h);
@@ -80,5 +81,5 @@ G.ult = (() => {
     }
   }
   function toggleAuto() { G.settings.ultAuto = !G.settings.ultAuto; G.store.set('ultAuto', G.settings.ultAuto); return G.settings.ultAuto; }
-  return { init, charge, input, update, draw, drawHud, ready, BTN, toggleAuto };
+  return { init, charge, input, update, draw, drawHud, drawTip, ready, BTN, toggleAuto };
 })();

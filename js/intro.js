@@ -147,7 +147,7 @@ G.intro = (() => {
     T(ctx, cap, W / 2, 62, 24, '#ffd84a');
     T(ctx, sub, W / 2, 432, 16, '#fff');
     for (let i = 0; i < 4; i++) { ctx.fillStyle = i === idx ? '#ffd84a' : '#4a5a70'; ctx.fillRect(W / 2 - 41 + i * 22, 470, 14, 6); }
-    if (idx === 3) T(ctx, '공방·마을 터치 = 이동  ·  새 공방 터치 = 나르미 실사  ·  브로커 터치(Space) = 적발  ·  브로커 3명 적발 → 필살기 AI 조사(자동/Q)', W / 2, 496, 12, '#cfd8e3');
+    if (idx === 3) T(ctx, '공방·마을 터치 = 이동  ·  새 공방 터치 = 나르미 실사  ·  브로커 터치(Space) = 적발  ·  브로커 3명 적발 → AI 조사 (자동 또는 Q)', W / 2, 496, 12, '#cfd8e3');
     T(ctx, '클릭·Enter 다음  ·  Esc 건너뛰기', W - 16, H - 16, 12, '#8fa3b8', 'right');
   }
   return { start, update, draw, seen: () => G.store.get('introSeen', false) };

@@ -14,6 +14,18 @@ G.ui = (() => {
     T(ctx, label, r.x + r.w / 2, r.y + r.h / 2 + 1, opt.size || 16, opt.col || '#2a2416');
   }
   const clicked = r => G.input.taps.some(p => G.U.inRect(p.x, p.y, r));
+  const hover = r => G.U.inRect(G.input.mouse.x, G.input.mouse.y, r);
+  // 설명 말풍선: lines[0]은 굵은 제목. (x, y) = 왼쪽 위, 화면 밖으로 안 나가게
+  function tip(ctx, x, y, lines) {
+    ctx.font = '12px ' + G.FONT;
+    const w = Math.max(...lines.map(s => ctx.measureText(s).width)) + 20, h = lines.length * 17 + 10;
+    x = Math.max(4, Math.min(C.VIEW.w - w - 4, x)); y = Math.max(4, Math.min(C.VIEW.h - h - 4, y));
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x + 3, y + 4, w, h);
+    ctx.fillStyle = '#fffdf6'; ctx.fillRect(x, y, w, h); ctx.fillStyle = '#5ec8f2'; ctx.fillRect(x, y, w, 3);
+    lines.forEach((s, i) => T(ctx, s, x + 10, y + 14 + i * 17, 12, i === 0 ? '#0b5d68' : '#2a2416', 'left'));
+  }
+  // AI 조사 설명 (타이틀·일시정지의 [?]와 HUD 버튼에서 같이 씀)
+  const ULT_TIP = ['AI 조사 (브로커 3명 적발하면 충전)', '나르미가 데이터로 화면 전체를 한 번에 조사해요.', '페이퍼컴퍼니 적발 · 새 공방 실사 · 브로커 적발', '자동 사용: 수상한 곳이 보이면 저절로 발동', '직접 사용: Q 키나 위쪽 [AI 조사] 버튼으로'];
   function hud(ctx, S) {
     ctx.fillStyle = '#1e2a3a'; ctx.fillRect(0, 0, C.VIEW.w, C.HUD_H);
     // HUD 아래 테두리 = 남은 시간 막대 (2026-11-03: 레벨업 대신), 필살기 버튼
@@ -125,5 +137,5 @@ G.ui = (() => {
       ctx.restore();
     }
   }
-  return { comboBadge, panel, button, clicked, hud, joystick, bubbles, checks, bubbleRect, PAUSE_BTN };
+  return { tip, hover, ULT_TIP, comboBadge, panel, button, clicked, hud, joystick, bubbles, checks, bubbleRect, PAUSE_BTN };
 })();

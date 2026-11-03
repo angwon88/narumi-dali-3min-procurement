@@ -27,12 +27,14 @@ G.screens = (() => {
   const soundLabel = () => G.audio.isMuted() ? '소리 켜기' : '소리 끄기';
   const BTN_MUSIC = { x: W - 118, y: 48, w: 106, h: 30 };
   const musicLabel = () => G.music.isOff() ? '음악 켜기' : '음악 끄기';
-  const BTN_ULT = { x: W - 118, y: 84, w: 106, h: 30 };
-  const ultLabel = () => G.settings.ultAuto ? '필살기: 자동' : '필살기: 수동(Q)';
+  const BTN_ULT = { x: W - 158, y: 84, w: 146, h: 30 }, BTN_ULTQ = { x: W - 190, y: 84, w: 28, h: 30 };
+  const ultLabel = () => G.settings.ultAuto ? 'AI 조사: 자동 사용' : 'AI 조사: 직접 사용(Q)';
+  let ultTipOn = false;                                                // [?]를 누르면 설명을 켜고 끔 (휴대폰용)
   function titleUpdate() {
     if (ui.clicked(BTN_SOUND)) { G.audio.toggle(); return; }
     if (ui.clicked(BTN_MUSIC)) { G.music.toggle(); return; }
     if (ui.clicked(BTN_ULT)) { G.ult.toggleAuto(); return; }
+    if (ui.clicked(BTN_ULTQ)) { ultTipOn = !ultTipOn; return; }
     if (ui.clicked(BTN_INTRO)) { G.intro.start(() => { G.screen = 'title'; }); return; }
     if (ui.clicked(BTN_START) || G.input.hit('enter') || G.input.hit(' ')) { if (G.intro.seen()) newGame(); else G.intro.start(newGame); }
   }
@@ -78,6 +80,8 @@ G.screens = (() => {
     ui.button(ctx, BTN_SOUND, soundLabel(), { size: 12, fill: '#cfd8e3', hot: '#fff' });
     ui.button(ctx, BTN_MUSIC, musicLabel(), { size: 12, fill: '#cfd8e3', hot: '#fff' });
     ui.button(ctx, BTN_ULT, ultLabel(), { size: 12, fill: '#a9e3f2', hot: '#fff' });
+    ui.button(ctx, BTN_ULTQ, '?', { size: 16, fill: '#ffd84a', hot: '#fff3a0' });
+    if (ultTipOn || ui.hover(BTN_ULT) || ui.hover(BTN_ULTQ)) ui.tip(ctx, BTN_ULTQ.x - 170, BTN_ULT.y + BTN_ULT.h + 6, ui.ULT_TIP);
     const best = G.store.get('best', 0);
     if (best) T(ctx, '최고 점수 ' + best + ' · 최고 등급 ' + G.store.get('bestGrade', '-'), W - 20, H - 20, 12, '#ffe48a', 'right');
     if (G.VERSION) T(ctx, G.VERSION, 16, H - 20, 12, '#8fa3b8', 'left');
@@ -153,6 +157,7 @@ G.screens = (() => {
     G.fx.drawParts(ctx, G.S);                                         // 파편·동전은 HUD 위로 (저금통까지 날아가게)
     if (G.debug) G.debug.draw(ctx);
     ui.joystick(ctx);
+    G.ult.drawTip(ctx);
     const tl = G.S.timeLeft;                                   // 마지막 10초 카운트다운
     if (tl > 0 && tl <= 10 && G.screen === 'play') {
       const n = Math.ceil(tl), f = tl - Math.floor(tl);
@@ -164,13 +169,14 @@ G.screens = (() => {
   const BTN_RESUME = { x: W / 2 - 90, y: 220, w: 180, h: 44 };
   const BTN_RESTART = { x: W / 2 - 90, y: 276, w: 180, h: 44 };
   const BTN_TITLE = { x: W / 2 - 90, y: 332, w: 180, h: 44 };
-  const BTN_PSOUND = { x: W / 2 - 90, y: 388, w: 88, h: 36 }, BTN_PMUSIC = { x: W / 2 + 2, y: 388, w: 88, h: 36 }, BTN_PULT = { x: W / 2 - 90, y: 432, w: 180, h: 32 };
+  const BTN_PSOUND = { x: W / 2 - 90, y: 388, w: 88, h: 36 }, BTN_PMUSIC = { x: W / 2 + 2, y: 388, w: 88, h: 36 }, BTN_PULT = { x: W / 2 - 90, y: 432, w: 180, h: 32 }, BTN_PULTQ = { x: W / 2 + 96, y: 432, w: 28, h: 32 };
   function pauseUpdate() {
     if (G.input.hit('escape') || G.input.hit('p') || ui.clicked(BTN_RESUME)) G.screen = 'play';
     else if (ui.clicked(BTN_RESTART)) newGame();
     else if (ui.clicked(BTN_TITLE)) G.screen = 'title';
     else if (ui.clicked(BTN_PSOUND)) G.audio.toggle();
     else if (ui.clicked(BTN_PULT)) G.ult.toggleAuto();
+    else if (ui.clicked(BTN_PULTQ)) ultTipOn = !ultTipOn;
     else if (ui.clicked(BTN_PMUSIC)) G.music.toggle();
   }
   function pauseDraw(ctx) {
@@ -181,6 +187,8 @@ G.screens = (() => {
     ui.button(ctx, BTN_PSOUND, soundLabel(), { size: 12, fill: '#cfd8e3', hot: '#fff' });
     ui.button(ctx, BTN_PMUSIC, musicLabel(), { size: 12, fill: '#cfd8e3', hot: '#fff' });
     ui.button(ctx, BTN_PULT, ultLabel(), { size: 12, fill: '#a9e3f2', hot: '#fff' });
+    ui.button(ctx, BTN_PULTQ, '?', { size: 16, fill: '#ffd84a', hot: '#fff3a0' });
+    if (ultTipOn || ui.hover(BTN_PULT) || ui.hover(BTN_PULTQ)) ui.tip(ctx, W / 2 - 150, 248, ui.ULT_TIP);
   }
 
   // ---------- 작전 종료 → 결과 ----------
