@@ -132,7 +132,7 @@ G.shops = (() => {
   function graduate(S, sh) {
     sh.sprout = false; sh.innov = true; sh.mature = true; sh.growT = 0; sh.lonely = false; sh.isNew = false;
     for (const it of itemsOf(sh)) { sh.q[it.id] = Math.min(3, sh.q[it.id] + 1); sh.mults[it.id] = rollMult(sh, it.id); }
-    // 2026-11-03 혁신 보상은 업종이 아니라 순서대로: 1호 전동 킥보드(이동 +35%) → 2호 수납 카트(가방 +1) → 3호 스마트 주문판 (첫 혁신부터 체감되게)
+    // 2026-11-03 혁신 보상은 업종이 아니라 순서대로: 1호 전동 킥보드(이동 +35%) → 2호 수납 카트(가방 +1) → 3호 AI 실사 드론(나르미 쉬는 시간 -40%) → 4호 스마트 주문판(계약 시간 +20%)
     const key = ['safety', 'furn', 'elec', 'health'].find(k => !S.innovCats.has(k)), I = key && G.levelup.INNOV[key];
     if (I) { I.apply(S); S.innovCats.add(key); }
     S.stats.innov = (S.stats.innov || 0) + 1;

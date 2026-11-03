@@ -28,8 +28,9 @@ G.levelup = (() => {
   // 혁신제품 (기획서 3.9): 카테고리별 효과 ① + 고른 공방이 혁신 공방으로 성장 ②
   const INNOV = {
     furn:   { product: '접이식 수납 카트', icon: 'cart',    effect: '가방 +1칸',             apply: S => { S.bagCap = Math.min(C.BAG_MAX, S.bagCap + 1); } },
-    elec:   { product: '스마트 주문판',    icon: 'board',   effect: '새 요청 제한 시간 +15%', apply: S => { S.limitMult *= 1.15; } },
-    health: { product: '보온 배송 상자',   icon: 'box',     effect: '시간 보너스 2배',        apply: S => { S.timeBonusMult = 2; } },
+    // 2026-11-03 3·4호를 체감되는 효과로: 3호 AI 실사 드론(나르미 쉬는 시간 -40%), 4호 스마트 주문판(모든 계약 시간 +20%, 말풍선 시계 초록 테두리)
+    elec:   { product: 'AI 실사 드론',     icon: 'drone',   effect: '나르미 쉬는 시간 -40%',  apply: S => { S.inspectCDMult *= 0.6; S.inspectCD = Math.min(S.inspectCD || 0, C.INSPECT_COOLDOWN * S.inspectCDMult); } },
+    health: { product: '스마트 주문판',    icon: 'board',   effect: '모든 계약 시간 +20%',    apply: S => { S.limitMult *= 1.2; S.smartBoard = true; for (const r of G.requests.active(S)) { r.limit *= 1.2; r.left *= 1.2; } } },
     safety: { product: '전동 킥보드',      icon: 'scooter', effect: '이동 속도 +35%', apply: S => { S.speedMult *= 1.35; S.scooter = true; } },
   };
   function innovCard(S) {
@@ -106,6 +107,7 @@ G.levelup = (() => {
       case 'cart': R(-16, -8, 28, 14); R(10, -14, 3, 10); ctx.fillStyle = col; R(-12, -4, 20, 6); ctx.fillStyle = '#fffdf6'; R(-14, 8, 6, 6); R(4, 8, 6, 6); break;
       case 'board': R(-14, -18, 28, 32); ctx.fillStyle = col; R(-10, -14, 20, 4); R(-10, -6, 14, 3); R(-10, 0, 18, 3); R(-10, 6, 10, 3); break;
       case 'box': R(-16, -10, 32, 22); ctx.fillStyle = col; R(-16, -4, 32, 3); ctx.fillStyle = '#e2433b'; R(-2, -16, 4, 6); R(-6, -18, 12, 3); break;
+      case 'drone': R(-18, -12, 12, 3); R(6, -12, 12, 3); R(-2, -10, 4, 6); R(-10, -4, 20, 10); ctx.fillStyle = col; R(-4, -1, 8, 4); ctx.fillStyle = '#fffdf6'; R(-6, 6, 3, 6); R(3, 6, 3, 6); break;
       case 'scooter': R(-16, 8, 8, 8); R(8, 8, 8, 8); R(-12, 6, 24, 3); R(8, -16, 3, 24); R(4, -16, 10, 3); break;
       default: for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + i * Math.PI * 0.4; R(Math.cos(a) * 12 - 4, Math.sin(a) * 12 - 4, 8, 8); } R(-6, -6, 12, 12);
     }
@@ -143,5 +145,5 @@ G.levelup = (() => {
     });
     if (!ready) { ctx.fillStyle = 'rgba(10,14,20,.25)'; ctx.fillRect(X0, Y0, CW * 3 + GAP * 2, CH); }
   }
-  return { INNOV, init, gain, open, choose, update, draw, CARDS, xpNeed, available };
+  return { INNOV, icon, init, gain, open, choose, update, draw, CARDS, xpNeed, available };
 })();

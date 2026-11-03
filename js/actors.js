@@ -118,6 +118,13 @@ G.dali = {
       ctx.fillStyle = this.bag[i] ? '#fffdf6' : 'rgba(255,253,246,.45)'; ctx.fillRect(x, y0, sz, sz);
       const b = this.bag[i]; if (b) G.icons.draw(ctx, b.item, x + sz / 2, y0 + sz / 2, 20);
     }
+    // 2026-11-03 받은 혁신 보상 아이콘 (가방 칸 오른쪽): 킥보드·카트·드론·주문판
+    const got = ['safety', 'furn', 'elec', 'health'].filter(k => S.innovCats && S.innovCats.has(k));
+    got.forEach((k, i) => {
+      const I = G.levelup.INNOV[k], ix = x0 + w + 4 + i * 18, iy = y0 + 2;
+      ctx.save(); ctx.translate(ix + 8, iy + 9); ctx.scale(0.3, 0.3); G.levelup.icon(ctx, I.icon, 0, 0, '#e0a800'); ctx.restore();
+      ctx.strokeStyle = '#7a5a00'; ctx.strokeRect(ix + .5, iy + 1.5, 16, 16);
+    });
     const B = S.buy;
     if (B && B.shop && B.dwell > 0) {
       const f = Math.min(1, B.dwell / (S.buyDwell || G.C.BUY_DWELL));
