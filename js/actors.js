@@ -6,6 +6,7 @@ G.dali = {
   bag: [],
   reset() { Object.assign(this, { x: G.world.START.x, y: G.world.START.y, face: 's', moving: false, t: 0, speed: G.C.DALI_SPEED, bag: [], path: null, goal: null }); },
   update(dt) {
+    this.speed = G.C.DALI_SPEED * ((G.S && G.S.speedMult) || 1);      // 2026-11-03 버그 수정: 혁신 보상(킥보드) 속도가 실제로 반영되게 매 프레임 계산 (예전엔 레벨업 카드에서만 갱신)
     let v = G.input.moveVec(); const sp = this.speed * dt * (G.S && G.S.storm ? G.C.STORM.speed : 1);   // 태풍: 비 때문에 -10%
     if (v.x || v.y) this.path = null;                                // 직접 조작하면 길 안내 취소
     else if (this.path && this.path.length) {                         // 터치·클릭 이동: 다음 지점으로
