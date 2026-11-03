@@ -187,6 +187,7 @@ G.shops = (() => {
   // ---------- 경쟁 유지 (기획서 3.8) ----------
   // 같은 공방에서 연달아 사면 streak +1, 옆 공방에서 사면 1부터 다시
   function compete(S, sh) {
+    if (!C.COMPETE) return;
     const row = sh.idx >> 1, st = S.streak[row], p = partner(S, sh);
     if (st.shop === sh.idx) st.n++; else { st.shop = sh.idx; st.n = 1; }
     sh.lonely = false;

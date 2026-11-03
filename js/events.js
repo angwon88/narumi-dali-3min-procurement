@@ -73,15 +73,15 @@ G.events = (() => {
   // ---------- ④ 예보 ----------
   const FORECAST = {
     dust:  { name: '미세먼지 예보', need: '마스크를 미리 준비해요', items: ['mask'], icon: 'mask' },
-    storm: { name: '태풍 예보', need: '안전모·구급상자를 미리 준비해요', items: ['helmet', 'kit'], icon: 'helmet' },
+    storm: { name: '태풍 예보', need: '곧 소방서·보건소·학교에 긴급 계약!', items: [], icon: 'helmet' },   // 2026-11-03 '미리 사 두기' 뺌: 예보는 경고만
     surge: { name: '원자재 가격 폭등 예보', need: '시세가 오르기 시작! 지금이라도 비축', items: [], icon: null },
   };
   G.director.on('forecast', (S, p) => {
     const f = FORECAST[p.id]; if (!f) return;
     S.forecasts.push({ id: p.id, at: p.at });
     f.items.forEach(it => S.prep.add(it));
-    G.director.banner(S, f.name + ' · ' + C.FORECAST_SEC + '초 뒤', f.need + " · 지금 준비하면 '미리 대비' 임무!");
-    G.narmi.say(p.id === 'surge' ? '원자재 값이 오를 거예요! 조달청 아래 비축칸에서 사 둬요' : "'대비' 표시 공방에서 미리 사 둬요!", 3);
+    G.director.banner(S, f.name + ' · ' + C.FORECAST_SEC + '초 뒤', f.need + (p.id === 'surge' ? " · 지금 비축하면 '위기 대응' 임무!" : ''));
+    G.narmi.say(p.id === 'surge' ? '원자재 값이 오를 거예요! 아낀 세금으로 비축칸에서 사 둬요' : '태풍이 와요! 긴급 계약을 빨리 해결해요', 3);
     G.audio.play('warn');
   });
   function endForecast(S, id) {

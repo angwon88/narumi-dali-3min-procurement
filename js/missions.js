@@ -20,7 +20,7 @@ G.missions = (() => {
       done: s => n(s.innov) > 0,
       real: '실제로도 조달청은 혁신제품의 첫 구매자가 되어 기술 기업의 성장을 도와요' },
     { id: 'prep', desc: '원자재를 쌀 때 비축하고, 재난 땐 긴급 계약을 빨리 해결해요', name: '위기 대응', short: '위기 대응!', col: '#0f8a96', icon: 'mask',
-      done: s => n(s.prepared) + n(s.urgentDone) > 0,   // 비축 방출·미리 준비한 물건 납품·긴급 계약 해결 중 하나
+      done: s => n(s.prepared) + n(s.urgentDone) > 0,   // 비축 방출 또는 긴급 계약 해결
       real: '실제로도 조달청은 원자재를 비축하고, 재난 땐 긴급입찰·수의계약으로 빨리 사요' },
   ];
   const BY = Object.fromEntries(LIST.map(m => [m.id, m]));

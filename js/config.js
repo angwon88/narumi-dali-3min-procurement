@@ -14,7 +14,7 @@ G.C = {
   PRICE_NORMAL: [0.80, 0.95], PRICE_FAKE: [0.45, 0.55], PRICE_REROLL_SEC: 20,   // 20초마다 행별 가격을 새로 뽑음(싼 쪽이 50% 확률로 바뀜)
   MONOPOLY_MULT: 1.3, STREAK_WARN: 3, STREAK_CLOSE: 5, REOPEN_SEC: 20, REOPEN_FAKE_CHANCE: 0.4,
   FAKE_VANISH_SEC: 3, INNOV_PRICE_MULT: 0.9, INNOV_SCORE_MULT: 1.5, INNOV_TRUST_BONUS: 2,
-  INNOV_TRIAL: 3, INNOV_TRIAL_FAIL: 0.25, INNOV_MATURE_MULT: 1.8,   // 혁신제품 시범 사용 3건, '보완 필요' 25%, 성공 판정 뒤 ×1.8
+  INNOV_TRIAL: 3, INNOV_TRIAL_FAIL: 0.15, INNOV_MATURE_MULT: 1.8,   // 혁신제품 시범 사용, '보완 필요' 15%(2026-11-03 2분판이라 25 → 15), 성공 판정 뒤 ×1.8
   LEVEL_REQ: [3, 6, 10, 14, 19, 25, 32, 40],   // 2분 기준
   FINAL_RUSH_AT: 100, FINAL_RUSH_MULT: 1.5,   // 마지막 20초
   STORM: { warnAt: 88, start: 90, end: 110, limit: 18, mult: 2, slow: 0.9 },
@@ -42,6 +42,7 @@ G.C = {
   ULT_NEED: 3, ULT_SCAN: 1.2, ULT_SCORE: 300, ULT_BROKER_PAUSE: 12,
   // 덜어내기 (2026-11-03): 레벨업 카드·세금 저금통(마을 선물)·나르미 데이터 단계 끔. 능력은 혁신제품 지정으로만
   LEVELUP: false, GIFTS: false, DATA_LEVELS: false,
+  COMPETE: false,                   // 2026-11-03 경쟁 유지(한 공방에 몰아주면 옆 공방 폐업·독점) 끔: 터치 조작에선 잘 안 보이고 공방이 갑자기 닫혀 헷갈림
   BROKER: true, BROKER_FIRST_AT: 30, BROKER_SPEED: [115, 165], BROKER_GRAB: 1.5, BROKER_REST: 5,   // 2026-11-02 강화: 0:55→0:45, 100~145→115~165, 쉬는 시간 7→5 / 11-03 BROKER_GRAB: 등장 뒤 두리번(알아챌 틈) 1.0→1.5
   TRUST_BROKER: -12, BROKER_BLOCK_SCORE: 150, BROKER_CATCH_BONUS: 300, BROKER_CATCH_TIME: 0.5, BROKER_BLOCK_SEC: 1.0, BROKER_BLOCK_CD: 2.5,   // 달이가 닿으면 브로커 1초 멈칫(검거 아님), 2.5초에 한 번
   REQ_FIRST_AT: 2, REQ_INTERVAL: 6.0, REQ_LIMIT: 35, REQ_EMPTY_FILL: 1,   // 기본값. 실제 구간별 값은 director.js
@@ -69,4 +70,4 @@ G.C = {
   GRADE: { S: [20000, 80], A: [13000, 60], B: [6000, 0] },   // 2026-11-03 덜어내기 뒤 2분 기준 (봇 0.7 ≈ 16,000~25,000 · 0.45 ≈ 10,000~19,000)
 };
 G.FONT = 'Galmuri11';
-G.VERSION = 'v4.3 · 필살기 선택·세금 비축';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)
+G.VERSION = 'v4.4 · 덜어내기 마무리';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)
