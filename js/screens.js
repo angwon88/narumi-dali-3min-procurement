@@ -165,6 +165,7 @@ G.screens = (() => {
   }
   // 달이 이동을 뺀 한 프레임 진행 (debug.js의 시간 건너뛰기도 이것을 쓴다)
   function step(S, dt) {
+    if (S.ultCut) { G.ult.cutUpdate(S, dt); return; }                // AI 조사 컷인 1.1초: 게임 멈춤
     S.timeLeft -= dt; S.elapsed += dt;
     G.director.update(S, dt);
     G.requests.update(S, dt);
@@ -215,6 +216,7 @@ G.screens = (() => {
     G.director.draw(ctx, G.S);
     ui.hud(ctx, G.S);
     ui.comboBadge(ctx, G.S);
+    G.ult.drawCut(ctx, G.S);
     G.events.drawBoards(ctx, G.S);
     G.fx.drawParts(ctx, G.S);                                         // 파편·동전은 HUD 위로 (저금통까지 날아가게)
     if (G.debug) G.debug.draw(ctx);

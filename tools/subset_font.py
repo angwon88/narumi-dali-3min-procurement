@@ -9,7 +9,7 @@ STRS = ['나르미와 달이의', '2분 조달작전', '조달관 5대 임무', 
         '잠깐 쉬는 중', '작전 일시정지', '계속하기', '처음부터', '타이틀로', '남은 시간', '점수', '임무', '아낀 세금', '만원', 'Esc·P 계속', '시간이 멈춰 있어요']
 # 결과 화면은 판마다 문장이 달라서, 이 파일들에 나오는 한글을 모두 담는다
 ROOT = os.path.join(os.path.dirname(__file__), '..')
-SRC = ''.join(open(os.path.join(ROOT, 'js', f), encoding='utf-8').read() for f in ['result.js', 'missions.js', 'screens.js', 'intro.js'])
+SRC = ''.join(open(os.path.join(ROOT, 'js', f), encoding='utf-8').read() for f in ['result.js', 'missions.js', 'screens.js', 'intro.js', 'ult.js', 'score.js', 'director.js'])
 hangul = {ch for ch in SRC if '\uac00' <= ch <= '\ud7a3'}
 chars = hangul | set(''.join(STRS)) | set(string.ascii_letters + string.digits + string.punctuation + ' ·★✔→—~')
 url = 'https://fonts.googleapis.com/css2?family=Jua&text=' + urllib.parse.quote(''.join(sorted(chars)))
