@@ -166,12 +166,12 @@ G.narmi = {
     if (flying) G.spr.shadow(ctx, this.x, this.y + 18, 9);
     G.spr.drawChar(ctx, 'narmi', flying ? 'walk' : 'rot', this.face, this.t, this.x, this.y - lift + bob);
     if (this.talk) {                                     // 말풍선 (짧은 반응 한마디)
-      ctx.font = '12px ' + G.FONT; const w = ctx.measureText(this.talk.text).width + 16, x = Math.round(this.x - w / 2), y = Math.round(this.y - 76);
+      ctx.font = '12px ' + G.FONT; const w = ctx.measureText(this.talk.text).width + 16, x = Math.round(Math.max(4, Math.min(G.C.VIEW.w - w - 4, this.x - w / 2))), y = Math.round(this.y - 76);   // 화면 밖으로 안 나가게
       ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x + 2, y + 3, w, 22);
       ctx.fillStyle = '#fffdf6'; ctx.fillRect(x, y, w, 22); ctx.fillStyle = '#3a3a3a';
       ctx.fillRect(x, y, w, 2); ctx.fillRect(x, y + 20, w, 2); ctx.fillRect(x, y, 2, 22); ctx.fillRect(x + w - 2, y, 2, 22);
       ctx.fillStyle = '#fffdf6'; ctx.fillRect(this.x - 3, y + 22, 6, 4);
-      G.world.text(ctx, this.talk.text, this.x, y + 11, 12, '#2a2416');
+      G.world.text(ctx, this.talk.text, x + w / 2, y + 11, 12, '#2a2416');
     }
     if (this.state === 'inspect' && this.target && !this.target.isBroker) {   // 실사 보고서 (2026-11-03): 확인 항목 3개가 차례로
       const sh = this.target, f = this.timer / G.C.INSPECT_TIME, x = Math.round(this.x), y = Math.round(this.y + 30);

@@ -8,14 +8,23 @@ G.result = (() => {
   // S등급은 점수·신뢰 + 조달관 5대 임무를 모두 해야 (2026-11-03). 점수는 S인데 임무가 모자라면 A + 안내
   function grade(S) {
     S.gradeNote = '';
+    let g0 = 'C';
     for (const g of ['S', 'A', 'B']) {
       const [sc, tr] = C.GRADE[g];
-      if (S.score >= sc && S.trust >= tr) {
-        if (g === 'S' && G.missions.count(S) < 5) { S.gradeNote = '임무 5개를 다 하면 S!'; continue; }
-        return g;
-      }
+      if (S.score >= sc && S.trust >= tr && (g !== 'S' || G.missions.count(S) >= 5)) { g0 = g; break; }
     }
-    return 'C';
+    // 2026-11-03 S가 아니면 S까지 무엇이 모자란지 정확히 (점수 · 마을 신뢰 · 남은 임무 이름)
+    if (g0 !== 'S') {
+      const [sc, tr] = C.GRADE.S, need = [];
+      if (S.score < sc) need.push('점수 +' + (sc - S.score).toLocaleString());
+      if (S.trust < tr) need.push('신뢰 +' + Math.ceil(tr - S.trust));
+      const left = G.missions.LIST.filter(m => !S.missions || S.missions[m.id] == null);
+      if (left.length === 1) need.push("임무 '" + left[0].name + "'");
+      else if (left.length) need.push('임무 ' + left.length + '개');
+      S.gradeNote = 'S까지: ' + need.join(' · ');
+      S.gradeLeft = left.map(m => m.name);
+    }
+    return g0;
   }
   const GRADE_COL = { S: '#e0a800', A: '#2e9b3a', B: '#2f6fb0', C: '#8a7a6a' };
   const GRADE_MSG = { S: '최고의 조달 파트너!', A: '믿음직한 조달 작전!', B: '마을이 고마워해요', C: '다음엔 더 잘할 수 있어요' };
@@ -183,7 +192,10 @@ G.result = (() => {
       ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 28, 0, 7); ctx.stroke(); ctx.lineWidth = 1;
       J(ctx, S.grade, 0, 3, 46, col);
       ctx.restore(); ctx.globalAlpha = 1;
-      if (t >= 0.8) J(ctx, S.gradeNote || (GRADE_MSG[S.grade] + (S.newBestGrade ? ' (최고 등급!)' : '')), gx, gy + 56, 15, S.gradeNote ? '#ffd0c8' : '#fff3b0', { stroke: [['rgba(40,28,10,.6)', 4]] });
+      if (t >= 0.8) {
+        J(ctx, GRADE_MSG[S.grade] + (S.newBestGrade ? ' (최고 등급!)' : ''), gx, gy + 54, 15, '#fff3b0', { stroke: [['rgba(40,28,10,.6)', 4]] });
+        if (S.gradeNote) J(ctx, S.gradeNote, gx, gy + 76, 14, '#ffd0c8', { stroke: [['rgba(40,28,10,.65)', 4]] });
+      }
     }
 
     // 2. 조달관 5대 임무 카드: 둥근 카드 + 임무 색 머리 + ✔ 도장

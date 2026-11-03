@@ -29,6 +29,13 @@ G.missions = (() => {
   function update(S, dt) {
     for (const m of LIST) if (S.missions[m.id] == null && m.done(S.stats || {}, S)) { S.missions[m.id] = S.elapsed; achieve(S, m); }
     if (S.mStamp && (S.mStamp.t += dt) > 1.8) S.mStamp = null;
+    // 2026-11-03 S등급 안내: 남은 시간 45초에 아직 못 한 임무를 나르미가 알려 줌 (한 번)
+    if (!S.mRemind && S.elapsed >= G.C.GAME_SECONDS - 45 && count(S) < 5) {
+      S.mRemind = true;
+      const left = LIST.filter(m => S.missions[m.id] == null);
+      G.director.banner(S, 'S등급까지 남은 임무: ' + left.map(m => m.name).join(' · '), left.length === 1 ? left[0].desc : '화면 위 임무 칸에서 빈 칸을 확인해요', { queue: true, dur: 4, col: left[0].col });
+      G.narmi.say('남은 임무가 있어요! 45초 남았어요', 2.5);
+    }
   }
   function achieve(S, m) {
     const k = count(S);
