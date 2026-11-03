@@ -126,7 +126,7 @@ G.shops = (() => {
     return sh;
   }
   G.director.on('sprout', S => { spawnSprout(S); });
-  G.director.on('tipStock', () => G.narmi.say('조달청 아래 비축칸: 원자재가 쌀 때 미리 사 둬요', 3.2));
+  G.director.on('tipStock', () => G.narmi.say('아낀 세금으로 원자재를 쌀 때 사 둬요! (조달청 아래 비축칸)', 3.2));
   G.director.on('tipReg', () => G.narmi.say('지붕의 ✔ = 나라장터 등록 업체! 등록된 곳과만 계약해요', 3.2));
   // 실적을 다 채우면 혁신제품 지정: 혁신 공방(성공 판정 상태)으로, 품질 +1, 업종별 혁신제품 효과
   function graduate(S, sh) {

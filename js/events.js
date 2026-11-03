@@ -13,13 +13,13 @@ G.events = (() => {
   const ZONE = { x: OB.x + 40, y: OB.y + OB.h + 4, w: 76, h: 26 };   // 마을 말풍선과 겹치지 않게
 
   function init(S) {
-    S.stock = 0; S.stockDwell = 0; S.stockWarned = false; S.stockBudget = C.STOCK_BUDGET;
+    S.stock = 0; S.stockDwell = 0; S.stockWarned = false;
     S.surge = null; S.surgeMult = 1; S.stabilized = new Set(); S.surgeDone = false;
     S.dust = null; S.storm = null; S.forecasts = []; S.prep = new Set();
   }
 
   // ---------- ① 비축 ----------
-  // 2026-11-03 실제 비축사업처럼: 조달청 비축 예산(9만원)으로 원자재(알루미늄·구리 등)를 산다.
+  // 2026-11-03 실제 비축사업처럼 원자재(알루미늄·구리 등)를 '쌀 때' 산다. 돈은 HUD의 '아낀 세금'에서 냄(A안: 가성비로 아낀 세금 → 비축)
   //   평소 시세 1상자 3만원, 폭등 예보가 뜨면 4.5만원(이미 오르기 시작). 폭등 때 공방에 방출해 재료값을 지킴
   const MAT = { furn: '알루미늄', elec: '구리', health: '니켈', safety: '아연' };
   const forecasting = S => S.forecasts.some(f => f.id === 'surge');
@@ -28,14 +28,15 @@ G.events = (() => {
   function stockUpdate(S, dt) {
     const d = G.dali, inZ = G.U.inRect(d.x, d.y, ZONE);
     if (!inZ) { S.stockDwell = 0; S.stockWarned = false; return; }
-    const why = !stockOpen(S) ? '원자재 가격이 이미 올랐어요' : S.stock >= C.STOCK_MAX ? '비축 창고가 가득 찼어요 (3/3)' : S.stockBudget < matPrice(S) ? '비축 예산이 모자라요 (' + S.stockBudget + '만원 남음)' : null;
+    const why = !stockOpen(S) ? '원자재 가격이 이미 올랐어요' : S.stock >= C.STOCK_MAX ? '비축 창고가 가득 찼어요 (3/3)' : S.saved < matPrice(S) ? '아낀 세금이 모자라요 (' + S.saved + '만원 · 1상자 ' + matPrice(S) + '만원)' : null;
     if (why) { S.stockDwell = 0; if (!S.stockWarned && !d.moving) { G.fx.add(S, ZONE.x + ZONE.w / 2, ZONE.y - 4, why, '#ffd6a0'); S.stockWarned = true; } return; }
     S.stockDwell += dt;
     if (S.stockDwell >= C.STOCK_DWELL) {
       const p = matPrice(S);
-      S.stockDwell = 0; S.stock++; S.stockBudget = r1(S.stockBudget - p);
+      S.stockDwell = 0; S.stock++; S.saved = r1(S.saved - p); S.stats.stockSpent = r1((S.stats.stockSpent || 0) + p);
+      G.fx.coins(S, 326, 17, ZONE.x + ZONE.w / 2, ZONE.y + 6, 4, null, null, 0);   // 아낀 세금(HUD)에서 동전이 비축칸으로
       S.stats.stocked = (S.stats.stocked || 0) + 1;
-      G.fx.add(S, ZONE.x + ZONE.w / 2, ZONE.y - 4, '원자재 1상자 비축 (' + p + '만원) · ' + S.stock + '/' + C.STOCK_MAX, '#9be37a', 16);
+      G.fx.add(S, ZONE.x + ZONE.w / 2, ZONE.y - 4, '아낀 세금 ' + p + '만원으로 원자재 1상자 · ' + S.stock + '/' + C.STOCK_MAX, '#9be37a', 16);
       if (S.stock === 1) G.narmi.say('원자재를 쌀 때 사 뒀어요! 값이 폭등하면 공방에 풀어요', 2.8);
       G.audio.play('buy');
     }
@@ -162,14 +163,14 @@ G.events = (() => {
   function drawWorld(ctx, S) {
     // 비축칸
     // 비축칸 (2026-11-03): 폭등 전에는 언제든 비축 예산으로 원자재 구입. 예보 때는 진하게 깜빡이며 재촉
-    const z = ZONE, can = stockOpen(S) && S.stock < C.STOCK_MAX && S.stockBudget >= matPrice(S), PREP = G.missions.BY.prep.col;
+    const z = ZONE, can = stockOpen(S) && S.stock < C.STOCK_MAX && S.saved >= matPrice(S), PREP = G.missions.BY.prep.col;
     const fc = forecasting(S), on = Math.floor(S.elapsed * 3) % 2 === 0;
     ctx.fillStyle = can ? (fc ? (on ? PREP : '#0b5d68') : 'rgba(15,138,150,.35)') : 'rgba(0,0,0,.08)'; ctx.fillRect(z.x, z.y, z.w, z.h);
     ctx.strokeStyle = can ? (fc ? '#fff' : PREP) : 'rgba(80,60,30,.5)'; ctx.setLineDash([3, 3]); ctx.strokeRect(z.x + .5, z.y + .5, z.w - 1, z.h - 1); ctx.setLineDash([]);
     crate(ctx, z.x + 4, z.y + 7);
     T(ctx, '원자재 비축', z.x + z.w / 2 + 8, z.y + z.h / 2 + 1, 12, can && fc ? '#fff' : can ? '#0b4d58' : '#6a5a3a');
     if (S.stockDwell > 0) { ctx.fillStyle = '#ffd84a'; ctx.fillRect(z.x, z.y + z.h - 3, Math.round(z.w * S.stockDwell / C.STOCK_DWELL), 3); }
-    if (!fc && stockOpen(S)) T(ctx, '예산 ' + S.stockBudget + '만 · 1상자 ' + matPrice(S) + '만', z.x + z.w / 2, z.y + z.h + 10, 12, '#4a3f2a');
+    if (!fc && stockOpen(S)) T(ctx, '아낀 세금으로 1상자 ' + matPrice(S) + '만', z.x + z.w / 2, z.y + z.h + 10, 12, '#4a3f2a');
     // 비축 창고 (조달청 오른쪽 옆): 금속 원자재 상자
     const sx = OB.x + OB.w + 6, sy = OB.y + OB.h - 14;
     for (let i = 0; i < C.STOCK_MAX; i++) {
@@ -196,7 +197,7 @@ G.events = (() => {
   }
   // 폭등 예보 중 비축 안내 (마을 말풍선보다 위층에 그림)
   function drawCallout(ctx, S) {
-    const z = ZONE; if (!forecasting(S) || !stockOpen(S) || S.stock >= C.STOCK_MAX || S.stockBudget < matPrice(S)) return;
+    const z = ZONE; if (!forecasting(S) || !stockOpen(S) || S.stock >= C.STOCK_MAX || S.saved < matPrice(S)) return;
     const w = 168, x = z.x + z.w / 2 - w / 2, y = z.y + z.h + 6;
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x + 2, y + 3, w, 20);
     ctx.fillStyle = '#0b5d68'; ctx.fillRect(x, y, w, 20); ctx.fillStyle = '#ffd84a'; ctx.fillRect(x, y, w, 2);

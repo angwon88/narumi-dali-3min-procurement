@@ -13,7 +13,7 @@ G.ult = (() => {
     if (S.ultLock || ready(S)) return;
     S.ultCharge++;
     if (ready(S)) {
-      G.narmi.say('데이터가 모였어요! 수상한 곳이 보이면 바로 일제 조사!', 2.6);
+      G.narmi.say(G.settings.ultAuto ? '데이터가 모였어요! 수상한 곳이 보이면 바로 일제 조사!' : '필살기 준비! Q 또는 위쪽 [AI 조사] 버튼', 2.6);
       G.audio.play('gift');
     }
   }
@@ -41,7 +41,7 @@ G.ult = (() => {
     return open.some(sh => sh.fake) || open.filter(sh => sh.isNew && !sh.verified && !sh.innov).length >= 2;
   }
   function update(S, dt) {
-    if (!S.ultFx && ready(S) && worth(S)) fire(S);
+    if (G.settings.ultAuto && !S.ultFx && ready(S) && worth(S)) fire(S);
     const u = S.ultFx; if (!u) return;
     u.t += dt;
     const bx = Math.min(1, u.t / C.ULT_SCAN) * C.VIEW.w;
@@ -73,11 +73,12 @@ G.ult = (() => {
     const r = ready(S), on = r && Math.floor((S.elapsed || 0) * 4) % 2 === 0;
     ctx.fillStyle = r ? (on ? '#5ec8f2' : '#2f9bd0') : '#2a3646'; ctx.fillRect(BTN.x, BTN.y, BTN.w, BTN.h);
     ctx.fillStyle = r ? '#fff' : '#3a4656'; ctx.fillRect(BTN.x, BTN.y, BTN.w, 2);
-    T(ctx, r ? '자동 대기' : 'AI 조사', BTN.x + BTN.w / 2, BTN.y + 11, 12, r ? '#0b2a3a' : '#8fa3b8');
+    T(ctx, r ? (G.settings.ultAuto ? '자동 대기' : '누르기 Q') : 'AI 조사', BTN.x + BTN.w / 2, BTN.y + 11, 12, r ? '#0b2a3a' : '#8fa3b8');
     for (let i = 0; i < C.ULT_NEED; i++) {
       const x = BTN.x + BTN.w / 2 - (C.ULT_NEED * 14 - 4) / 2 + i * 14, y = BTN.y + 20;
       ctx.fillStyle = i < S.ultCharge ? (r ? '#0b2a3a' : '#7a3fb0') : '#3a4656'; ctx.fillRect(x, y, 10, 9);
     }
   }
-  return { init, charge, input, update, draw, drawHud, ready, BTN };
+  function toggleAuto() { G.settings.ultAuto = !G.settings.ultAuto; G.store.set('ultAuto', G.settings.ultAuto); return G.settings.ultAuto; }
+  return { init, charge, input, update, draw, drawHud, ready, BTN, toggleAuto };
 })();

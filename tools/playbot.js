@@ -29,7 +29,7 @@ window.PlayBot = {
       }
       const Z = G.events.ZONE;
       const fc = S.forecasts.some(f => f.id === 'surge'), mp = fc ? G.C.MAT_PRICE_FORECAST : G.C.MAT_PRICE;
-      if (stock && !S.surge && !S.surgeDone && S.stock < G.C.STOCK_MAX && S.stockBudget >= mp && (S.elapsed < 14 || fc)) target = { x: Z.x + Z.w / 2, y: Z.y + Z.h / 2 };   // 비축: 초반(쌀 때)이나 폭등 예보 때
+      if (stock && !S.surge && !S.surgeDone && S.stock < G.C.STOCK_MAX && S.saved >= mp && (S.elapsed < 14 || fc)) target = { x: Z.x + Z.w / 2, y: Z.y + Z.h / 2 };   // 비축: 초반(쌀 때)이나 폭등 예보 때
       else if (mode === 'buy') {
         for (const r of uncovered) {
           // 개편: 계약 조건(★minQ)을 맞추는 공방 중 가장 싼 곳. quality:false면 조건을 안 보고 제일 싼 곳(옛 전략 비교용)
