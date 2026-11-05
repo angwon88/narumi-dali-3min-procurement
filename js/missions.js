@@ -19,9 +19,9 @@ G.missions = (() => {
     { id: 'sprout', desc: '새싹 공방을 사 줘서 실적 3건이면 혁신제품 지정!', name: '새싹을 혁신제품으로', short: '새싹 성장!', col: '#d39e00', icon: 'lamp',
       done: s => n(s.innov) > 0,
       real: '실제로도 조달청은 혁신제품의 첫 구매자가 되어 기술 기업의 성장을 도와요' },
-    { id: 'prep', desc: '원자재를 쌀 때 비축하고, 재난 땐 긴급 계약을 빨리 해결해요', name: '위기 대응', short: '위기 대응!', col: '#0f8a96', icon: 'mask',
+    { id: 'prep', desc: G.C.STOCK === false ? '태풍이 오면 긴급 계약을 빨리 해결해요' : '원자재를 쌀 때 비축하고, 재난 땐 긴급 계약을 빨리 해결해요', name: '위기 대응', short: '위기 대응!', col: '#0f8a96', icon: 'mask',
       done: s => n(s.prepared) + n(s.urgentDone) > 0,   // 비축 방출 또는 긴급 계약 해결
-      real: '실제로도 조달청은 원자재를 비축하고, 재난 땐 긴급입찰·수의계약으로 빨리 사요' },
+      real: G.C.STOCK === false ? '실제로도 조달청은 재난 땐 긴급입찰·수의계약으로 빨리 사요' : '실제로도 조달청은 원자재를 비축하고, 재난 땐 긴급입찰·수의계약으로 빨리 사요' },
   ];
   const BY = Object.fromEntries(LIST.map(m => [m.id, m]));
   function init(S) { S.missions = {}; S.mStamp = null; }

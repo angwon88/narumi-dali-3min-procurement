@@ -86,7 +86,11 @@ G.intro = (() => {
       if (k > 0.2) stampBox(ctx, cx - 270, top + 136, '조건 ✘', '#d9342b', (k - 0.2) * 5);
       if (k > 0.38) stampBox(ctx, cx - 80, top + 136, '가성비!', '#2e9b3a', (k - 0.38) * 5);
       const dk = Math.min(1, Math.max(0, (k - 0.38) / 0.3));                   // 달이: B로 걸어감
-      G.spr.drawChar(ctx, 'dali', dk > 0 && dk < 1 ? 'walk' : 'rot', 'n', tt, cx - 200 + dk * 190, top + 258 - dk * 118, 1.05);   // B 공방 문 앞으로
+      if (G.C.CONNECT) {                                                       // 계약 연결: 카드를 누르고 → B 공방을 누름 → 수레 출발
+        const tk = k < 0.2 ? { x: cx - 8, y: top + 215 } : { x: cx - 80, y: top + 100 };
+        if (k < 0.5) { ctx.strokeStyle = '#ffd84a'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(tk.x, tk.y, 10 + (tt * 2 % 1) * 12, 0, 7); ctx.stroke(); ctx.lineWidth = 1; }
+        if (k >= 0.5) G.connect.vehicle(ctx, cx - 110 + Math.min(1, (k - 0.5) / 0.3) * 60, top + 250, 1, 'desk', false, tt);
+      } else G.spr.drawChar(ctx, 'dali', dk > 0 && dk < 1 ? 'walk' : 'rot', 'n', tt, cx - 200 + dk * 190, top + 258 - dk * 118, 1.05);   // B 공방 문 앞으로
       // 나르미: 등록 심사 중인 새 공방(너무 싸고 너무 좋음)을 눌러 실사 → 실사 보고서 → 적발
       const nk = Math.min(1, Math.max(0, (k - 0.3) / 0.25));
       G.spr.drawChar(ctx, 'narmi', nk > 0 && nk < 1 ? 'walk' : 'rot', 'ne', tt, cx + 120 + nk * 75, top + 250 - nk * 108, 1.05);
@@ -101,7 +105,11 @@ G.intro = (() => {
       }
       if (k > 0.78) stampBox(ctx, cx + 195, top + 78, '적발!', '#d9342b', (k - 0.78) * 5);
     } else if (i === 3) {                              // ④ 위기 대응: 아낀 세금으로 원자재 비축 → 폭등 때 공방 값 그대로 / 태풍 긴급조달
-      // 왼쪽: 아낀 세금 → 원자재 상자 → 폭등
+      // 왼쪽: 아낀 세금 → 원자재 상자 → 폭등 (시험판은 비축을 꺼서 왼쪽에 보건소 긴급 계약)
+      if (G.C.STOCK === false) {
+        house(ctx, cx - 280, top + 150, 180, 80, '#7fb8a4', '#3f6f60', '보건소');
+        if (k > 0.3) { const bx = cx - 232, by = top + 30; ctx.fillStyle = '#d9342b'; ctx.fillRect(bx, by - 14, 56, 14); ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('긴급 ×2', bx + 28, by - 7); ctx.fillStyle = '#fffdf6'; ctx.fillRect(bx, by, 84, 90); ctx.strokeStyle = '#e5533d'; ctx.lineWidth = 3; ctx.strokeRect(bx + 1.5, by + 1.5, 81, 87); ctx.lineWidth = 1; G.icons.draw(ctx, 'kit', bx + 42, by + 28, 34); T(ctx, '구급상자', bx + 42, by + 56, 12, '#2a2416'); T(ctx, '예정 9만', bx + 42, by + 72, 12, '#6a5a3a'); }
+      } else {
       ctx.fillStyle = '#1e2a3a'; ctx.fillRect(cx - 330, top + 6, 120, 30); T(ctx, '아낀 세금', cx - 300, top + 21, 12, '#8fa3b8'); T(ctx, Math.max(3, 12 - Math.min(3, Math.floor(k * 8)) * 3) + '만원', cx - 238, top + 21, 12, '#9be37a');
       const crates = Math.min(3, Math.floor(k * 8));
       for (let j = 0; j < 3; j++) { const x = cx - 300 + j * 26, y = top + 120; if (j < crates) { G.events.crate(ctx, x, y); G.events.crate(ctx, x + 6, y - 12); } else { ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.strokeRect(x + .5, y + .5, 13, 11); } }
@@ -116,6 +124,7 @@ G.intro = (() => {
           ctx.fillStyle = lc; ctx.fillRect(x, top + 226, 160, 16); T(ctx, lab, x + 80, top + 234, 12, '#fff');
         }
       }
+      }
       // 오른쪽: 태풍 → 긴급조달 (긴급 계약 ×2)
       ctx.save(); ctx.beginPath(); ctx.rect(cx + 10, top - 20, 330, 300); ctx.clip();
       ctx.fillStyle = 'rgba(20,32,60,.35)'; ctx.fillRect(cx + 10, top - 20, 330, 300);
@@ -129,7 +138,8 @@ G.intro = (() => {
         G.icons.draw(ctx, 'helmet', bx + 42, by + 28, 34); T(ctx, '안전모', bx + 42, by + 56, 12, '#2a2416'); T(ctx, '예정 7만', bx + 42, by + 72, 12, '#6a5a3a');
       }
       if (k > 0.55) stampBox(ctx, cx + 175, top + 128, '긴급조달!', '#0f8a96', (k - 0.55) * 5);
-      G.spr.drawChar(ctx, 'dali', 'walk', 'e', tt, cx + 40 + Math.min(1, k * 1.4) * 60, top + 262, 1.0);
+      if (G.C.CONNECT) G.connect.vehicle(ctx, cx + 40 + Math.min(1, k * 1.4) * 60, top + 262, 1, 'helmet', false, tt);
+      else G.spr.drawChar(ctx, 'dali', 'walk', 'e', tt, cx + 40 + Math.min(1, k * 1.4) * 60, top + 262, 1.0);
     } else if (i === 4) {                              // ⑤ 조달관 5대 임무 (missions.js)
       const K = G.soft;
       G.missions.LIST.forEach((m, j) => {
@@ -181,9 +191,9 @@ G.intro = (() => {
   }
   const CAPS = [
     ['마을이 계약 조건과 함께 주문해요', '나라장터 주문 카드 맨 아래 별 = 꼭 지켜야 할 품질 조건이에요'],
-    ['조건을 맞추는 곳 중 가성비를 골라요', '제일 싼 곳이 정답은 아니에요 · ✔ 없는 새 공방은 눌러서 나르미가 실사해요'],
-    ['검수 합격! 브로커는 막고, 새싹은 키워요', '브로커는 눌러서 적발 · 3명 잡으면 AI 조사 · 새싹 공방을 사 주면 혁신제품으로'],
-    ['위기 대응: 비축과 긴급조달', '아낀 세금으로 원자재를 쌀 때 비축 · 태풍이 오면 긴급 계약을 빨리 해결해요'],
+    ['카드를 누르고, 맞는 공방을 눌러 계약!', '조건을 맞춘 곳 중 가장 싼 곳이 가성비 · ✔ 없는 새 공방은 눌러서 나르미가 실사해요'],
+    ['납품은 자동! 브로커는 막고, 새싹은 키워요', '납품이 끝나기 전에 브로커를 눌러 적발 · 3명 잡으면 AI 조사 · 새싹과 계약하면 혁신제품으로'],
+    ['위기 대응: 긴급조달', '태풍이 오면 긴급 계약(점수 ×2)을 먼저 해결해요'],
     ['조달관 5대 임무', '다섯 가지를 모두 해내면 S등급! 화면 위 임무 칸에 도장이 찍혀요'],
   ];
   // 2026-11-03 타이틀·결과와 같은 톤: 일러스트 배경 + 둥근 장면 액자 + 스티커 제목 + 크림색 설명 알약

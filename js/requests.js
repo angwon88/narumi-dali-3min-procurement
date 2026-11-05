@@ -68,7 +68,7 @@ G.requests = (() => {
         const qs = S.shops.filter(sh => sh.cat === 'furn').map(sh => sh.q.desk).sort();
         spawn(S, { vid: 'school', item: 'desk', minQ: qs[0] < 2 && qs[1] >= 2 ? 2 : 0 });
         S.firstReqDone = true; S.reqClock = S.reqInterval || C.REQ_INTERVAL;
-        G.narmi.say('계약 조건부터 확인! 품질 별을 봐요', 2.6);
+        G.narmi.say(C.CONNECT ? '계약 카드를 누르고, 조건에 맞는 공방을 눌러요!' : '계약 조건부터 확인! 품질 별을 봐요', 2.6);
       }
     } else {
       S.reqClock -= dt;
@@ -80,7 +80,7 @@ G.requests = (() => {
     for (const r of S.requests) {
       r.t += dt; if (r.failT != null) r.failT += dt;
       if (r.state === 'open') {
-        r.left -= dt;
+        if (!r.ship) r.left -= dt;                                    // 계약 연결: 납품 중에는 계약 시간이 멈춤
         if (r.left <= 0) { r.left = 0; r.state = 'expired'; S.stats.reqExpired++; onExpire(S, r); }
       } else r.endT += dt;
     }
@@ -208,16 +208,20 @@ G.requests = (() => {
       const r = same.find(q => b.q >= q.minQ) || same[0];
       if (!r) continue;
       d.bag.splice(i--, 1);
-      const ok = b.realQ >= r.minQ;
-      S.checks.push({ x: r.vill.yard.x + r.vill.yard.w / 2, y: r.vill.yard.y - 128, minQ: r.minQ, q: b.q, realQ: b.realQ, ok, fake: b.fake, t: 0 });
-      if (b.fake) { fraud(S, r, b); continue; }
-      if (!ok) { qualityFail(S, r, b); continue; }
-      if ((b.innov || b.sprout) && trial(S, r, b)) continue;      // 혁신·새싹 시범 사용: '보완 필요'면 요청은 그대로 남음 (구매면책)
-      r.state = 'done';
-      S.stats.passed = (S.stats.passed || 0) + 1;
-      G.score.delivered(S, r, b);
+      settle(S, r, b);
     }
   }
+  // 물건이 마을에 도착: 검수 → 점수 (달이 납품·계약 연결 수레가 함께 씀)
+  function settle(S, r, b) {
+    const ok = b.realQ >= r.minQ;
+    S.checks.push({ x: r.vill.yard.x + r.vill.yard.w / 2, y: r.vill.yard.y - 128, minQ: r.minQ, q: b.q, realQ: b.realQ, ok, fake: b.fake, t: 0 });
+    if (b.fake) { fraud(S, r, b); return; }
+    if (!ok) { qualityFail(S, r, b); return; }
+    if ((b.innov || b.sprout) && trial(S, r, b)) return;          // 혁신·새싹 시범 사용: '보완 필요'면 요청은 그대로 남음 (구매면책)
+    r.state = 'done';
+    S.stats.passed = (S.stats.passed || 0) + 1;
+    G.score.delivered(S, r, b);
+  }
 
-  return { init, update, spawn, active, ofVillage, deliver, stolen };
+  return { init, update, spawn, active, ofVillage, deliver, settle, stolen };
 })();

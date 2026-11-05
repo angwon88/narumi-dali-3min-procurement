@@ -33,6 +33,10 @@ G.levelup = (() => {
     health: { product: '스마트 주문판',    icon: 'board',   effect: '모든 계약 시간 +20%',    apply: S => { S.limitMult *= 1.2; S.smartBoard = true; for (const r of G.requests.active(S)) { r.limit *= 1.2; r.left *= 1.2; } } },
     safety: { product: '전동 킥보드',      icon: 'scooter', effect: '이동 속도 +35%', apply: S => { S.speedMult *= 1.35; S.scooter = true; } },
   };
+  if (C.CONNECT) {                                                     // 계약 연결: 걷기·가방이 없어 보상을 납품 쪽으로
+    Object.assign(INNOV.safety, { product: '전기 납품 트럭', icon: 'truck', effect: '납품 속도 +35%', apply: S => { S.shipMult *= 1.35; S.truck = true; } });
+    Object.assign(INNOV.furn, { product: '물류 창고', icon: 'depot', effect: '공방 동시 납품 +1건', apply: S => { S.slotBonus += 1; } });
+  }
   function innovCard(S) {
     const cand = S.shops.filter(sh => G.shops.isOpen(S, sh) && !sh.fake && !sh.innov && !S.innovCats.has(sh.cat));
     if (!cand.length) return null;
@@ -104,6 +108,8 @@ G.levelup = (() => {
       case 'talk': R(-18, -14, 36, 22); R(-10, 8, 6, 6); ctx.fillStyle = col; R(-12, -6, 6, 4); R(-2, -6, 6, 4); R(8, -6, 4, 4); break;
       case 'book': R(-16, -14, 32, 28); ctx.fillStyle = col; R(-1, -14, 2, 28); R(-12, -8, 9, 2); R(4, -8, 9, 2); R(-12, -2, 9, 2); R(4, -2, 9, 2); break;
       case 'coin': ctx.beginPath(); ctx.arc(cx, cy, 16, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = col; R(-2, -10, 4, 20); R(-8, -6, 16, 3); R(-8, 3, 16, 3); break;
+      case 'truck': R(-18, -10, 22, 18); R(6, -4, 12, 12); ctx.fillStyle = col; R(9, -1, 6, 4); ctx.fillStyle = '#fffdf6'; R(-14, 10, 7, 7); R(7, 10, 7, 7); break;
+      case 'depot': R(-18, -4, 36, 20); R(-14, -9, 28, 5); R(-8, -14, 16, 5); ctx.fillStyle = col; R(-8, 4, 16, 12); ctx.fillStyle = '#fffdf6'; R(-8, 8, 16, 2); break;
       case 'cart': R(-16, -8, 28, 14); R(10, -14, 3, 10); ctx.fillStyle = col; R(-12, -4, 20, 6); ctx.fillStyle = '#fffdf6'; R(-14, 8, 6, 6); R(4, 8, 6, 6); break;
       case 'board': R(-14, -18, 28, 32); ctx.fillStyle = col; R(-10, -14, 20, 4); R(-10, -6, 14, 3); R(-10, 0, 18, 3); R(-10, 6, 10, 3); break;
       case 'box': R(-16, -10, 32, 22); ctx.fillStyle = col; R(-16, -4, 32, 3); ctx.fillStyle = '#e2433b'; R(-2, -16, 4, 6); R(-6, -18, 12, 3); break;

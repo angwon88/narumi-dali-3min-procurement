@@ -89,7 +89,7 @@ G.ui = (() => {
     else if (r.t < 0.25) sc = 0.6 + 1.6 * r.t;                          // 등장: 톡 튀어나옴
     ctx.save(); ctx.globalAlpha = a;
     ctx.translate(b.x + b.w / 2, b.y + b.h / 2 + dy); ctx.scale(sc, sc); ctx.translate(-b.w / 2, -b.h / 2);
-    const danger = r.state === 'open' && f <= 0.25 && Math.floor(r.t * 4) % 2 === 0;
+    const danger = r.state === 'open' && !r.ship && f <= 0.25 && Math.floor(r.t * 4) % 2 === 0;
     ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(2, 3, b.w, b.h);
     ctx.fillStyle = r.state === 'expired' ? '#ffd6d0' : '#fffdf6'; ctx.fillRect(0, 0, b.w, b.h);
     ctx.fillStyle = danger ? '#e5533d' : r.urgent ? '#e5533d' : '#3a3a3a';           // 테두리
@@ -100,7 +100,7 @@ G.ui = (() => {
     const vt = G.S && G.S.vstate && G.S.vstate[r.vid] ? G.S.vstate[r.vid].tier : 0;   // 단장한 마을의 계약: 탭 오른쪽에 별 (시간 넉넉)
     if (vt) { for (let i = 0; i < vt; i++) G.icons.stars(ctx, b.w - 12 - i * 10, -11, 1, 1, 1); }
     if (r.state === 'open' && G.S && G.S.smartBoard) { ctx.lineWidth = 2; ctx.strokeStyle = '#2e9b3a'; ctx.beginPath(); ctx.arc(cx, cy, 19.5, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 4; }   // 스마트 주문판: 계약 시간 +20%
-    if (r.state === 'open') { ctx.strokeStyle = ringColor(f); ctx.beginPath(); ctx.arc(cx, cy, 16, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f); ctx.stroke(); }
+    if (r.state === 'open') { const pf = r.ship ? r.ship.p : f; ctx.strokeStyle = r.ship ? '#2f6fb5' : ringColor(f); ctx.beginPath(); ctx.arc(cx, cy, 16, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pf); ctx.stroke(); }   // 납품 중: 파란 고리 = 납품 진행
     ctx.lineWidth = 1;
     if (!r.fraud) G.icons.draw(ctx, r.item, cx, cy, 26);
     ctx.font = '12px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = '#2a2416'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(G.ITEM[r.item].name, cx, 44);
@@ -111,8 +111,8 @@ G.ui = (() => {
     const sw = r.minQ * 16 - 2, tx = r.minQ < 3 ? 22 : 0, sx = Math.round(b.w / 2 - (sw + tx) / 2);
     G.icons.stars(ctx, sx, 66, r.minQ, r.minQ, 2);
     if (r.minQ < 3) T(ctx, '이상', sx + sw + 13, 73, 12, '#fff');
-    ctx.fillStyle = r.urgent ? '#d9342b' : '#2f4f8a'; ctx.fillRect(0, -11, 44, 11);   // '나라장터' 탭 (전자조달 주문) / 태풍 '긴급 ×2'
-    ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(r.urgent ? '긴급 ×2' : '나라장터', 22, -5);
+    ctx.fillStyle = r.ship ? '#2e9b3a' : r.urgent ? '#d9342b' : '#2f4f8a'; ctx.fillRect(0, -11, 44, 11);   // '나라장터' 탭 (전자조달 주문) / 태풍 '긴급 ×2'
+    ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(r.ship ? '납품 중' : r.urgent ? '긴급 ×2' : '나라장터', 22, -5);
     if (r.fraud) {                                                   // 미납: 빈 상자 / 불량: 부서진 상자
       ctx.fillStyle = '#c9a26b'; ctx.fillRect(cx - 9, cy - 2, 18, 11); ctx.fillStyle = '#a07f4f'; ctx.fillRect(cx - 9, cy - 2, 18, 2);
       if (r.fraud === 'empty') { ctx.fillStyle = '#5a4630'; ctx.fillRect(cx - 7, cy, 14, 7); ctx.fillStyle = '#c9a26b'; ctx.fillRect(cx - 12, cy - 8, 8, 3); ctx.fillRect(cx + 4, cy - 8, 8, 3); }

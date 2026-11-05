@@ -209,7 +209,7 @@ G.result = (() => {
       paper: ['적발 ' + (s.caught || 0) + '곳', '실사 ' + ((s.certified || 0) + (s.caught || 0)) + '번'],
       broker: ['차단 ' + stop + '번', s.brokerWon ? '뺏긴 계약 ' + s.brokerWon + '건' : '한 번도 안 뺏김!'],
       sprout: ['혁신제품 ' + (s.innov || 0) + '곳', '새싹 실적 ' + (s.sproutBuy || 0) + ' · 공방 성장 ' + (s.shopGrow || 0)],
-      prep: ['대응 ' + ((s.prepared || 0) + (s.urgentDone || 0)) + '번', '긴급 해결 ' + (s.urgentDone || 0) + ' · 비축 방출 ' + (s.released || 0)],
+      prep: ['대응 ' + ((s.prepared || 0) + (s.urgentDone || 0)) + '번', '긴급 해결 ' + (s.urgentDone || 0) + (G.C.STOCK === false ? '' : ' · 비축 방출 ' + (s.released || 0))],
     };
     const mk = G.missions.count(S);
     J(ctx, mk === 5 ? '★ 5대 임무 완수! 완벽한 조달관 ★' : '조달관 5대 임무 ' + mk + '/5', W / 2, cy - 13, 15, mk === 5 ? '#ffe45a' : '#fff6dc', { stroke: [['rgba(40,28,10,.6)', 4]] });

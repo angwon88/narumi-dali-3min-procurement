@@ -26,6 +26,7 @@ G.events = (() => {
   const stockOpen = S => !S.surge && !S.surgeDone;
   const matPrice = S => forecasting(S) ? C.MAT_PRICE_FORECAST : C.MAT_PRICE;
   function stockUpdate(S, dt) {
+    if (C.STOCK === false) return;
     const d = G.dali, inZ = G.U.inRect(d.x, d.y, ZONE);
     if (!inZ) { S.stockDwell = 0; S.stockWarned = false; return; }
     const why = !stockOpen(S) ? '원자재 가격이 이미 올랐어요' : S.stock >= C.STOCK_MAX ? '비축 창고가 가득 찼어요 (3/3)' : S.saved < matPrice(S) ? '아낀 세금이 모자라요 (' + S.saved + '만원 · 1상자 ' + matPrice(S) + '만원)' : null;
@@ -114,7 +115,7 @@ G.events = (() => {
     if (!S.openVillages.has(vid) || !S.openCats.has(G.ITEM[item].cat)) return null;
     const mine = G.requests.ofVillage(S, vid);
     let r = mine.length < C.MAX_REQ_PER_VILLAGE ? G.requests.spawn(S, { vid, item, urgent: true }) : null;
-    if (!r) r = mine.filter(q => !q.urgent && !q.broker).sort((a, b) => b.left - a.left)[0];
+    if (!r) r = mine.filter(q => !q.urgent && !q.broker && !q.ship).sort((a, b) => b.left - a.left)[0];
     if (!r) return null;
     r.urgent = true; r.limit = r.left = C.STORM.limit; r.t = 0;
     return r;
@@ -161,6 +162,7 @@ G.events = (() => {
     ctx.fillStyle = '#c0c6cc'; ctx.fillRect(x + 3, y + 6, 8, 3);    // 금속 덩어리
   }
   function drawWorld(ctx, S) {
+    if (C.STOCK === false) return;                                     // 시험판: 비축칸·창고·시세판 숨김
     // 비축칸
     // 비축칸 (2026-11-03): 폭등 전에는 언제든 비축 예산으로 원자재 구입. 예보 때는 진하게 깜빡이며 재촉
     const z = ZONE, can = stockOpen(S) && S.stock < C.STOCK_MAX && S.saved >= matPrice(S), PREP = G.missions.BY.prep.col;

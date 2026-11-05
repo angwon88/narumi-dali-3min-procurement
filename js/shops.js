@@ -50,7 +50,7 @@ G.shops = (() => {
   // 이 요청 조건을 맞추는 공방 중 가장 싼 값 (가성비 판정용, 표시 품질 기준)
   function bestPrice(S, item, minQ) {
     let best = Infinity;
-    for (const sh of S.shops) if (isOpen(S, sh) && !sh.fake && sh.q[item] >= minQ) best = Math.min(best, price(sh, item));   // 수상한 공방은 비교 대상 아님
+    for (const sh of S.shops) if (isOpen(S, sh) && !sh.fake && sh.q[item] >= minQ && !(C.CONNECT && !G.connect.hasSlot(S, sh))) best = Math.min(best, price(sh, item));   // 수상한 공방은 비교 대상 아님
     return best;
   }
   const isOpen = (S, sh) => sh.status === 'open' && S.openCats.has(sh.cat);
@@ -126,7 +126,7 @@ G.shops = (() => {
     return sh;
   }
   G.director.on('sprout', S => { spawnSprout(S); });
-  G.director.on('tipStock', S => !S.hard && G.narmi.say('아낀 세금으로 원자재를 쌀 때 사 둬요! (조달청 아래 비축칸)', 3.2));
+  G.director.on('tipStock', S => !S.hard && C.STOCK !== false && G.narmi.say('아낀 세금으로 원자재를 쌀 때 사 둬요! (조달청 아래 비축칸)', 3.2));
   G.director.on('tipReg', S => !S.hard && G.narmi.say('지붕의 ✔ = 나라장터 등록 업체! 등록된 곳과만 계약해요', 3.2));
   // 실적을 다 채우면 혁신제품 지정: 혁신 공방(성공 판정 상태)으로, 품질 +1, 업종별 혁신제품 효과
   function graduate(S, sh) {
@@ -161,13 +161,15 @@ G.shops = (() => {
     const prep = itemsOf(sh).find(it => S.prep && S.prep.has(it.id));     // 예보 중: 대비 물건은 요청 없이도 삼
     return prep ? { item: prep.id, r: null } : null;
   }
-  function buy(S, sh, item, r) {
+  function buy(S, sh, item, r) { G.dali.bag.push(order(S, sh, item, r)); }
+  // 값을 치르고 물건 정보를 돌려줌 (달이 가방·계약 연결 수레가 함께 씀)
+  function order(S, sh, item, r) {
     const p = price(sh, item);
     const prep = !r;
     // 가성비 판정은 '산 순간' 기준: 이 요청 조건을 맞춘 공방 중 가장 싼 곳이었나 (조건 미달이면 null)
     const fits = r && sh.q[item] >= r.minQ;
     const best = fits && !sh.sprout ? p <= bestPrice(S, item, r.minQ) + 0.05 : undefined;   // 새싹 공방 구매는 가성비 대신 '투자'
-    G.dali.bag.push({ item, paid: p, shop: sh.idx, fake: sh.fake, innov: sh.innov, sprout: sh.sprout, prep, q: sh.q[item], realQ: realQ(sh, item), best, forReq: r ? r.id : null });
+    const bought = { item, paid: p, shop: sh.idx, fake: sh.fake, innov: sh.innov, sprout: sh.sprout, prep, q: sh.q[item], realQ: realQ(sh, item), best, forReq: r ? r.id : null };
     G.audio.play('buy');   // 수상한 물건도 겉보기는 같다
     if (!sh.fake) { sh.sales += p; while (sh.tier < C.SHOP_TIER.length && sh.sales >= C.SHOP_TIER[sh.tier]) growShop(S, sh); }
     S.stats.bought = (S.stats.bought || 0) + 1;
@@ -175,6 +177,7 @@ G.shops = (() => {
     G.fx.add(S, d.x + d.w / 2, d.y - 6, G.ITEM[item].name + ' 계약 ' + p + '만원', '#fff');
     if (sh.fake && sh.closeT === 0) sh.closeT = 0.0001;                  // 3초 뒤 사라짐
     compete(S, sh);
+    return bought;
   }
   // ---------- 공방 성장 (2026-11-03): 누적 판매로 작업장 → 공장 ----------
   function growShop(S, sh) {
@@ -204,6 +207,7 @@ G.shops = (() => {
     } else if (st.n >= S.streakWarn) p.lonely = true;
   }
   function updateBuy(S, dt) {
+    if (C.CONNECT) return;                                           // 계약 연결: 달이는 사지 않음
     const dali = G.dali, B = S.buy;
     const sh = S.shops.find(s => isOpen(S, s) && U.inRect(dali.x, dali.y, s.w.door)) || null;
     if (sh !== B.shop) { B.shop = sh; B.dwell = 0; B.warned = false; }
@@ -265,7 +269,7 @@ G.shops = (() => {
   }
   // 부정 낙찰: 방치된 수상한 공방이 그 업종 요청 하나를 따내고 납품하지 않은 채 사라짐 (요청이 없으면 생길 때까지 기다림)
   function bidRig(S, sh) {
-    const r = G.requests.active(S).filter(q => G.ITEM[q.item].cat === sh.cat).sort((a, b) => a.left - b.left)[0];
+    const r = G.requests.active(S).filter(q => G.ITEM[q.item].cat === sh.cat && !q.ship).sort((a, b) => a.left - b.left)[0];   // 납품 중 계약은 건드리지 않음
     if (!r) { sh.bidT = 0.5; return; }
     G.requests.stolen(S, r, sh);
     sh.status = 'closing'; sh.closeT = 0; sh.closeWhy = 'scam';
@@ -425,7 +429,7 @@ G.shops = (() => {
   function needMap(S) {
     if (needAt === S.elapsed && needMemo) return needMemo;
     const m = {};
-    for (const r of G.requests.active(S)) (m[r.item] = m[r.item] || { n: 0, minQ: 9 }).n++, m[r.item].minQ = Math.min(m[r.item].minQ, r.minQ);
+    for (const r of G.requests.active(S)) if (!r.ship) (m[r.item] = m[r.item] || { n: 0, minQ: 9 }).n++, m[r.item].minQ = Math.min(m[r.item].minQ, r.minQ);
     for (const b of G.dali.bag) if (m[b.item]) m[b.item].n--;
     needAt = S.elapsed; return (needMemo = m);
   }
@@ -601,7 +605,7 @@ G.shops = (() => {
       chimney(ctx, sh);
       windowView(ctx, sh);
       priceTag(ctx, S, sh);
-      if (sh.status === 'open') doorMat(ctx, S, sh);
+      if (sh.status === 'open' && !C.CONNECT) doorMat(ctx, S, sh);
       if (sh.status === 'closing') {               // 속인 뒤: 셔터 + 폐업 팻말
         shutter(ctx, b, Math.min(1, sh.closeT / 0.4), '');
         ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + b.w / 2 - 34, b.y + 34, 68, 20);
@@ -659,11 +663,11 @@ G.shops = (() => {
   function drawHover(ctx, S) {
     const m = G.input.mouse; if (m.x < 0) { G.canvas.style.cursor = ''; return; }
     const sh = shopAt(S, m);
-    G.canvas.style.cursor = sh || G.broker.hit(S, m) ? 'pointer' : '';
+    G.canvas.style.cursor = sh || G.broker.hit(S, m) || (C.CONNECT && G.requests.active(S).some(r => U.inRect(m.x, m.y, G.ui.bubbleRect(r)))) ? 'pointer' : '';
     if (!sh) return;
     const b = sh.w.body, ok = !whyNot(S, sh);
     ctx.strokeStyle = ok ? '#ffd84a' : 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
     ctx.strokeRect(b.x - 3, b.y - 3, b.w + 6, b.h + 6); ctx.setLineDash([]); ctx.lineWidth = 1;
   }
-  return { spawnSprout, graduate, bestPrice, bestFor, drawDoorInfo, certified, request, whyNot, makeInnov, init, update, draw, drawHover, price, isOpen, rollRow, opened, inspected, handleInspectInput, shopAt, spawnFake, newShop };
+  return { order, spawnSprout, graduate, bestPrice, bestFor, drawDoorInfo, certified, request, whyNot, makeInnov, init, update, draw, drawHover, price, isOpen, rollRow, opened, inspected, handleInspectInput, shopAt, spawnFake, newShop };
 })();

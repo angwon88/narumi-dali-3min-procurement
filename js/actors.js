@@ -110,7 +110,7 @@ G.dali = {
   },
   // 머리 위: 가방 칸 + 구매 게이지 (캐릭터 위에 그려야 해서 따로)
   drawOver(ctx, S) {
-    const cap = S.bagCap, sz = 22, gap = 2, w = cap * sz + (cap - 1) * gap;
+    const cap = G.C.CONNECT ? 0 : S.bagCap, sz = 22, gap = 2, w = cap * sz + (cap - 1) * gap;
     const x0 = Math.round(this.x - w / 2), y0 = Math.round(this.y - 72);
     for (let i = 0; i < cap; i++) {
       const x = x0 + i * (sz + gap);

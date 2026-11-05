@@ -29,7 +29,11 @@ G.broker = (() => {
   // (2026-11-02 조정: 페이퍼컴퍼니 공방에 들르게 했더니 공방 실사로 너무 쉽게 막혀 분리. 막는 법 = 먼저 납품 / 브로커를 눌러 적발)
   function plan(S) {
     const bk = S.bk;
-    const reqs = G.requests.active(S).filter(r => !r.broker && r.left > 8).sort((a, b) => b.price - a.price);
+    let reqs = G.requests.active(S).filter(r => !r.broker && r.left > 8).sort((a, b) => b.price - a.price);
+    if (C.CONNECT) {                                                  // 계약 연결: 경주가 되는 납품 중 계약을 먼저, 없으면 체결 전 카드
+      const open = G.requests.active(S).filter(r => !r.broker).sort((a, b) => b.price - a.price);
+      reqs = open.filter(r => r.ship && G.connect.secLeft(S, r) >= C.CONNECT_BROKER_MIN).concat(open.filter(r => !r.ship && r.left > 8));
+    }
     for (const r of reqs) {
       const yx = r.vill.yard.x + r.vill.yard.w / 2;
       // 2026-11-03: 가장자리 마을(학교·도서관)은 달릴 거리가 짧아 알아챌 틈이 없었음 → 먼저 화면 끝에 나타나 BROKER_GRAB초 두리번(이때도 잡을 수 있음)
@@ -113,6 +117,7 @@ G.broker = (() => {
   }
   // 부정 납품: 그 계약은 불량품으로 실패
   function dumpGoods(S, r) {
+    if (r.ship) G.connect.cancel(S, r);                               // 계약 연결: 달리던 수레는 취소
     r.state = 'expired'; r.fraud = 'broken'; r.broker = false;
     S.stats.brokerWon++;
     G.score.trust(S, C.TRUST_BROKER); G.score.breakCombo(S);
@@ -260,5 +265,5 @@ G.broker = (() => {
     ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('브로커!', b.w - 22, -5);
     ctx.strokeStyle = blink ? '#e5533d' : 'rgba(229,83,61,.5)'; ctx.lineWidth = 2; ctx.strokeRect(-2, -2, b.w + 4, b.h + 4); ctx.lineWidth = 1;
   }
-  return { init, update, draw, drawSanction, hit, request, caught, bubbleMark, raccoon, face };
+  return { init, update, draw, drawSanction, pathTo, hit, request, caught, bubbleMark, raccoon, face };
 })();

@@ -6,6 +6,7 @@
 window.PlayBot = {
   // 한 프레임의 판단과 이동 (2026-11-04 분리: 시연 영상 녹화에서도 씀). st = { mode } 상태를 프레임 사이에 유지
   tick(S, opt = {}, st = {}) {
+    if (G.C.CONNECT) return this.tickConnect(S, opt, st);
     const { avoidFake = true, speed = 1, inspect = false, quality = true, chase = true, sprout = true, stock = true } = opt;
     const d = G.dali, DT = 1 / 60;
     st.mode = st.mode || 'buy'; let target = null;
@@ -45,6 +46,29 @@ window.PlayBot = {
       if (dist > stp) { d.x += dx / dist * stp; d.y += dy / dist * stp; d.moving = true; d.face = G.spr.dir8(dx, dy); } else { d.x = target.x; d.y = target.y; d.moving = false; }
     } else d.moving = false;
   },
+  // 계약 연결 조작 (2026-11-06): 카드 선택 → 공방 터치. 걷지 않으므로 speed는 '계약 한 건 판단 시간'으로 바꿔 씀(0.7 → 1.2초, 0.45 → 1.87초). bkDelay: 브로커 알아채는 시간(초)
+  tickConnect(S, opt = {}, st = {}) {
+    const { avoidFake = true, speed = 0.7, inspect = false, chase = true, sprout = true, bkDelay = 0 } = opt, DT = 1 / 60;
+    G.dali.moving = false;
+    const suspicious = sh => Object.keys(sh.mults).some(id => sh.q[id] === 3 && sh.mults[id] < 0.6);
+    const bk = S.bk, live = bk && (bk.state === 'run' || bk.state === 'grab');
+    st.bkT = live ? (st.bkT || 0) + DT : 0;
+    if (chase && live && st.bkT >= bkDelay && S.inspectCD <= 0 && !G.narmi.busy()) G.broker.request(S);
+    else if (inspect && S.inspectCD <= 0 && !G.narmi.busy()) {
+      const need = new Set(G.requests.active(S).map(r => G.ITEM[r.item].cat));
+      const pick = S.shops.filter(s => !G.shops.whyNot(S, s)).sort((a, b) => (suspicious(b) - suspicious(a)) || (need.has(b.cat) - need.has(a.cat)))[0];
+      if (pick) G.shops.request(S, pick);
+    }
+    if ((st.think = (st.think || 0) - DT) > 0) return;
+    const cards = G.requests.active(S).filter(r => !r.ship).sort((a, b) => a.left - b.left);
+    for (const r of cards) {
+      const cand = S.shops.filter(s => G.shops.isOpen(S, s) && !(avoidFake && suspicious(s)) && G.connect.fit(S, s, r) === 'ok');
+      const sh = (sprout && cand.find(s => s.sprout)) || cand.sort((a, b) => G.shops.price(a, r.item) - G.shops.price(b, r.item))[0];
+      if (!sh) continue;
+      S.sel = r; G.connect.tapShop(S, sh); st.think = 0.84 / speed;
+      return;
+    }
+  },
   run(opt = {}) {
     const { until = 999 } = opt;   // until: 이 시간(초)까지만 진행
     G.screens.newGame(); const S = G.S, DT = 1 / 60; G.screen = 'pause';
@@ -55,7 +79,7 @@ window.PlayBot = {
       while (S.pendingLevels > 0) { G.levelup.open(S); G.levelup.choose(S, S.offer[0]); G.screen = 'pause'; }
     }
     const st2 = S.stats;
-    return { 배달: S.delivered, 불합격: st2.qFail || 0, 가성비: st2.valueBest || 0, 가성비놓침: st2.valueMiss || 0, 놓침: st2.reqExpired, 속음: (st2.scammed || 0) + (st2.stolen || 0), 적발: st2.caught || 0, 검증: S.data, 데이터단계: S.dataLv, 만료: st2.certExpired || 0, 요청: st2.reqMade, 점수: S.score, 신뢰: Math.round(S.trust), 아낀세금: S.saved, 낭비: S.wasted, 레벨: S.level, 선물: (S.gifts || []).length, 최대콤보: S.maxCombo || 0, 브로커승: st2.brokerWon || 0, 브로커막음: st2.brokerBlocked || 0, 브로커적발: st2.brokerCaught || 0, 새싹: st2.sprouts || 0, 필살기: st2.ult || 0, 새싹실적: st2.sproutBuy || 0, 혁신지정: st2.innov || 0 };
+    return { 배달: S.delivered, 불합격: st2.qFail || 0, 가성비: st2.valueBest || 0, 가성비놓침: st2.valueMiss || 0, 놓침: st2.reqExpired, 속음: (st2.scammed || 0) + (st2.stolen || 0), 적발: st2.caught || 0, 검증: S.data, 데이터단계: S.dataLv, 만료: st2.certExpired || 0, 요청: st2.reqMade, 점수: S.score, 신뢰: Math.round(S.trust), 아낀세금: S.saved, 낭비: S.wasted, 레벨: S.level, 선물: (S.gifts || []).length, 최대콤보: S.maxCombo || 0, 브로커승: st2.brokerWon || 0, 브로커막음: st2.brokerBlocked || 0, 브로커적발: st2.brokerCaught || 0, 새싹: st2.sprouts || 0, 필살기: st2.ult || 0, 수레취소: st2.shipStolen || 0, 긴급: st2.urgentDone || 0, 새싹실적: st2.sproutBuy || 0, 혁신지정: st2.innov || 0 };
   },
   avg(opt, n = 5) {
     const rs = []; for (let i = 0; i < n; i++) rs.push(this.run(opt));

@@ -8,7 +8,7 @@ G.screens = (() => {
 
   function newGame() {
     G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, floats: [], bagCap: C.BAG_START, scoreMult: 1, hard: !!G.settings.hard };   // 하드 모드는 판 시작 때 고정
-    G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S); G.gifts.init(G.S); G.events.init(G.S); G.broker.init(G.S); G.missions.init(G.S); G.ult.init(G.S);
+    G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S); G.gifts.init(G.S); G.events.init(G.S); G.connect.init(G.S); G.broker.init(G.S); G.missions.init(G.S); G.ult.init(G.S);
     G.dali.reset(); G.narmi.reset(); G.input.reset();
     G.screen = 'play';
   }
@@ -149,7 +149,7 @@ G.screens = (() => {
     if (ultTipOn || ui.hover(BTN_ULT) || ui.hover(BTN_ULTQ)) ui.tip(ctx, BTN_ULTQ.x - 170, BTN_ULT.y + BTN_ULT.h + 6, ui.ULT_TIP);
     const hk = G.settings.hard ? '_hard' : '', best = G.store.get('best' + hk, 0);
     if (best) J(ctx, (hk ? '하드 ' : '') + '최고 점수 ' + best + ' · 최고 등급 ' + G.store.get('bestGrade' + hk, '-'), W - 18, H - 18, 15, '#fff3b0', { align: 'right', stroke: [['rgba(40,28,10,.55)', 4]] });
-    J(ctx, '터치·클릭으로 이동 · Space 브로커 · Enter 시작 · M 소리', LX, 515, 14, '#fff', { stroke: [['rgba(40,28,10,.5)', 4]] });
+    J(ctx, C.CONNECT ? '카드 → 공방을 눌러 계약 · Space 브로커 · Enter 시작 · M 소리' : '터치·클릭으로 이동 · Space 브로커 · Enter 시작 · M 소리', LX, 515, 14, '#fff', { stroke: [['rgba(40,28,10,.5)', 4]] });
     if (G.VERSION) T(ctx, G.VERSION, 10, H - 9, 12, 'rgba(255,255,255,.6)', 'left');
     if (G.input.hit('m')) G.audio.toggle();
   }
@@ -172,6 +172,7 @@ G.screens = (() => {
     S.timeLeft -= dt; S.elapsed += dt;
     G.director.update(S, dt);
     G.requests.update(S, dt);
+    G.connect.update(S, dt);
     G.narmi.update(dt, S);
     G.broker.update(S, dt);
     G.missions.update(S, dt);
@@ -226,6 +227,7 @@ G.screens = (() => {
     ctx.save(); if (shake) ctx.translate(Math.round((Math.random() - 0.5) * shake), Math.round((Math.random() - 0.5) * shake));
     G.world.draw(ctx);
     G.shops.draw(ctx, G.S);
+    G.connect.drawShops(ctx, G.S);
     G.villages.draw(ctx, G.S);
     G.gifts.draw(ctx, G.S);
     G.events.drawWorld(ctx, G.S);
@@ -234,7 +236,9 @@ G.screens = (() => {
     G.narmi.draw(ctx);
     G.nav.draw(ctx);
     G.dali.draw(ctx);
+    G.connect.drawShips(ctx, G.S);
     ui.bubbles(ctx, G.S);
+    G.connect.drawOver(ctx, G.S);
     ui.checks(ctx, G.S);
     G.events.drawCallout(ctx, G.S);
     G.broker.draw(ctx, G.S);

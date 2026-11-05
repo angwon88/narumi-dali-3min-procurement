@@ -50,6 +50,7 @@ G.nav = (() => {
     for (const p of G.input.taps) {
       if (p.y < C.HUD_H) continue;                                    // HUD(일시정지 버튼 등)는 따로 처리
       if (G.broker.hit(S, p)) { G.broker.request(S); return; }
+      if (C.CONNECT && G.connect.tap(S, p)) return;                   // 계약 연결: 카드·공방·마을은 여기서, 빈 땅만 달이 이동
       const t = targetOf(S, p); if (t) { go(S, t); return; }
     }
     if (G.input.hit(' ')) {                                           // 키보드 Space = 브로커 추격 전용 (2026-11-03: 공방 실사는 직접 눌러서)
