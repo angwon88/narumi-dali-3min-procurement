@@ -23,7 +23,7 @@ G.director = (() => {
     { at: 8, hook: 'tipReg' },
     { at: 14, hook: 'tipStock' },                                  // 원자재 비축 안내                                     // 등록 업체 안내
     { at: 26, hook: 'firstFake', flag: 'fake' },   // 2분 기준 첫 수상한 공방
-    ...C.SPROUT_AT.map(at => ({ at, hook: 'sprout' })),          // 개편: 새싹 공방(스타트업) 개업                 // 첫 수상한 공방 확정 등장 (적발 기회를 늘리려고 1:00 → 0:50)
+    ...(C.CONNECT ? C.NEWSHOP_AT.map(at => ({ at, hook: 'newShop' })) : C.SPROUT_AT.map(at => ({ at, hook: 'sprout' }))),          // 개편: 새싹 공방(스타트업) 개업                 // 첫 수상한 공방 확정 등장 (적발 기회를 늘리려고 1:00 → 0:50)
     { at: C.FINAL_RUSH_AT, rush: true, banner: '최후의 20초! 브로커 조직 총출동!', sub: '점수 1.5배 · 브로커가 쉬지 않고 와요 · AI 조사로 한 번에 싹!' },
   ];
   const hooks = {};                                // 다른 작업이 등록: G.director.on('firstFake', fn)

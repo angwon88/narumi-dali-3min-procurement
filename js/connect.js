@@ -2,14 +2,19 @@
    - 체결: 카드 선택 → 공방 터치. 조건(★)·등록(실사)·납품 칸을 확인. 체결하면 계약 시간이 멈춘다
    - 납품: 공방 → 마을을 CONNECT_SHIP_SPEED로 이동(CONNECT_SHIP_SEC 범위로 맞춤). 먼 공방일수록 오래 걸림. 도착하면 기존 검수·점수(requests.settle)
    - 공방별 동시 납품: CONNECT_SLOTS[공방 단계] + 물류 창고 보상
-   - 브로커가 먼저 도착하면 납품 취소(broker.js가 cancel을 부름)
+   - 브로커는 수레를 쫓아와 닿으면 물건을 빼앗음(broker.js가 cancel을 부름)
+   - 단가계약: 직접 계약하면 같은 물건 다음 CONTRACT_AUTO건 자동 체결(값 고정). ★ 조건을 못 맞추면 직접 골라야 함
+   - 새 공방: NEWSHOP_AT에 새싹·페이퍼컴퍼니가 같은 겉모습으로 개업 → 달이가 걸어가 실사 보고서를 보고 등록/적발
    C.CONNECT가 false면 이 파일은 아무 일도 하지 않고 옛 조작(달이 이동·구매)이 그대로 돈다. */
 'use strict';
 G.connect = (() => {
   const C = G.C, U = G.U, T = (...a) => G.world.text(...a);
   const r1 = v => Math.round(v * 10) / 10;
 
-  function init(S) { S.sel = null; S.ships = []; S.shipMult = 1; S.slotBonus = 0; S.connectHint = true; }
+  function init(S) {
+    S.sel = null; S.ships = []; S.shipMult = 1; S.slotBonus = 0; S.connectHint = true; S.deals = {}; S.report = null; S.newPending = 0;
+    S.newQ = ['sprout', 'fake', ...(Math.random() < 0.5 ? ['sprout', 'fake'] : ['fake', 'sprout'])];
+  }
   const slots = (S, sh) => C.CONNECT_SLOTS[sh.tier || 0] + (S.slotBonus || 0);
   const busy = (S, sh) => S.ships.filter(s => s.shop === sh).length;
   const hasSlot = (S, sh) => busy(S, sh) < slots(S, sh);
@@ -31,11 +36,7 @@ G.connect = (() => {
     S.sel = S.sel === r ? null : r; S.connectHint = false;
     G.audio.play('ok');
   }
-  function inspect(S, sh) {                                            // 새 공방: 나르미가 실사 (쉬는 중이면 대기열)
-    if (!G.shops.whyNot(S, sh)) { G.shops.request(S, sh); return; }
-    S.wantInspect = sh; const b = sh.w.body;
-    G.fx.add(S, b.x + b.w / 2, b.y + 110, '나르미가 바빠요 · 곧 실사할게요', '#ffd6a0');
-  }
+  function inspect(S, sh) { const d = sh.w.door; G.nav.walkTo(d.x + d.w / 2, d.y + 14); }   // 새 공방: 달이가 문 앞으로 걸어가 실사
   function say(S, sh, text, col) { const b = sh.w.body; G.fx.add(S, b.x + b.w / 2, b.y + 110, text, col || '#ffd6a0'); }
   function tapShop(S, sh) {
     if (!G.shops.isOpen(S, sh)) { say(S, sh, G.shops.whyNot(S, sh) || '지금은 계약할 수 없어요'); return; }
@@ -49,9 +50,11 @@ G.connect = (() => {
     if (why === 'under') { say(S, sh, name + G.U.josa(name, '은', '는') + ' 조건 미달 (★' + r.minQ + ' 이상 필요)', '#ff8a7a'); return false; }
     if (why === 'full') { say(S, sh, '납품 중이라 더 못 받아요 (' + busy(S, sh) + '/' + slots(S, sh) + ')'); return false; }
     if (why === 'check') { inspect(S, sh); return false; }
-    launch(S, r, sh, G.shops.order(S, sh, r.item, r));
+    const bought = G.shops.order(S, sh, r.item, r);
+    launch(S, r, sh, bought);
+    S.deals[r.item] = { sh, item: r.item, left: C.CONTRACT_AUTO, price: bought.paid, best: bought.best };
     S.sel = null;
-    if (!S.firstShip) { S.firstShip = true; G.narmi.say('납품은 자동이에요! 브로커가 오면 눌러서 막아요', 2.6); }
+    if (!S.firstShip) { S.firstShip = true; G.narmi.say('단가계약! ' + name + ' 다음 ' + C.CONTRACT_AUTO + '건은 자동으로 계약돼요', 2.8); }
     return true;
   }
   function launch(S, r, sh, b) {
@@ -75,6 +78,7 @@ G.connect = (() => {
   }
   function update(S, dt) {
     if (!C.CONNECT) return;
+    spawnNew(S); autoDeals(S); updateReport(S, dt);
     if (S.sel && (S.sel.state !== 'open' || S.sel.ship)) S.sel = null;   // 고른 카드가 끝났으면 선택 해제
     for (const s of S.ships.slice()) {
       s.p = Math.min(1, s.p + dt * speedNow(S) / s.dur); place(s);
@@ -83,7 +87,109 @@ G.connect = (() => {
       G.requests.settle(S, s.r, s.b);
     }
   }
-  // 브로커가 먼저 도착: 수레 취소, 쓴 돈은 낭비
+  // ---------- 단가계약 ----------
+  function autoCovers(S, r) { const d = S.deals[r.item]; return !!d && d.sh.status === 'open' && d.sh.q[r.item] >= r.minQ; }
+  function dropDeals(S, sh) { for (const k of Object.keys(S.deals || {})) if (S.deals[k].sh === sh) delete S.deals[k]; }
+  function autoDeals(S) {
+    for (const r of G.requests.active(S)) {
+      if (r.ship || r.t < C.CONTRACT_AUTO_DELAY) continue;
+      const d = S.deals[r.item]; if (!d) continue;
+      if (d.sh.status !== 'open') { delete S.deals[r.item]; continue; }
+      if (d.sh.q[r.item] < r.minQ || !hasSlot(S, d.sh)) continue;       // 조건 미달은 직접, 칸이 없으면 대기
+      launch(S, r, d.sh, G.shops.order(S, d.sh, r.item, r, d));
+      r.auto = true; d.left--; S.stats.autoDeal = (S.stats.autoDeal || 0) + 1;
+      if (S.sel === r) S.sel = null;
+      if (d.left <= 0) {
+        delete S.deals[r.item];
+        const b = d.sh.w.body, name = G.ITEM[r.item].name;
+        G.fx.add(S, b.x + b.w / 2, b.y + 110, name + ' 단가계약 끝 · 다시 계약해요', '#ffd6a0');
+      }
+    }
+  }
+  // 말풍선 탭: [글자, 색]. 없으면 기본(나라장터·긴급)
+  function tab(S, r) {
+    if (r.state !== 'open') return null;
+    if (r.ship) return r.auto ? ['자동 납품', '#2e9b3a'] : ['납품 중', '#2e9b3a'];
+    const d = S.deals[r.item]; if (!d) return null;
+    if (d.sh.q[r.item] < r.minQ) return ['직접 계약', '#d97a00'];
+    return ['자동 대기', '#2f6fb5'];
+  }
+  // ---------- 새 공방 ----------
+  G.director.on('newShop', S => { S.newPending++; });
+  function spawnNew(S) {
+    while (S.newPending > 0 && S.newQ.length) {
+      const sh = S.newQ[0] === 'sprout' ? G.shops.spawnSprout(S) : G.shops.spawnFake(S, null, true);
+      if (!sh) return;                                                  // 자리가 없으면 다음 프레임에 다시
+      S.newQ.shift(); S.newPending--;
+      G.director.banner(S, '새 공방 개업! (' + sh.w.cat.name + ' ' + sh.w.side + ')', '눌러서 달이를 보내요 · 실사 보고서를 보고 등록 또는 적발');
+      G.audio.play('banner');
+    }
+  }
+  function updateReport(S, dt) {
+    const d = G.dali, sh = S.shops.find(s => G.shops.isOpen(S, s) && needsCheck(s) && U.inRect(d.x, d.y, s.w.door)) || null;
+    if (!sh) { S.report = null; return; }
+    if (!S.report || S.report.sh !== sh) S.report = { sh, t: sh.seenReport ? C.INSPECT_TIME : 0 };
+    S.report.t = Math.min(C.INSPECT_TIME, S.report.t + dt);
+    if (S.report.t < C.INSPECT_TIME) return;
+    sh.seenReport = true;
+    if (G.input.hit('1')) decide(S, 'reg'); else if (G.input.hit('2')) decide(S, 'catch');
+  }
+  const reportRect = sh => { const d = sh.w.door, w = 216, h = 124; return { x: U.clamp(d.x + d.w / 2 - w / 2, 4, C.VIEW.w - w - 4), y: d.y + d.h + 4, w, h }; };
+  const btnReg = R => ({ x: R.x + 8, y: R.y + R.h - 46, w: 96, h: 40 });
+  const btnCatch = R => ({ x: R.x + R.w - 104, y: R.y + R.h - 46, w: 96, h: 40 });
+  function tapReport(S, p) {
+    if (!S.report) return false;
+    const R = reportRect(S.report.sh); if (!U.inRect(p.x, p.y, R)) return false;
+    if (S.report.t >= C.INSPECT_TIME) { if (U.inRect(p.x, p.y, btnReg(R))) decide(S, 'reg'); else if (U.inRect(p.x, p.y, btnCatch(R))) decide(S, 'catch'); }
+    return true;
+  }
+  // 등록/적발 결정. 맞히면 기존 실사 결과, 틀리면 큰 감점(페이퍼컴퍼니) 또는 기회 상실(새싹)
+  function decide(S, kind) {
+    const sh = S.report && S.report.sh; if (!sh) return;
+    S.report = null; S.stats.inspected = (S.stats.inspected || 0) + 1;
+    const b = sh.w.body, fy = b.y + 110, fake = sh.fake;
+    if (kind === 'catch' && fake) { G.shops.inspected(S, sh); return; }
+    if (kind === 'reg' && !fake) {
+      G.shops.inspected(S, sh); sh.growT = 0;
+      G.director.banner(S, '새싹 공방 등록!', '실적은 없어도 설비가 있어요 · 계약 ' + C.SPROUT_GOAL + '건이면 혁신제품으로 성장');
+      return;
+    }
+    S.stats.wrongCheck = (S.stats.wrongCheck || 0) + 1; S.shakeT = Math.max(S.shakeT || 0, 0.35);
+    sh.status = 'closing'; sh.closeT = 0; sh.closeWhy = 'scam';
+    if (kind === 'reg') {                                               // 페이퍼컴퍼니를 등록: 부정 낙찰
+      S.score = Math.max(0, S.score + C.WRONG_FAKE_SCORE); G.score.trust(S, C.WRONG_FAKE_TRUST); G.score.breakCombo(S); S.catchStreak = 0;
+      const r = G.requests.active(S).filter(q => G.ITEM[q.item].cat === sh.cat && !q.ship).sort((a, c) => a.left - c.left)[0];
+      if (r) G.requests.stolen(S, r, sh);
+      G.director.banner(S, '부정 낙찰! 페이퍼컴퍼니였어요', '생산 설비가 없었어요 · 점수 ' + C.WRONG_FAKE_SCORE + ' · 신뢰 ' + C.WRONG_FAKE_TRUST);
+      G.audio.play('scam');
+    } else {                                                            // 새싹을 적발: 혁신제품 기회 상실
+      G.score.trust(S, C.WRONG_SPROUT_TRUST);
+      G.director.banner(S, '앗, 새싹 공방이었어요…', '실적만 없을 뿐 설비는 있었어요 · 혁신제품 기회를 놓쳤어요');
+      G.fx.add(S, b.x + b.w / 2, fy, '신뢰 ' + C.WRONG_SPROUT_TRUST, '#ff8a7a');
+      G.audio.play('fail');
+    }
+  }
+  function drawReport(ctx, S) {
+    if (!C.CONNECT) return;
+    const rp = S.report; if (!rp) return;
+    const sh = rp.sh, R = reportRect(sh), f = rp.t / C.INSPECT_TIME, done = f >= 1;
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(R.x + 3, R.y + 4, R.w, R.h);
+    ctx.fillStyle = '#fffdf6'; ctx.fillRect(R.x, R.y, R.w, R.h);
+    ctx.fillStyle = '#1e2a3a'; ctx.fillRect(R.x, R.y, R.w, 18); T(ctx, !done ? '달이가 실사하는 중…' : S.hard ? '실사 보고서' : '실사 보고서 · 설비를 보고 고르세요', R.x + R.w / 2, R.y + 9, 12, '#fff');
+    [['사업장', true, '있음', ''], ['생산 설비', !sh.fake, '있음', '없음'], ['납품 실적', false, '', '없음']].forEach(([name, ok, yes, no], i) => {
+      const y = R.y + 28 + i * 16, shown = f > 0.2 + i * 0.25;
+      T(ctx, name, R.x + 12, y, 12, '#4a3f2a', 'left');
+      if (!shown) { T(ctx, '…', R.x + R.w - 12, y, 12, '#8a8f99', 'right'); return; }
+      const col = ok ? '#2e9b3a' : i === 2 ? '#8a6a20' : '#d9342b';     // 실적 없음은 새싹도 그래서 빨강이 아님
+      T(ctx, (ok ? '✔ ' + yes : '✘ ' + no), R.x + R.w - 12, y, 12, col, 'right');
+    });
+    if (!done) { ctx.fillStyle = 'rgba(20,24,30,.85)'; ctx.fillRect(R.x, R.y + R.h - 6, R.w, 6); ctx.fillStyle = '#5ec8f2'; ctx.fillRect(R.x, R.y + R.h - 6, Math.round(R.w * f), 6); return; }
+    for (const [B, label, col] of [[btnReg(R), '등록', '#2e9b3a'], [btnCatch(R), '적발', '#d9342b']]) {
+      ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(B.x + 1, B.y + 2, B.w, B.h); ctx.fillStyle = col; ctx.fillRect(B.x, B.y, B.w, B.h);
+      T(ctx, label, B.x + B.w / 2, B.y + B.h / 2 + 1, 16, '#fff');
+    }
+  }
+  // 브로커가 수레를 잡음: 수레 취소, 쓴 돈은 낭비
   function cancel(S, r) {
     const s = r.ship; if (!s) return;
     S.ships.splice(S.ships.indexOf(s), 1); r.ship = null;
@@ -116,10 +222,16 @@ G.connect = (() => {
     for (const sh of S.shops) {
       if (!G.shops.isOpen(S, sh)) continue;
       const b = sh.w.body, cx = b.x + b.w / 2, y = b.y + b.h + 5, n = busy(S, sh), m = slots(S, sh);
+      if (needsCheck(sh)) { pill(ctx, cx, y, 92, '달이 실사', '#0f8a96'); continue; }
+      let cy = 0;                                                       // 단가계약: 물건 그림 + 남은 건수
+      for (const k of Object.keys(S.deals)) {
+        const d = S.deals[k]; if (d.sh !== sh) continue;
+        const px = b.x + 2 + cy * 55, py = y + 20; cy++;
+        ctx.fillStyle = 'rgba(30,42,58,.9)'; ctx.fillRect(px, py, 52, 16); G.icons.draw(ctx, k, px + 10, py + 8, 13); T(ctx, '자동 ' + d.left, px + 34, py + 8, 12, '#9be37a');
+      }
       if (!r) { if (n) pill(ctx, cx, y, 92, '납품 중 ' + n + '/' + m, '#2f6fb5'); continue; }
       const st = fit(S, sh, r);
       if (st === 'other') { ctx.fillStyle = 'rgba(20,24,30,.42)'; ctx.fillRect(b.x, b.y, b.w, b.h); if (n) pill(ctx, cx, y, 92, '납품 중 ' + n + '/' + m, '#2f6fb5'); continue; }
-      if (st === 'check') { pill(ctx, cx, y, 92, '눌러서 실사', '#0f8a96'); continue; }
       if (st === 'full') { pill(ctx, cx, y, 92, '납품 중 ' + n + '/' + m, '#5a6472'); continue; }
       if (S.hard) { pill(ctx, cx, y, 92, G.shops.price(sh, r.item) + '만', '#2a3646'); continue; }   // 하드: 조건 힌트 없음
       if (st === 'under') { ctx.fillStyle = 'rgba(217,52,43,.16)'; ctx.fillRect(b.x, b.y, b.w, b.h); pill(ctx, cx, y, 92, '조건 ✘', '#d9342b'); continue; }
@@ -174,5 +286,5 @@ G.connect = (() => {
       T(ctx, '카드를 눌러요', b.x + b.w / 2, y + 10, 12, '#2a2416');
     }
   }
-  return { init, update, tap, select, tapShop, sign, cancel, fit, slots, busy, hasSlot, needsCheck, secLeft, vehicle, drawShops, drawShips, drawOver };
+  return { init, update, tap, tapReport, decide, tab, autoCovers, dropDeals, drawReport, select, tapShop, sign, cancel, fit, slots, busy, hasSlot, needsCheck, secLeft, vehicle, drawShops, drawShips, drawOver };
 })();

@@ -38,6 +38,8 @@ G.audio = (() => {
     gift: () => { [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, 0.12, 'triangle', i * 0.08, 0.25)); },
     click: () => tone(600, 0.04, 'square', 0, 0.2),
     warn: () => { tone(880, 0.09, 'square', 0, 0.18); tone(880, 0.09, 'square', 0.14, 0.18); },
+    siren: () => { for (let i = 0; i < 3; i++) { tone([520, 1040], 0.17, 'sawtooth', i * 0.34, 0.28); tone([1040, 520], 0.17, 'sawtooth', i * 0.34 + 0.17, 0.28); } },
+    chase: () => { tone(98, 0.12, 'sawtooth', 0, 0.3); tone(98, 0.1, 'sawtooth', 0.17, 0.22); },
     tick: () => tone(1200, 0.03, 'square', 0, 0.18),
     end: () => { [784, 659, 523, 784].forEach((f, i) => tone(f, 0.16, 'square', i * 0.12, 0.25)); },
     banner: () => { tone(660, 0.08, 'triangle', 0, 0.2); tone(880, 0.1, 'triangle', 0.08, 0.2); },

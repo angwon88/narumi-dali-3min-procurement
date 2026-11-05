@@ -149,7 +149,7 @@ G.screens = (() => {
     if (ultTipOn || ui.hover(BTN_ULT) || ui.hover(BTN_ULTQ)) ui.tip(ctx, BTN_ULTQ.x - 170, BTN_ULT.y + BTN_ULT.h + 6, ui.ULT_TIP);
     const hk = G.settings.hard ? '_hard' : '', best = G.store.get('best' + hk, 0);
     if (best) J(ctx, (hk ? '하드 ' : '') + '최고 점수 ' + best + ' · 최고 등급 ' + G.store.get('bestGrade' + hk, '-'), W - 18, H - 18, 15, '#fff3b0', { align: 'right', stroke: [['rgba(40,28,10,.55)', 4]] });
-    J(ctx, C.CONNECT ? '카드 → 공방을 눌러 계약 · Space 브로커 · Enter 시작 · M 소리' : '터치·클릭으로 이동 · Space 브로커 · Enter 시작 · M 소리', LX, 515, 14, '#fff', { stroke: [['rgba(40,28,10,.5)', 4]] });
+    J(ctx, C.CONNECT ? '카드 → 공방을 눌러 계약 · 새 공방은 달이가 실사 · Space 브로커 · M 소리' : '터치·클릭으로 이동 · Space 브로커 · Enter 시작 · M 소리', LX, 515, 14, '#fff', { stroke: [['rgba(40,28,10,.5)', 4]] });
     if (G.VERSION) T(ctx, G.VERSION, 10, H - 9, 12, 'rgba(255,255,255,.6)', 'left');
     if (G.input.hit('m')) G.audio.toggle();
   }
@@ -245,6 +245,7 @@ G.screens = (() => {
     G.dali.drawOver(ctx, G.S);
     G.shops.drawDoorInfo(ctx, G.S);
     G.shops.drawHover(ctx, G.S);
+    G.connect.drawReport(ctx, G.S);
     G.fx.draw(ctx, G.S);
     G.events.drawOverlay(ctx, G.S);
     G.ult.draw(ctx, G.S);
@@ -255,6 +256,7 @@ G.screens = (() => {
     G.villages.dangerEdge(ctx, G.S);
     G.director.draw(ctx, G.S);
     ui.hud(ctx, G.S);
+    G.broker.drawAlarm(ctx, G.S);
     ui.comboBadge(ctx, G.S);
     rushDraw(ctx, G.S);
     G.ult.drawCut(ctx, G.S);

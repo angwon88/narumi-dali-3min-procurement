@@ -73,7 +73,8 @@ G.shops = (() => {
 
   // ---------- 새 공방 개업 (빈 칸 재개업 · 수상한 공방 교체) ----------
   function newShop(S, sh, fake) {
-    Object.assign(sh, { status: 'open', fake, sales: 0, tier: 0, tierT: null, sprout: false, innov: false, mature: false, growT: null, verified: false, isNew: true, certT: 0, bidT: fake && C.FAKE_BID ? C.FAKE_BID_SEC : 0, fx: null, openFx: 0, stampT: 0, flagT: FLAG_SEC, closeT: 0, revealT: 0, reopenT: 0, lonely: false, monopoly: false, closeWhy: null });
+    Object.assign(sh, { status: 'open', fake, sales: 0, tier: 0, tierT: null, sprout: false, innov: false, mature: false, growT: null, verified: false, isNew: true, certT: 0, bidT: fake && C.FAKE_BID ? C.FAKE_BID_SEC : 0, fx: null, openFx: 0, stampT: 0, flagT: FLAG_SEC, closeT: 0, revealT: 0, reopenT: 0, lonely: false, monopoly: false, closeWhy: null, seenReport: false });
+    if (C.CONNECT) G.connect.dropDeals(S, sh);                         // 공방이 바뀌면 그 공방과의 단가계약 끝
     const p0 = partner(S, sh);
     if (p0.monopoly) { p0.monopoly = false; const b = p0.w.body; G.fx.add(S, b.x + b.w / 2, b.y + 8, '경쟁 공방이 생겨 독점이 풀렸어요', '#9be37a'); }
     S.streak[sh.idx >> 1] = { shop: -1, n: 0 };
@@ -105,7 +106,7 @@ G.shops = (() => {
     newShop(S, sh, true);
     return sh;
   }
-  G.director.on('firstFake', S => { S.firstFakeDone = true; spawnFake(S); S.fakeClock = 14; });
+  G.director.on('firstFake', S => { if (C.CONNECT) return; S.firstFakeDone = true; spawnFake(S); S.fakeClock = 14; });
   // ---------- 새싹 공방 (개편 2단계: 스타트업 성장) ----------
   // 열린 행에서 빈 칸이 있으면 거기, 없으면 평범한 공방 하나를 새싹 공방으로 교체. 품질 ★2~3, 값은 조금 비쌈
   function spawnSprout(S) {
@@ -121,7 +122,7 @@ G.shops = (() => {
     Object.assign(sh, { sprout: true, trial: C.SPROUT_GOAL, growT: 0 });
     S.stats.sprouts = (S.stats.sprouts || 0) + 1;
     const who = sh.w.cat.name + sh.w.side;
-    G.director.banner(S, '새싹 공방 개업! (' + who + ')', '실적 없는 스타트업 · 사 주면 자라서 혁신제품이 돼요 (실적 ' + C.SPROUT_GOAL + '건)');
+    if (!C.CONNECT) G.director.banner(S, '새싹 공방 개업! (' + who + ')', '실적 없는 스타트업 · 사 주면 자라서 혁신제품이 돼요 (실적 ' + C.SPROUT_GOAL + '건)');
     G.audio.play('banner');
     return sh;
   }
@@ -163,12 +164,12 @@ G.shops = (() => {
   }
   function buy(S, sh, item, r) { G.dali.bag.push(order(S, sh, item, r)); }
   // 값을 치르고 물건 정보를 돌려줌 (달이 가방·계약 연결 수레가 함께 씀)
-  function order(S, sh, item, r) {
-    const p = price(sh, item);
+  function order(S, sh, item, r, deal) {
+    const p = deal ? deal.price : price(sh, item);                       // 단가계약은 계약 때 값 그대로
     const prep = !r;
     // 가성비 판정은 '산 순간' 기준: 이 요청 조건을 맞춘 공방 중 가장 싼 곳이었나 (조건 미달이면 null)
     const fits = r && sh.q[item] >= r.minQ;
-    const best = fits && !sh.sprout ? p <= bestPrice(S, item, r.minQ) + 0.05 : undefined;   // 새싹 공방 구매는 가성비 대신 '투자'
+    const best = deal ? deal.best : fits && !sh.sprout ? p <= bestPrice(S, item, r.minQ) + 0.05 : undefined;   // 새싹 공방 구매는 가성비 대신 '투자'
     const bought = { item, paid: p, shop: sh.idx, fake: sh.fake, innov: sh.innov, sprout: sh.sprout, prep, q: sh.q[item], realQ: realQ(sh, item), best, forReq: r ? r.id : null };
     G.audio.play('buy');   // 수상한 물건도 겉보기는 같다
     if (!sh.fake) { sh.sales += p; while (sh.tier < C.SHOP_TIER.length && sh.sales >= C.SHOP_TIER[sh.tier]) growShop(S, sh); }
@@ -263,6 +264,7 @@ G.shops = (() => {
       else if (sh.status === 'empty' && (sh.reopenT -= dt) <= 0) {
         const fake = S.firstFakeDone && fakeCount(S) < fakeMax(S) && Math.random() < C.REOPEN_FAKE_CHANCE;
         newShop(S, sh, fake);
+        if (C.CONNECT) sh.isNew = false;                               // 계약 연결: 실사 대상은 정해진 시각의 새 공방만, 빈 자리는 등록 업체로
       }
     }
     updateBuy(S, dt);
@@ -594,7 +596,7 @@ G.shops = (() => {
       if (sh.status === 'empty') { emptyLot(ctx, sh, S); continue; }
       if (sh.status === 'caught') { caughtView(ctx, sh); continue; }
       if (sh.innov) innovLook(ctx, sh);
-      if (sh.sprout) sproutLook(ctx, sh);
+      if (sh.sprout && !(C.CONNECT && G.connect.needsCheck(sh))) sproutLook(ctx, sh);   // 실사 전엔 새싹인지 모르게
       tierLook(ctx, sh);
       if (sh.status === 'open') {                                         // 나라장터 등록 표시 (2026-11-03)
         const reg = !sh.isNew || sh.verified || sh.innov, rx = b.x + 9, ry = b.y + 11;

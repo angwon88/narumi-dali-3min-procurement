@@ -49,6 +49,7 @@ G.ult = (() => {
   // 2026-11-03 똑똑한 자동 발동: 충전이 다 되면 쓸모 있는 순간(페이퍼컴퍼니가 있거나, 브로커가 달리거나, 심사 중인 새 공방이 2곳 이상)에 저절로. Q·버튼으로 바로 쓸 수도 있음
   function worth(S) {
     if (S.bk && (S.bk.state === 'run' || S.bk.state === 'grab')) return true;
+    if (C.CONNECT) return false;                                       // 새 공방 실사는 달이의 일: AI 조사가 대신하지 않음
     const open = S.shops.filter(sh => sh.status === 'open' && G.shops.isOpen(S, sh));
     return open.some(sh => sh.fake) || open.filter(sh => sh.isNew && !sh.verified && !sh.innov).length >= 2;
   }
@@ -58,7 +59,7 @@ G.ult = (() => {
     const u = S.ultFx; if (!u) return;
     u.t += dt; for (const h of u.hits) h.t += dt;
     const bx = Math.min(1, u.t / C.ULT_SCAN) * C.VIEW.w;
-    for (const sh of S.shops) {
+    for (const sh of C.CONNECT ? [] : S.shops) {
       if (u.done.has(sh.idx) || sh.w.body.x + sh.w.body.w / 2 > bx) continue;
       u.done.add(sh.idx);
       if (sh.status === 'open' && G.shops.isOpen(S, sh) && (sh.fake || (sh.isNew && !sh.verified && !sh.innov))) {

@@ -54,14 +54,22 @@ window.PlayBot = {
     const bk = S.bk, live = bk && (bk.state === 'run' || bk.state === 'grab');
     st.bkT = live ? (st.bkT || 0) + DT : 0;
     if (chase && live && st.bkT >= bkDelay && S.inspectCD <= 0 && !G.narmi.busy()) G.broker.request(S);
-    else if (inspect && S.inspectCD <= 0 && !G.narmi.busy()) {
-      const need = new Set(G.requests.active(S).map(r => G.ITEM[r.item].cat));
-      const pick = S.shops.filter(s => !G.shops.whyNot(S, s)).sort((a, b) => (suspicious(b) - suspicious(a)) || (need.has(b.cat) - need.has(a.cat)))[0];
-      if (pick) G.shops.request(S, pick);
+    // 달이: 새 공방으로 걸어가 보고서를 읽고 고름 (wrong: 잘못 고를 확률). 보고서 읽는 시간도 판단 시간에 비례
+    const d = G.dali;
+    if (S.report && S.report.t >= G.C.INSPECT_TIME) {
+      st.rt = (st.rt || 0) + DT;
+      if (st.rt >= 0.6 / speed) { const miss = Math.random() < (opt.wrong || 0); G.connect.decide(S, S.report.sh.fake !== miss ? 'catch' : 'reg'); st.rt = 0; }
+    } else if (inspect && !S.report) {
+      const sh = S.shops.filter(s => G.shops.isOpen(S, s) && G.connect.needsCheck(s)).sort((a, b) => Math.hypot(a.w.door.x - d.x, a.w.door.y - d.y) - Math.hypot(b.w.door.x - d.x, b.w.door.y - d.y))[0];
+      if (sh) {
+        const tx = sh.w.door.x + 20, ty = sh.w.door.y + 14, dx = tx - d.x, dy = ty - d.y, dist = Math.hypot(dx, dy), stp = d.speed * DT;
+        if (dist > stp) { d.x += dx / dist * stp; d.y += dy / dist * stp; d.moving = true; d.face = G.spr.dir8(dx, dy); } else { d.x = tx; d.y = ty; }
+      }
     }
     if ((st.think = (st.think || 0) - DT) > 0) return;
     const cards = G.requests.active(S).filter(r => !r.ship).sort((a, b) => a.left - b.left);
     for (const r of cards) {
+      if (G.connect.autoCovers(S, r)) continue;                        // 단가계약이 처리함
       const cand = S.shops.filter(s => G.shops.isOpen(S, s) && !(avoidFake && suspicious(s)) && G.connect.fit(S, s, r) === 'ok');
       const sh = (sprout && cand.find(s => s.sprout)) || cand.sort((a, b) => G.shops.price(a, r.item) - G.shops.price(b, r.item))[0];
       if (!sh) continue;
@@ -79,7 +87,7 @@ window.PlayBot = {
       while (S.pendingLevels > 0) { G.levelup.open(S); G.levelup.choose(S, S.offer[0]); G.screen = 'pause'; }
     }
     const st2 = S.stats;
-    return { 배달: S.delivered, 불합격: st2.qFail || 0, 가성비: st2.valueBest || 0, 가성비놓침: st2.valueMiss || 0, 놓침: st2.reqExpired, 속음: (st2.scammed || 0) + (st2.stolen || 0), 적발: st2.caught || 0, 검증: S.data, 데이터단계: S.dataLv, 만료: st2.certExpired || 0, 요청: st2.reqMade, 점수: S.score, 신뢰: Math.round(S.trust), 아낀세금: S.saved, 낭비: S.wasted, 레벨: S.level, 선물: (S.gifts || []).length, 최대콤보: S.maxCombo || 0, 브로커승: st2.brokerWon || 0, 브로커막음: st2.brokerBlocked || 0, 브로커적발: st2.brokerCaught || 0, 새싹: st2.sprouts || 0, 필살기: st2.ult || 0, 수레취소: st2.shipStolen || 0, 긴급: st2.urgentDone || 0, 새싹실적: st2.sproutBuy || 0, 혁신지정: st2.innov || 0 };
+    return { 배달: S.delivered, 불합격: st2.qFail || 0, 가성비: st2.valueBest || 0, 가성비놓침: st2.valueMiss || 0, 놓침: st2.reqExpired, 속음: (st2.scammed || 0) + (st2.stolen || 0), 적발: st2.caught || 0, 검증: S.data, 데이터단계: S.dataLv, 만료: st2.certExpired || 0, 요청: st2.reqMade, 점수: S.score, 신뢰: Math.round(S.trust), 아낀세금: S.saved, 낭비: S.wasted, 레벨: S.level, 선물: (S.gifts || []).length, 최대콤보: S.maxCombo || 0, 브로커승: st2.brokerWon || 0, 브로커막음: st2.brokerBlocked || 0, 브로커적발: st2.brokerCaught || 0, 새싹: st2.sprouts || 0, 필살기: st2.ult || 0, 수레취소: st2.shipStolen || 0, 자동: st2.autoDeal || 0, 오판: st2.wrongCheck || 0, 지정기회: st2.sprouts || 0, 긴급: st2.urgentDone || 0, 새싹실적: st2.sproutBuy || 0, 혁신지정: st2.innov || 0 };
   },
   avg(opt, n = 5) {
     const rs = []; for (let i = 0; i < n; i++) rs.push(this.run(opt));

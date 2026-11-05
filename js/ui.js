@@ -25,7 +25,7 @@ G.ui = (() => {
     lines.forEach((s, i) => T(ctx, s, x + 10, y + 14 + i * 17, 12, i === 0 ? '#0b5d68' : '#2a2416', 'left'));
   }
   // AI 조사 설명 (타이틀·일시정지의 [?]와 HUD 버튼에서 같이 씀)
-  const ULT_TIP = ['AI 조사 (브로커 3명 적발하면 충전)', '나르미가 데이터로 화면 전체를 한 번에 조사해요.', '페이퍼컴퍼니 적발 · 새 공방 실사 · 브로커 적발', '자동 사용: 수상한 곳이 보이면 저절로 발동', '직접 사용: Q 키나 위쪽 [AI 조사] 버튼으로'];
+  const ULT_TIP = ['AI 조사 (브로커 3명 적발하면 충전)', '나르미가 데이터로 화면 전체를 한 번에 조사해요.', G.C.CONNECT ? '달리는 브로커 적발 · 잠시 브로커 출동 중단' : '페이퍼컴퍼니 적발 · 새 공방 실사 · 브로커 적발', '자동 사용: 수상한 곳이 보이면 저절로 발동', '직접 사용: Q 키나 위쪽 [AI 조사] 버튼으로'];
   function hud(ctx, S) {
     ctx.fillStyle = '#1e2a3a'; ctx.fillRect(0, 0, C.VIEW.w, C.HUD_H);
     // HUD 아래 테두리 = 남은 시간 막대 (2026-11-03: 레벨업 대신), 필살기 버튼
@@ -111,8 +111,9 @@ G.ui = (() => {
     const sw = r.minQ * 16 - 2, tx = r.minQ < 3 ? 22 : 0, sx = Math.round(b.w / 2 - (sw + tx) / 2);
     G.icons.stars(ctx, sx, 66, r.minQ, r.minQ, 2);
     if (r.minQ < 3) T(ctx, '이상', sx + sw + 13, 73, 12, '#fff');
-    ctx.fillStyle = r.ship ? '#2e9b3a' : r.urgent ? '#d9342b' : '#2f4f8a'; ctx.fillRect(0, -11, 44, 11);   // '나라장터' 탭 (전자조달 주문) / 태풍 '긴급 ×2'
-    ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(r.ship ? '납품 중' : r.urgent ? '긴급 ×2' : '나라장터', 22, -5);
+    const tb = G.C.CONNECT && G.S ? G.connect.tab(G.S, r) : null;   // 계약 연결: 납품 중·자동·직접 계약 표시
+    ctx.fillStyle = tb ? tb[1] : r.urgent ? '#d9342b' : '#2f4f8a'; ctx.fillRect(0, -11, 44, 11);   // '나라장터' 탭 (전자조달 주문) / 태풍 '긴급 ×2'
+    ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(tb ? tb[0] : r.urgent ? '긴급 ×2' : '나라장터', 22, -5);
     if (r.fraud) {                                                   // 미납: 빈 상자 / 불량: 부서진 상자
       ctx.fillStyle = '#c9a26b'; ctx.fillRect(cx - 9, cy - 2, 18, 11); ctx.fillStyle = '#a07f4f'; ctx.fillRect(cx - 9, cy - 2, 18, 2);
       if (r.fraud === 'empty') { ctx.fillStyle = '#5a4630'; ctx.fillRect(cx - 7, cy, 14, 7); ctx.fillStyle = '#c9a26b'; ctx.fillRect(cx - 12, cy - 8, 8, 3); ctx.fillRect(cx + 4, cy - 8, 8, 3); }

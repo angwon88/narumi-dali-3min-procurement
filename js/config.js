@@ -63,6 +63,10 @@ G.C = {
   CONNECT_SLOTS: [1, 2, 2],   // 공방 단계별(공방·작업장·공장) 동시 납품 수
   CONNECT_SHIP_SPEED: 170, CONNECT_SHIP_SEC: [3, 5],   // 수레 속도(px/초)와 납품 시간 범위(초)
   CONNECT_BROKER_MIN: 2,   // 브로커는 도착까지 이 초 이상 남은 수레의 계약을 먼저 노림
+  CONTRACT_AUTO: 3, CONTRACT_AUTO_DELAY: 0.7,   // 단가계약: 직접 계약하면 같은 물건 다음 3건 자동 체결(값 고정), 카드가 뜨고 0.7초 뒤
+  CONNECT_BROKER_SPEED: [210, 260], CONNECT_BROKER_GRAB: 1.0,   // 브로커가 수레를 쫓는 속도(px/초)와 등장 뒤 출발까지
+  NEWSHOP_AT: [15, 40, 65, 85],   // 새 공방: 새싹 → 페이퍼컴퍼니 → 둘이 섞여 한 번씩. 겉모습은 같고 달이가 실사해 고름
+  WRONG_FAKE_TRUST: -20, WRONG_FAKE_SCORE: -800, WRONG_SPROUT_TRUST: -5,   // 잘못 고른 실사
   STOCK: false,   // 원자재 비축 (시험판에서 끔). 폭등도 함께 끄려면 EVENTS.surge
   // 사건 켜고 끄기 (false면 그 사건이 아예 일어나지 않음 — 빼고 싶을 때 여기 한 곳만 바꾸면 됨)
   EVENTS: { fake: true, dust: false, storm: true, surge: false },   // 2026-11-03 사건 2개: 태풍(긴급조달) → 원자재 폭등 (미세먼지 뺌)   // 2026-11-03 태풍 위기 구현(기획서 4.2)
@@ -79,4 +83,4 @@ G.C = {
   GRADE: { S: [20000, 80], A: [13000, 60], B: [6000, 0] },   // 2026-11-03 덜어내기 뒤 2분 기준 (봇 0.7 ≈ 16,000~25,000 · 0.45 ≈ 10,000~19,000)
 };
 G.FONT = 'Galmuri11';
-G.VERSION = 'v7.0 시험 · 계약 연결';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)
+G.VERSION = 'v7.1 시험 · 단가계약·달이 실사';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)

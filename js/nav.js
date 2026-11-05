@@ -49,6 +49,7 @@ G.nav = (() => {
   function handleTaps(S) {
     for (const p of G.input.taps) {
       if (p.y < C.HUD_H) continue;                                    // HUD(일시정지 버튼 등)는 따로 처리
+      if (C.CONNECT && G.connect.tapReport(S, p)) return;             // 실사 보고서 버튼이 가장 먼저
       if (G.broker.hit(S, p)) { G.broker.request(S); return; }
       if (C.CONNECT && G.connect.tap(S, p)) return;                   // 계약 연결: 카드·공방·마을은 여기서, 빈 땅만 달이 이동
       const t = targetOf(S, p); if (t) { go(S, t); return; }
@@ -66,5 +67,7 @@ G.nav = (() => {
     ctx.strokeStyle = 'rgba(255,216,74,' + (0.9 - k * 0.7).toFixed(2) + ')'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.ellipse(g.x, g.y + 2, 6 + k * 10, 3 + k * 5, 0, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1;
   }
-  return { route, handleTaps, draw, targetOf };
+  // 달이를 그 자리로 걷게 함 (계약 연결: 새 공방 실사)
+  function walkTo(x, y) { const d = G.dali; d.path = route({ x: d.x, y: d.y }, { x, y }); d.goal = { kind: 'point', x, y }; d.goalT = 0; }
+  return { route, walkTo, handleTaps, draw, targetOf };
 })();
