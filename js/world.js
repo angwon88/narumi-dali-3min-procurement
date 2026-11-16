@@ -127,7 +127,13 @@ G.world = (() => {
     const pz = G.img && G.img.plaza;                                   // 11-16 광장 바닥 그림(Leonardo.ai, tools/crop_image.cjs). 없으면 코드 돌길
     if (pz && pz.naturalWidth) {
       ctx.drawImage(pz, 0, SY + 62, C.VIEW.w, VY - SY - 62);
-      ctx.fillStyle = 'rgba(250,240,214,.32)'; ctx.fillRect(0, SY + 62, C.VIEW.w, VY - SY - 62);   // 카드·수레·글자가 잘 보이게 바닥을 연하게
+      ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.fillRect(0, SY + 62, C.VIEW.w, VY - SY - 62);   // 카드·수레·글자가 잘 보이게 바닥을 연하게
+      // 11-16 미래형 바닥: 조달청 둘레 빛나는 원형 광장 (그림에는 원이 없어 코드로)
+      const cx = office.body.x + office.body.w / 2, cy = office.body.y + office.body.h / 2 + 6;
+      ctx.save(); ctx.beginPath(); ctx.rect(0, SY + 62, C.VIEW.w, VY - SY - 62); ctx.clip();
+      ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 12; ctx.beginPath(); ctx.ellipse(cx, cy, 150, 92, 0, 0, 7); ctx.stroke();
+      ctx.strokeStyle = 'rgba(94,200,242,.55)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(cx, cy, 157, 99, 0, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.ellipse(cx, cy, 143, 85, 0, 0, 7); ctx.stroke();
+      ctx.restore(); ctx.lineWidth = 1;
     } else cobble(ctx, 0, SY + 62, C.VIEW.w, VY - SY - 62);              // 광장
     px(ctx, '#b89d66', 0, SY + 62, C.VIEW.w, 3); px(ctx, '#b89d66', 0, VY - 4, C.VIEW.w, 3);   // 연석
     for (const x of [240, 480, 720]) lamp(ctx, x, SY + 98);           // 공방 종류 사이 가로등
