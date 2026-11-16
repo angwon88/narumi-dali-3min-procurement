@@ -127,8 +127,6 @@ G.world = (() => {
     const pz = G.img && G.img.plaza;                                   // 11-16 광장 바닥 그림(Leonardo.ai, tools/crop_image.cjs). 없으면 코드 돌길
     if (pz && pz.naturalWidth) {
       ctx.drawImage(pz, 0, SY + 62, C.VIEW.w, VY - SY - 62);
-      const ox = office.body.x + office.body.w / 2, oy = office.body.y + office.body.h / 2 + 8;
-      ctx.fillStyle = '#e8d0ac'; ctx.beginPath(); ctx.ellipse(ox, oy, 66, 50, 0, 0, 7); ctx.fill();   // 원본 가운데 조각상이 조달청 밑으로 비치지 않게 돌바닥 색으로 덮음
       ctx.fillStyle = 'rgba(250,240,214,.32)'; ctx.fillRect(0, SY + 62, C.VIEW.w, VY - SY - 62);   // 카드·수레·글자가 잘 보이게 바닥을 연하게
     } else cobble(ctx, 0, SY + 62, C.VIEW.w, VY - SY - 62);              // 광장
     px(ctx, '#b89d66', 0, SY + 62, C.VIEW.w, 3); px(ctx, '#b89d66', 0, VY - 4, C.VIEW.w, 3);   // 연석
