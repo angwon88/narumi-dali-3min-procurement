@@ -69,21 +69,23 @@ G.villages = (() => {
     // 1단계 소품
     if (v.id === 'school') { const x = b.x + 34, w = Math.sin(t * 5) * 1.5; px('#6a6a6a', x, b.y - 20, 2, 46); px('#2f6fb5', x + 2, b.y - 20 + w, 15, 10); G.icons.stars(ctx, x + 6, b.y - 18 + w, 1, 1, 1); }   // 교기(파란 바탕 노란 별)
     if (v.id === 'clinic' || v.id === 'fire') {
-      const x = b.x + b.w - 64, y = b.y + 50, red = v.id === 'fire';
+      const art = G.world.villageArt(v), x = art ? b.x + 44 : b.x + b.w - 64, y = art ? b.y - 16 : b.y + 50, red = v.id === 'fire';   // 건물 그림이면 창을 가리지 않게 앞마당에 세움
       px(red ? '#d9342b' : '#f4f6f8', x, y, 34, 14); px(red ? '#a8231b' : '#c9d6e0', x + 22, y - 5, 12, 6);
       px('#2a2a2a', x + 5, y + 13, 7, 5); px('#2a2a2a', x + 23, y + 13, 7, 5);
       if (red) { px('#c0c6cc', x + 2, y - 3, 18, 2); px('#c0c6cc', x + 4, y - 6, 2, 4); px('#c0c6cc', x + 14, y - 6, 2, 4); }
       else { px('#e5533d', x + 8, y + 3, 6, 2); px('#e5533d', x + 10, y + 1, 2, 6); }
       px(Math.floor(t * 4) % 2 ? '#5ec8f2' : '#e5533d', x + 26, y - 7, 4, 2);
     }
-    if (v.id === 'library') for (let i = 0; i < 4; i++) { const x = b.x + 40 + i * 44; px('#6b4423', x, b.y + 47, 24, 4); ['#e86a5c', '#ffd84a', '#d18ad9'].forEach((c, k) => px(c, x + 3 + k * 8, b.y + 43, 4, 4)); }
+    // 창턱 책: 코드 그림의 창 자리에만 (건물 그림이면 생략)
+    if (v.id === 'library' && !G.world.villageArt(v)) for (let i = 0; i < 4; i++) { const x = b.x + 40 + i * 44; px('#6b4423', x, b.y + 47, 24, 4); ['#e86a5c', '#ffd84a', '#d18ad9'].forEach((c, k) => px(c, x + 3 + k * 8, b.y + 43, 4, 4)); }
     // 2026-11-03 지금 받는 효과를 벽에 작은 배지로 (예전엔 단장할 때 한 번만 글자로 떠서 몰랐음)
     { const txt = s.tier >= 2 ? '시간 +15% · 점수 ×' + C.VILLAGE_T2_SCORE : '계약 시간 +15%';
       ctx.font = '12px ' + G.FONT; const w = ctx.measureText(txt).width + 14, x = b.x + 38, y = b.y + 55;
       px('rgba(0,0,0,.25)', x + 1, y + 2, w, 13); px(s.tier >= 2 ? '#b08800' : '#2e7d3a', x, y, w, 13); px('rgba(255,255,255,.25)', x, y, w, 1);
       G.world.text(ctx, txt, x + w / 2, y + 7, 12, '#fff'); }
     // 지붕 별 (단장 단계)
-    for (let i = 0; i < s.tier; i++) G.icons.stars(ctx, b.x + b.w - 44 - i * 9, b.y + 7, 1, 1, 1);
+    { const art = G.world.villageArt(v), rx = art ? Math.min(b.x + b.w, art.x + art.w - 2) : b.x + b.w, ry = art ? Math.max(b.y + 7, art.y + 8) : b.y + 7;   // 건물 그림이면 지붕 위치에 맞춤
+      for (let i = 0; i < s.tier; i++) G.icons.stars(ctx, rx - 44 - i * 9, ry, 1, 1, 1); }
     if (s.upT != null) for (let i = 0; i < 6; i++) {        // 공사 먼지
       const k = s.upT / 1.2; ctx.globalAlpha = 0.6 * (1 - k); ctx.fillStyle = '#e8dcc0';
       ctx.beginPath(); ctx.arc(b.x + 20 + i * 36, b.y + b.h - 8 - k * 20, 6 + k * 10, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
@@ -121,8 +123,10 @@ G.villages = (() => {
           ctx.fillStyle = '#5ec8f2'; if (blink) ctx.fillRect(y.x + 56, y.y + 16, 2, 3);
           G.world.text(ctx, '대기 중', y.x + 100, y.y + 22, 12, '#fff');
         } else if (v.id === 'fire') {
-          ctx.fillStyle = '#7d8590'; ctx.fillRect(b.x + 2, b.y + 26, 30, 44);
-          ctx.fillStyle = '#6a7179'; for (let k = 0; k < 6; k++) ctx.fillRect(b.x + 2, b.y + 30 + k * 7, 30, 2);
+          if (!G.world.villageArt(v)) {                                 // 코드 그림일 때만 차고 문을 회색으로 (그림이면 창만 꺼짐)
+            ctx.fillStyle = '#7d8590'; ctx.fillRect(b.x + 2, b.y + 26, 30, 44);
+            ctx.fillStyle = '#6a7179'; for (let k = 0; k < 6; k++) ctx.fillRect(b.x + 2, b.y + 30 + k * 7, 30, 2);
+          }
           darkWindows(ctx, b, v);
         } else if (v.id === 'library') {
           darkWindows(ctx, b, v);
@@ -133,7 +137,7 @@ G.villages = (() => {
         ctx.globalAlpha = 1;
       }
       const art = G.world.villageArt(v);                                // 건물 그림이면 지붕 높이가 달라서 얼굴을 지붕 위로 맞춤
-      face(ctx, b.x + b.w - 12, art ? Math.max(b.y + 11, art.y + 20) : b.y + 11, hurt ? -1 : s.happyT > 0 ? 1 : 0);
+      face(ctx, art ? Math.min(b.x + b.w - 12, art.x + art.w - 14) : b.x + b.w - 12, art ? Math.max(b.y + 11, art.y + 20) : b.y + 11, hurt ? -1 : s.happyT > 0 ? 1 : 0);
     }
   }
 
