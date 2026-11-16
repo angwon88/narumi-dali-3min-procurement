@@ -442,6 +442,8 @@ G.shops = (() => {
     return !!e && e.n > 0 && sh.q[itemId] >= e.minQ;
   }
   function priceTag(ctx, S, sh) {
+    // 11-16 8.12단계: 가격표는 계약 카드를 골랐을 때 그 업종 공방에만 (평소엔 건물이 보이게, 화면 정보 줄이기)
+    if (C.CONNECT && C.TAG_ON_SELECT && !(S.sel && G.ITEM[S.sel.item].cat === sh.cat)) return;
     const b = sh.w.body, tx = sh.w.tagX, flash = sh.fx && Math.floor(sh.fx.t * 6) % 2 === 0;
     if (sh.fx) { ctx.fillStyle = flash ? '#ffd84a' : '#fff3b0'; ctx.fillRect(tx - 2, b.y + 23, TAG_W + 4, 38); }
     ctx.fillStyle = '#fffdf6'; ctx.fillRect(tx, b.y + 25, TAG_W, 34);
