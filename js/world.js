@@ -117,10 +117,20 @@ G.world = (() => {
     for (let ry = y + 4; ry < y + h - 1; ry += 5) { px(ctx, 'rgba(0,0,0,.18)', x, ry, w, 1); for (let rx = x + ((ry - y) % 10 ? 4 : 0); rx < x + w; rx += 8) px(ctx, 'rgba(0,0,0,.12)', rx, ry - 4, 1, 4); }
     px(ctx, 'rgba(255,255,255,.22)', x, y, w, 2); px(ctx, 'rgba(0,0,0,.28)', x, y + h, w, 3);
   }
-  function label(ctx, s, cx, cy) {                                     // 지붕 이름판
-    ctx.font = '12px ' + G.FONT; const w = ctx.measureText(s).width + 10;
-    px(ctx, 'rgba(20,16,10,.45)', cx - w / 2, cy - 7, w, 14); text(ctx, s, cx, cy, 12, '#fff');
+  // 지붕 이름판 (8.15단계 미래형 간판): 둥근 남색 판 + 색 테두리 + 위쪽 빛 + 왼쪽 아이콘(또는 색 점) + 굵은 흰 글자
+  function label(ctx, s, cx, cy, col, icon) {
+    if (!C.FUTURE || !G.soft) { ctx.font = '12px ' + G.FONT; const w = ctx.measureText(s).width + 10; px(ctx, 'rgba(20,16,10,.45)', cx - w / 2, cy - 7, w, 14); text(ctx, s, cx, cy, 12, '#fff'); return; }
+    const K = G.soft, F = '12px "Galmuri11 Bold", ' + G.FONT; ctx.font = F;
+    const tw = ctx.measureText(s).width, lead = icon ? 16 : col ? 9 : 0, w = Math.round(tw + 12 + lead), h = 16, x = Math.round(cx - w / 2), y = Math.round(cy - h / 2);
+    ctx.fillStyle = 'rgba(10,20,35,.28)'; K.rr(ctx, x + 1, y + 2, w, h, 8); ctx.fill();                       // 그림자
+    ctx.fillStyle = 'rgba(24,38,60,.92)'; K.rr(ctx, x, y, w, h, 8); ctx.fill();
+    ctx.strokeStyle = col || '#5ec8f2'; ctx.lineWidth = 1; K.rr(ctx, x + .5, y + .5, w - 1, h - 1, 7.5); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.16)'; ctx.fillRect(x + 6, y + 2, w - 12, 1);                         // 위쪽 빛
+    if (icon && G.icons) G.icons.draw(ctx, icon, x + 10, y + h / 2, 12);
+    else if (col) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x + 7.5, y + h / 2, 2.5, 0, 7); ctx.fill(); }
+    ctx.font = F; ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(s, x + 6 + lead, y + h / 2 + .5);
   }
+  const VICON = { school: 'desk', clinic: 'kit', fire: 'ext', library: 'lamp' };   // 마을 간판 아이콘
   // ---------- 11-16 8.13단계 미래형 바닥: 밝은 보도 데크 + 네모 화단 + LED 가로등 + 화분 나무 (C.FUTURE) ----------
   function deck(ctx, x0, y0, w, h) {
     px(ctx, '#d9e3ea', x0, y0, w, h);                                   // 흰 건물이 묻히지 않게 살짝 어둡게
@@ -233,7 +243,7 @@ G.world = (() => {
     for (let xx = b.x + 8; xx < b.x + b.w; xx += 14) px(ctx, '#857c70', xx, b.y + b.h - 4, 1, 4);
     outline(ctx, b.x, b.y + 18, b.w, b.h - 18);
     slopeRoof(ctx, b.x, b.y - 2, b.w, 22, L.roof, 4, 7);
-    label(ctx, s.cat.name + '공방 ' + s.side, b.x + b.w / 2, b.y + 10);
+    label(ctx, s.cat.name + '공방 ' + s.side, b.x + b.w / 2 + 4, b.y + 10, s.cat.col);   // 왼쪽 ✔ 표시와 안 겹치게 살짝 오른쪽
     // 문: 틀 + 판자 문 + 위 채광창 + 손잡이 + 계단
     px(ctx, '#2a1d14', s.doorGfx - 2, b.y + 30, 24, 31); px(ctx, '#5a3826', s.doorGfx, b.y + 32, 20, 29);
     px(ctx, '#ffe9a8', s.doorGfx + 2, b.y + 33, 16, 4); px(ctx, '#2a1d14', s.doorGfx + 9, b.y + 33, 2, 4);
@@ -276,7 +286,7 @@ G.world = (() => {
     const art = villageArt(v);                                         // 11-16 이미지 AI 건물 그림이 있으면 벽·지붕·문·창 대신 (이름표만 위에)
     if (art) {
       ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(art.im, art.x, art.y, art.w, art.h); ctx.restore();
-      label(ctx, v.name, b.x + b.w / 2, art.y + 13);
+      label(ctx, v.name, b.x + b.w / 2, art.y + 13, v.col, VICON[v.id]);
       return;
     }
     if (VL.kind === 'stone') { px(ctx, wall, b.x, b.y + 18, b.w, b.h - 18); for (let yy = b.y + 22, r = 0; yy < b.y + b.h; yy += 8, r++) { px(ctx, shade(v.col, 0.85), b.x, yy + 7, b.w, 1); for (let xx = b.x + (r % 2 ? 10 : 0); xx < b.x + b.w; xx += 20) px(ctx, shade(v.col, 0.85), xx, yy, 1, 8); } for (let xx = b.x + 34; xx < b.x + b.w - 10; xx += 44) { px(ctx, '#e6def0', xx, b.y + 22, 5, b.h - 26); px(ctx, '#c8bcd8', xx + 4, b.y + 22, 1, b.h - 26); } }
@@ -291,7 +301,7 @@ G.world = (() => {
       ctx.strokeStyle = shade(VL.roof, 0.6); ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1;
     }
     if (v.id === 'fire') { px(ctx, '#3a3f48', b.x + b.w / 2 - 6, b.y - 18, 12, 18); px(ctx, '#e5533d', b.x + b.w / 2 - 4, b.y - 16, 8, 6); px(ctx, '#2a2e36', b.x + b.w / 2 - 8, b.y - 20, 16, 3); }   // 망루
-    label(ctx, v.name, b.x + b.w / 2, b.y + 10);
+    label(ctx, v.name, b.x + b.w / 2, b.y + 10, v.col, VICON[v.id]);
     for (let i = 0; i < 4; i++) {                                      // 창 (불 켜짐) + 덧문 + 꽃 화분
       const wx = b.x + 40 + i * 44, wy = b.y + 30;
       px(ctx, '#3b2a1e', wx - 2, wy - 2, 28, 20);
@@ -309,8 +319,8 @@ G.world = (() => {
   // 캐시: 바닥 + 공방·마을 바탕 (글꼴이 준비된 뒤 한 번)
   let cache = null;
   function staticLayer() {
-    if (cache) return cache;
-    cache = document.createElement('canvas'); cache.width = C.VIEW.w * C.RES; cache.height = C.VIEW.h * C.RES;
+    if (cache && cache._res === C.RES) return cache;                  // 화면 배율이 바뀌면 다시 그림
+    cache = document.createElement('canvas'); cache._res = C.RES; cache.width = C.VIEW.w * C.RES; cache.height = C.VIEW.h * C.RES;
     const g = cache.getContext('2d'); g.scale(C.RES, C.RES); g.imageSmoothingEnabled = false; seed = 7;
     drawGround(g); shops.forEach(s => drawShop(g, s)); villages.forEach(v => drawVillage(g, v));
     return cache;
@@ -348,5 +358,7 @@ G.world = (() => {
     ctx.drawImage(staticLayer(), 0, 0, C.VIEW.w, C.VIEW.h);
     drawOffice(ctx, performance.now() / 1000);
   }
-  return { shade, CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, villageArt, roofPerch: { x: 480, y: 242 } };
+  // 마을 이름표만 다시 그리기 (피해 연출이 덮은 뒤)
+  function villageLabel(ctx, v) { const art = villageArt(v), b = v.body; label(ctx, v.name, b.x + b.w / 2, art ? art.y + 13 : b.y + 10, v.col, VICON[v.id]); }
+  return { shade, CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, villageArt, villageLabel, roofPerch: { x: 480, y: 242 } };
 })();

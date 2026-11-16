@@ -1,5 +1,5 @@
 html,body{margin:0;height:100%;background:#1b1f24;overflow:hidden}
 body{display:flex;align-items:center;justify-content:center}
-#game{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;background:#233}
+#game{display:block;image-rendering:auto;touch-action:none;background:#233}  /* 8.15단계: 캔버스를 화면 픽셀에 맞춰 그리므로 늘리지 않음(픽셀 그대로 늘리기는 줄일 때 글자를 깨뜨림) */
 #rotate{display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:#1b1f24;color:#fff;font:20px sans-serif;z-index:9}
 @media (orientation:portrait) and (pointer:coarse){#rotate{display:flex}}

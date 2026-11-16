@@ -104,8 +104,8 @@ G.screens = (() => {
   function titleBg(ctx) {
     const im = G.img.title_bg;
     if (!im || !im.naturalWidth) { G.world.draw(ctx); return false; }
-    if (!bgCache) {
-      bgCache = document.createElement('canvas'); bgCache.width = W * C.RES; bgCache.height = H * C.RES;
+    if (!bgCache || bgCache._res !== C.RES) {
+      bgCache = document.createElement('canvas'); bgCache._res = C.RES; bgCache.width = W * C.RES; bgCache.height = H * C.RES;
       const g = bgCache.getContext('2d'); g.scale(C.RES, C.RES); g.filter = 'blur(2px)'; g.drawImage(im, -8, -8, W + 16, H + 16); g.filter = 'none';
     }
     ctx.drawImage(bgCache, 0, 0, W, H); return true;

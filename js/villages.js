@@ -59,15 +59,16 @@ G.villages = (() => {
     const b = v.body, t = s.t, g = s.upT == null ? 1 : Math.min(1, s.upT / 0.6);
     if (s.upT != null) { s.upT += 1 / 60; if (s.upT > 1.2) s.upT = null; }
     const px = (c, x, y, w, h) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); };
+    const art0 = G.world.villageArt(v), by = art0 ? art0.y + 4 : b.y;   // 8.15단계: 건물 그림이면 그림의 지붕 높이에 맞춰 장식을 올림
     if (s.tier >= 2) {                                      // 증축 (위로 솟는 구조물)
       const rise = Math.round(16 * g), cx = b.x + b.w / 2 + 52;           // 마을 이름(가운데) 오른쪽에
-      if (v.id === 'school') { px('#c9a94a', cx - 11, b.y - rise, 22, rise + 2); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx, b.y - rise + 8, 6, 0, 7); ctx.fill(); px('#3a3a3a', cx - 1, b.y - rise + 4, 2, 5); px('#3a3a3a', cx, b.y - rise + 8, 4, 1); }
-      if (v.id === 'clinic') { px('#fff', cx - 12, b.y - rise, 24, rise + 2); px('#e5533d', cx - 2, b.y - rise + 2, 4, 12); px('#e5533d', cx - 6, b.y - rise + 6, 12, 4); }
-      if (v.id === 'fire') { const x = b.x + 40; px('#8a2a22', x, b.y - rise - 4, 16, rise + 6); px('#fff6b0', x + 4, b.y - rise, 8, 6); px(Math.floor(t * 4) % 2 ? '#ff3b30' : '#5ec8f2', x + 5, b.y - rise - 8, 6, 4); }
-      if (v.id === 'library') { ctx.fillStyle = '#8b7ab8'; ctx.beginPath(); ctx.arc(cx, b.y + 2, 18 * g, Math.PI, 0); ctx.fill(); px('#ffe48a', cx - 1, b.y - 18 * g - 4, 2, 5); px('#fff6b0', cx - 6, b.y - 8, 4, 6); px('#fff6b0', cx + 2, b.y - 8, 4, 6); }
+      if (v.id === 'school') { px('#c9a94a', cx - 11, by - rise, 22, rise + 2); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx, by - rise + 8, 6, 0, 7); ctx.fill(); px('#3a3a3a', cx - 1, by - rise + 4, 2, 5); px('#3a3a3a', cx, by - rise + 8, 4, 1); }
+      if (v.id === 'clinic') { px('#fff', cx - 12, by - rise, 24, rise + 2); px('#e5533d', cx - 2, by - rise + 2, 4, 12); px('#e5533d', cx - 6, by - rise + 6, 12, 4); }
+      if (v.id === 'fire') { const x = art0 ? cx - 8 : b.x + 40; px('#8a2a22', x, by - rise - 4, 16, rise + 6); px('#fff6b0', x + 4, by - rise, 8, 6); px(Math.floor(t * 4) % 2 ? '#ff3b30' : '#5ec8f2', x + 5, by - rise - 8, 6, 4); }
+      if (v.id === 'library') { ctx.fillStyle = '#8b7ab8'; ctx.beginPath(); ctx.arc(cx, by + 2, 18 * g, Math.PI, 0); ctx.fill(); px('#ffe48a', cx - 1, by - 18 * g - 4, 2, 5); px('#fff6b0', cx - 6, by - 8, 4, 6); px('#fff6b0', cx + 2, by - 8, 4, 6); }
     }
     // 1단계 소품
-    if (v.id === 'school') { const x = b.x + 34, w = Math.sin(t * 5) * 1.5; px('#6a6a6a', x, b.y - 20, 2, 46); px('#2f6fb5', x + 2, b.y - 20 + w, 15, 10); G.icons.stars(ctx, x + 6, b.y - 18 + w, 1, 1, 1); }   // 교기(파란 바탕 노란 별)
+    if (v.id === 'school') { const x = b.x + 34, w = Math.sin(t * 5) * 1.5; px('#6a6a6a', x, by - 20, 2, 46); px('#2f6fb5', x + 2, by - 20 + w, 15, 10); G.icons.stars(ctx, x + 6, by - 18 + w, 1, 1, 1); }   // 교기(파란 바탕 노란 별)
     if (v.id === 'clinic' || v.id === 'fire') {
       const art = G.world.villageArt(v), x = art ? b.x + 44 : b.x + b.w - 64, y = art ? b.y - 16 : b.y + 50, red = v.id === 'fire';   // 건물 그림이면 창을 가리지 않게 앞마당에 세움
       px(red ? '#d9342b' : '#f4f6f8', x, y, 34, 14); px(red ? '#a8231b' : '#c9d6e0', x + 22, y - 5, 12, 6);
@@ -92,7 +93,7 @@ G.villages = (() => {
     }
   }
   function darkWindows(ctx, b, v) {
-    const art = G.world.villageArt(v, true); if (art) { ctx.drawImage(art.im, art.x, art.y, art.w, art.h); return; }   // 11-16 건물 그림이면 유리창이 꺼진 그림으로
+    if (G.world.villageArt(v)) return;                                // 건물 그림이면 draw()에서 먼저 그림 (이름표·배지가 위에 오게, 8.15단계)
     ctx.fillStyle = '#3b4250'; for (let i = 0; i < 4; i++) ctx.fillRect(b.x + 40 + i * 44, b.y + 30, 24, 16);
   }
 
@@ -105,11 +106,13 @@ G.villages = (() => {
         G.world.text(ctx, '곧 열려요', b.x + b.w / 2, b.y + 41, 12, '#4a3f2a');
         continue;
       }
+      const dk = hurt && v.id !== 'clinic' && G.world.villageArt(v, true);   // 건물 그림의 꺼진 창: 단장 장식·배지·이름표보다 먼저
+      if (dk) { ctx.globalAlpha = Math.min(1, s.hurtT / 0.5); ctx.drawImage(dk.im, dk.x, dk.y, dk.w, dk.h); ctx.globalAlpha = 1; G.world.villageLabel(ctx, v); }
       upLook(ctx, v, s);
       const blink = Math.floor(s.t * 3) % 2 === 0;
       if (v.id === 'fire') {                         // 경광등: 평소 빨강 깜빡, 피해 시 회색
         ctx.fillStyle = hurt ? '#7d7d7d' : blink ? '#ff3b30' : '#a8231b';
-        ctx.fillRect(b.x + b.w - 30, b.y - 6, 10, 7);
+        const fa = G.world.villageArt(v); ctx.fillRect(b.x + b.w - 30, (fa ? fa.y + 4 : b.y) - 6, 10, 7);   // 그림이면 지붕 높이에
       }
       if (hurt) {
         const fade = Math.min(1, s.hurtT / 0.5);      // 마지막 0.5초 서서히 회복

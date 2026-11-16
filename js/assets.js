@@ -7,7 +7,8 @@ G.ASSET_SRC = {
   plaza: 'assets/plaza.jpg',   // 11-16 광장 바닥: Leonardo.ai 그림에서 돌바닥만 잘라 냄(원본 docs/licenses/원본_건물, tools/crop_image.cjs). 없으면 코드 돌길
   village_school: 'assets/village_school.png', village_school_dark: 'assets/village_school_dark.png',
   village_clinic: 'assets/village_clinic.png', village_clinic_dark: 'assets/village_clinic_dark.png',
-  village_library: 'assets/village_library.png', village_library_dark: 'assets/village_library_dark.png',   // 11-16 마을 그림 시험: Leonardo.ai로 만든 학교(원본 docs/licenses/원본_건물, 만든 도구 tools/make_sprite.cjs). _dark = 피해 때 유리창이 꺼진 그림. 없으면 코드 그림
+  village_library: 'assets/village_library.png', village_library_dark: 'assets/village_library_dark.png',
+  village_fire: 'assets/village_fire.png', village_fire_dark: 'assets/village_fire_dark.png',   // 11-16 마을 그림 시험: Leonardo.ai로 만든 학교(원본 docs/licenses/원본_건물, 만든 도구 tools/make_sprite.cjs). _dark = 피해 때 유리창이 꺼진 그림. 없으면 코드 그림
    // title_bg: 이미지 AI(Leonardo.ai Lucid Origin)로 만든 타이틀 배경   // mascot3d: 공모전 제공 공식 3D 이미지를 줄인 것(타이틀·결과)
 };
 G.FONT_SRC = {

@@ -7,9 +7,11 @@
   G.input.bind(cv);
 
   function fit() {                                   // 비율 유지 확대(레터박스)
-    const s = Math.min(innerWidth / C.VIEW.w, innerHeight / C.VIEW.h);
-    cv.style.width = Math.floor(C.VIEW.w * s) + 'px';
-    cv.style.height = Math.floor(C.VIEW.h * s) + 'px';
+    const s = Math.min(innerWidth / C.VIEW.w, innerHeight / C.VIEW.h), cw = Math.floor(C.VIEW.w * s), ch = Math.floor(C.VIEW.h * s);
+    cv.style.width = cw + 'px';
+    cv.style.height = ch + 'px';
+    // 8.15단계: 캔버스 해상도 = 화면에 보이는 실제 픽셀 수 (늘리거나 줄이지 않아 글자가 깨지지 않음). 캐시 그림은 배율이 바뀌면 다시 그림
+    if (C.RES_AUTO) { const dpr = window.devicePixelRatio || 1, pw = Math.max(C.VIEW.w, Math.min(C.VIEW.w * 3, Math.round(cw * dpr))); if (cv.width !== pw) { cv.width = pw; cv.height = Math.round(pw * C.VIEW.h / C.VIEW.w); C.RES = pw / C.VIEW.w; } }
   }
   addEventListener('resize', fit); fit();
   document.addEventListener('visibilitychange', () => { if (document.hidden) G.screens.autoPause(); });

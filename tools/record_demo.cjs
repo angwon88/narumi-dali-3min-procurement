@@ -33,7 +33,7 @@ const INIT = `
 const REC = `
 window.REC = (() => {
   const C = G.C, W = 960, H = 540, cv = document.getElementById('game'), ctx = cv.getContext('2d');
-  cv.width = 1920; cv.height = 1080;
+  cv.width = 1920; cv.height = 1080; C.RES_AUTO = false; C.RES = 2;   // 8.15단계: 녹화는 늘 2배
   const M = G.missions.LIST;
   const CAP = {
     // 11-16 8.0단계: 임무가 4단계로 바뀌어 깨지지 않게만 맞춤. 단계 안내·카드 장면은 아직 반영 안 함 → 다시 녹화하기 전에 손봐야 함

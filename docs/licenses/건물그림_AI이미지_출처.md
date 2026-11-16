@@ -28,3 +28,4 @@
 - 광장 바닥: `원본_건물/미래타일_LeonardoAI.jpg`에서 가운데 띠(x 370~980, y 300~480)만 → `assets/plaza.jpg` (`crop_image.cjs ... 370 300 610 180 1920 564`). 원형 광장은 코드로 그림
 - 옛날식 학교·광장 원본은 같은 폴더에 보관(지금은 안 씀)
 - 보건소: `원본_건물/미래보건소_LeonardoAI.jpg` → `assets/village_clinic.png` (`make_sprite.cjs --box 200,338,676,46,1310,48,1298`, 원본 가장자리 검은 띠 제외)
+- 소방서·도서관(미래형): 참가자가 만든 `assets/village_fire.png`·`village_library.png` (원본 Leonardo.ai 그림은 `원본_건물/`에 추가 예정). 꺼진 창 덧그림은 `tools/make_dark.cjs`로 다시 만듦
