@@ -216,6 +216,15 @@ G.connect = (() => {
     ctx.fillStyle = col; ctx.fillRect(cx - w / 2, y, w, 18);
     T(ctx, text, cx, y + 9, 12, '#fff');
   }
+  // 실사 발판: 달이가 걸어가 서는 자리 (문 앞). 청록 테두리가 깜빡이고 발자국 두 개
+  function checkMat(ctx, S, d) {
+    const x = d.x + 3, y = d.y + 3, w = d.w - 6, h = d.h - 6, r = 7, on = 0.5 + Math.sin((S.elapsed || 0) * 6) * 0.5;
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    ctx.fillStyle = 'rgba(200,240,245,.9)'; ctx.fill();
+    ctx.strokeStyle = '#0f8a96'; ctx.lineWidth = 2 + on; ctx.stroke(); ctx.lineWidth = 1;
+    ctx.fillStyle = 'rgba(15,138,150,.55)';
+    for (const fx of [-6, 6]) { ctx.beginPath(); ctx.ellipse(x + w / 2 + fx, y + h / 2 + 1, 3.5, 5.5, fx < 0 ? -0.2 : 0.2, 0, 7); ctx.fill(); }
+  }
   // 공방 표시: 납품 칸, 그리고 카드를 고르면 받을 수 있는 곳 / 없는 곳
   function drawShops(ctx, S) {
     if (!C.CONNECT) return;
@@ -223,7 +232,12 @@ G.connect = (() => {
     for (const sh of S.shops) {
       if (!G.shops.isOpen(S, sh)) continue;
       const b = sh.w.body, cx = b.x + b.w / 2, y = b.y + b.h + 5, n = busy(S, sh), m = slots(S, sh);
-      if (needsCheck(sh)) { pill(ctx, cx, y, 92, '달이 실사', '#0f8a96'); continue; }
+      if (needsCheck(sh)) {                                             // 11-16 8.3단계: 달이가 설 자리(문 앞 발판)를 보여 주고, '달이 실사' 표시는 그 옆으로 (전에는 표시 위에 달이가 서서 가려짐)
+        const d = sh.w.door, pw = b.w - d.w - 8, pcx = d.x > b.x ? b.x + 2 + pw / 2 : d.x + d.w + 6 + pw / 2;
+        checkMat(ctx, S, d);
+        if (!(S.report && S.report.sh === sh)) pill(ctx, pcx, d.y + 5, pw, '달이 실사', '#0f8a96');
+        continue;
+      }
       let cy = 0;                                                       // 단가계약: 물건 그림 + 남은 건수
       for (const k of Object.keys(S.deals)) {
         const d = S.deals[k]; if (d.sh !== sh) continue;
