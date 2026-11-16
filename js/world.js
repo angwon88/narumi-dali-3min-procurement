@@ -131,6 +131,7 @@ G.world = (() => {
     ctx.font = F; ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(s, x + 6 + lead, y + h / 2 + .5);
   }
   const VICON = { school: 'desk', clinic: 'kit', fire: 'ext', library: 'lamp' };   // 마을 간판 아이콘
+  const VLABEL_DX = { clinic: -62 };                                   // 건물 그림의 가운데 장식(보건소 초록 십자)을 가리지 않게 이름표를 옮김
   // ---------- 11-16 8.13단계 미래형 바닥: 밝은 보도 데크 + 네모 화단 + LED 가로등 + 화분 나무 (C.FUTURE) ----------
   function deck(ctx, x0, y0, w, h) {
     px(ctx, '#d9e3ea', x0, y0, w, h);                                   // 흰 건물이 묻히지 않게 살짝 어둡게
@@ -299,7 +300,7 @@ G.world = (() => {
     const art = villageArt(v);                                         // 11-16 이미지 AI 건물 그림이 있으면 벽·지붕·문·창 대신 (이름표만 위에)
     if (art) {
       ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(art.im, art.x, art.y, art.w, art.h); ctx.restore();
-      label(ctx, v.name, b.x + b.w / 2, art.y + 13, v.col, VICON[v.id]);
+      label(ctx, v.name, b.x + b.w / 2 + (VLABEL_DX[v.id] || 0), art.y + 13, v.col, VICON[v.id]);
       return;
     }
     if (VL.kind === 'stone') { px(ctx, wall, b.x, b.y + 18, b.w, b.h - 18); for (let yy = b.y + 22, r = 0; yy < b.y + b.h; yy += 8, r++) { px(ctx, shade(v.col, 0.85), b.x, yy + 7, b.w, 1); for (let xx = b.x + (r % 2 ? 10 : 0); xx < b.x + b.w; xx += 20) px(ctx, shade(v.col, 0.85), xx, yy, 1, 8); } for (let xx = b.x + 34; xx < b.x + b.w - 10; xx += 44) { px(ctx, '#e6def0', xx, b.y + 22, 5, b.h - 26); px(ctx, '#c8bcd8', xx + 4, b.y + 22, 1, b.h - 26); } }
@@ -389,6 +390,6 @@ G.world = (() => {
     drawOffice(ctx, performance.now() / 1000);
   }
   // 마을 이름표만 다시 그리기 (피해 연출이 덮은 뒤)
-  function villageLabel(ctx, v) { const art = villageArt(v), b = v.body; label(ctx, v.name, b.x + b.w / 2, art ? art.y + 13 : b.y + 10, v.col, VICON[v.id]); }
+  function villageLabel(ctx, v) { const art = villageArt(v), b = v.body; label(ctx, v.name, b.x + b.w / 2 + (art ? VLABEL_DX[v.id] || 0 : 0), art ? art.y + 13 : b.y + 10, v.col, VICON[v.id]); }
   return { shopArt, shade, CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, villageArt, villageLabel, roofPerch };
 })();

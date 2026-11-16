@@ -32,3 +32,4 @@
 - 조달청(미래형): 참가자가 만든 `assets/village_procurement_hq.png` (흰 배경판·dark 판은 `원본_건물/`에 보관, 원본 Leonardo.ai 그림 추가 예정). 간판의 CI는 공모전 제공 공식 자료
 - 공방 4종(미래형): 참가자가 만든 `원본_건물/공방4종.png`(한 장에 2×2) → `tools/split_shops.cjs` → `assets/shop_furn·elec·health·safety.png`
 - 배송 드론: 참가자가 만든 `assets/drone_small.png`·`drone_fast.png` (흰 배경판은 `원본_건물/`)
+- 보건소(다시 만듦): 참가자가 만든 `원본_건물/미래보건소2.png` → `assets/village_clinic.png` (먼저 쓴 `미래보건소_LeonardoAI.jpg`는 학교와 너무 비슷해 바꿈)
