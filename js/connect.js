@@ -88,11 +88,12 @@ G.connect = (() => {
     }
   }
   // ---------- 단가계약 ----------
-  function autoCovers(S, r) { const d = S.deals[r.item]; return !!d && d.sh.status === 'open' && d.sh.q[r.item] >= r.minQ; }
+  // 11-16 8.1단계: 태풍 긴급 계약은 단가계약 대상이 아님 (4단계 목표 '긴급 계약부터 해결'을 직접 하게)
+  function autoCovers(S, r) { const d = S.deals[r.item]; return !r.urgent && !!d && d.sh.status === 'open' && d.sh.q[r.item] >= r.minQ; }
   function dropDeals(S, sh) { for (const k of Object.keys(S.deals || {})) if (S.deals[k].sh === sh) delete S.deals[k]; }
   function autoDeals(S) {
     for (const r of G.requests.active(S)) {
-      if (r.ship || r.t < C.CONTRACT_AUTO_DELAY) continue;
+      if (r.ship || r.urgent || r.t < C.CONTRACT_AUTO_DELAY) continue;
       const d = S.deals[r.item]; if (!d) continue;
       if (d.sh.status !== 'open') { delete S.deals[r.item]; continue; }
       if (d.sh.q[r.item] < r.minQ || !hasSlot(S, d.sh)) continue;       // 조건 미달은 직접, 칸이 없으면 대기
@@ -110,7 +111,7 @@ G.connect = (() => {
   function tab(S, r) {
     if (r.state !== 'open') return null;
     if (r.ship) return r.auto ? ['자동 납품', '#2e9b3a'] : ['납품 중', '#2e9b3a'];
-    const d = S.deals[r.item]; if (!d) return null;
+    const d = S.deals[r.item]; if (!d || r.urgent) return null;          // 긴급 계약은 빨간 '긴급 ×2' 탭 그대로
     if (d.sh.q[r.item] < r.minQ) return ['직접 계약', '#d97a00'];
     return ['자동 대기', '#2f6fb5'];
   }
