@@ -121,9 +121,43 @@ G.world = (() => {
     ctx.font = '12px ' + G.FONT; const w = ctx.measureText(s).width + 10;
     px(ctx, 'rgba(20,16,10,.45)', cx - w / 2, cy - 7, w, 14); text(ctx, s, cx, cy, 12, '#fff');
   }
+  // ---------- 11-16 8.13단계 미래형 바닥: 밝은 보도 데크 + 네모 화단 + LED 가로등 + 화분 나무 (C.FUTURE) ----------
+  function deck(ctx, x0, y0, w, h) {
+    px(ctx, '#d9e3ea', x0, y0, w, h);                                   // 흰 건물이 묻히지 않게 살짝 어둡게
+    for (let y = y0 + 12; y < y0 + h; y += 12) px(ctx, '#c7d3dc', x0, y, w, 1);
+    for (let row = 0, y = y0; y < y0 + h; row++, y += 12) for (let x = x0 + (row % 2) * 12; x < x0 + w; x += 24) px(ctx, '#c7d3dc', x, y, 1, 12);
+    for (let k = 0; k < w * h / 2600; k++) { const x = x0 + Math.floor(rnd() * w / 24) * 24, y = y0 + Math.floor(rnd() * h / 12) * 12; px(ctx, 'rgba(94,200,242,.35)', x + 2, y + 5, 20, 2); }   // 바닥에 박힌 하늘색 빛 줄
+  }
+  function planter(ctx, x, y, w, h) {                                  // 네모 화단: 흰 테두리 + 다듬은 잔디 + 작은 꽃
+    px(ctx, 'rgba(0,0,0,.12)', x + 1, y + h, w, 2);
+    px(ctx, '#ffffff', x, y, w, h); px(ctx, '#cfdbe2', x, y + h - 2, w, 2);
+    px(ctx, '#8fd19e', x + 2, y + 2, w - 4, h - 5); px(ctx, '#a7e0b2', x + 2, y + 2, w - 4, 2);
+    for (let k = 0; k < w / 10; k++) { const fx = x + 4 + rnd() * (w - 8), fy = y + 4 + rnd() * Math.max(1, h - 10); px(ctx, ['#ffffff', '#ffd6e8', '#fff6b0'][Math.floor(rnd() * 3)], fx, fy, 2, 2); }
+  }
+  function futureGround(ctx, x0, y0, w, h) {
+    deck(ctx, x0, y0, w, h);
+    for (let x = x0 + 6; x < x0 + w - 40; x += 64 + Math.floor(rnd() * 24)) planter(ctx, x, y0 + 4 + Math.floor(rnd() * Math.max(1, h - 30)), 34 + Math.floor(rnd() * 18), 14);
+  }
+  function futureLamp(ctx, x, y) {                                     // 얇은 흰 기둥 + 하늘색 LED 막대
+    px(ctx, 'rgba(0,0,0,.15)', x - 4, y - 1, 9, 3);
+    px(ctx, '#cfd8e0', x - 3, y - 3, 7, 3); px(ctx, '#ffffff', x - 1, y - 32, 3, 30); px(ctx, '#cfd8e0', x + 1, y - 32, 1, 30);
+    px(ctx, 'rgba(94,200,242,.25)', x - 6, y - 40, 13, 12); px(ctx, '#5ec8f2', x - 2, y - 38, 5, 8); px(ctx, '#e6f8ff', x - 1, y - 37, 2, 6);
+  }
+  function futureTree(ctx, x, y) {                                     // 둥근 흰 화분에 다듬은 둥근 나무
+    px(ctx, 'rgba(0,0,0,.15)', x - 11, y - 1, 22, 4);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(x - 9, y - 10, 18, 9); ctx.fillStyle = '#cfdbe2'; ctx.fillRect(x - 9, y - 3, 18, 2); ctx.fillStyle = '#5ec8f2'; ctx.fillRect(x - 9, y - 10, 18, 2);
+    px(ctx, '#8a6a4a', x - 1, y - 16, 3, 6);
+    const blob = (cx, cy, r, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill(); };
+    blob(x, y - 26, 12, '#5fb878'); blob(x - 3, y - 29, 7, '#7fcf92'); px(ctx, '#c8f0d0', x - 5, y - 33, 3, 2);
+  }
   function drawGround(ctx) {
+    if (C.FUTURE) {
+      futureGround(ctx, 0, TOP, C.VIEW.w, SY - TOP + 66);              // 공방 줄 뒤
+      futureGround(ctx, 0, VY - 4, C.VIEW.w, C.VIEW.h - VY + 4);        // 마을 줄
+    } else {
     grass(ctx, 0, TOP, C.VIEW.w, SY - TOP + 66);                       // 공방 줄 뒤
     grass(ctx, 0, VY - 4, C.VIEW.w, C.VIEW.h - VY + 4);                 // 마을 줄
+    }
     const pz = G.img && G.img.plaza;                                   // 11-16 광장 바닥 그림(Leonardo.ai, tools/crop_image.cjs). 없으면 코드 돌길
     if (pz && pz.naturalWidth) {
       ctx.drawImage(pz, 0, SY + 62, C.VIEW.w, VY - SY - 62);
@@ -135,10 +169,11 @@ G.world = (() => {
       ctx.strokeStyle = 'rgba(94,200,242,.55)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(cx, cy, 157, 99, 0, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.ellipse(cx, cy, 143, 85, 0, 0, 7); ctx.stroke();
       ctx.restore(); ctx.lineWidth = 1;
     } else cobble(ctx, 0, SY + 62, C.VIEW.w, VY - SY - 62);              // 광장
-    px(ctx, '#b89d66', 0, SY + 62, C.VIEW.w, 3); px(ctx, '#b89d66', 0, VY - 4, C.VIEW.w, 3);   // 연석
-    for (const x of [240, 480, 720]) lamp(ctx, x, SY + 98);           // 공방 종류 사이 가로등
-    for (const x of [8, 952]) lamp(ctx, x, SY + 98);
-    for (const x of [240, 480, 720]) tree(ctx, x, VY + 104);           // 마을 사이 나무
+    const curb = C.FUTURE ? '#a9c4d3' : '#b89d66', L = C.FUTURE ? futureLamp : lamp, Tr = C.FUTURE ? futureTree : tree;
+    px(ctx, curb, 0, SY + 62, C.VIEW.w, 3); px(ctx, curb, 0, VY - 4, C.VIEW.w, 3);   // 연석
+    for (const x of [240, 480, 720]) L(ctx, x, SY + 98);              // 공방 종류 사이 가로등
+    for (const x of [8, 952]) L(ctx, x, SY + 98);
+    for (const x of [240, 480, 720]) Tr(ctx, x, VY + 104);            // 마을 사이 나무
   }
   // ---------- 2026-11-03 그래픽 상향 3: 건물에 깊이감 (경사 지붕·처마·주춧돌·꽃 화분·창 불빛·부드러운 그림자) ----------
   // 업종별 모양: 가구 = 나무 판자 + 붉은 기와 / 전자 = 파란 사이딩 + 남색 금속 지붕 / 보건 = 흰 타일 + 초록 지붕 / 안전 = 노란 벽돌 + 주황 지붕
@@ -226,11 +261,17 @@ G.world = (() => {
   }
   function drawVillage(ctx, v) {
     const y = v.yard, b = v.body, wall = shade(v.col, 1), VL = VLOOK[v.id] || { roof: shade(v.col, 0.5), kind: 'plank' };
+    if (C.FUTURE) {                                                    // 미래형 앞마당: 데크 + 양옆 네모 화단 + 하늘색 빛 길
+      deck(ctx, y.x, y.y, y.w, y.h); px(ctx, '#cfdbe2', y.x, y.y, y.w, 1);
+      planter(ctx, y.x + 4, y.y + 6, 40, 28); planter(ctx, y.x + y.w - 44, y.y + 6, 40, 28);
+      px(ctx, 'rgba(94,200,242,.45)', b.x + b.w / 2 - 14, y.y + 4, 28, 2); px(ctx, 'rgba(94,200,242,.3)', b.x + b.w / 2 - 14, y.y + y.h - 6, 28, 2);
+    } else {
     // 앞마당: 잔디 + 가장자리 꽃밭 + 디딤돌 길
     px(ctx, '#8cc56a', y.x, y.y, y.w, y.h); px(ctx, '#9bd277', y.x, y.y, y.w, 2);
     for (let x = y.x + 6; x < y.x + y.w; x += 12) px(ctx, '#7ab35a', x, y.y + 4, 2, y.h - 8);
     for (let k = 0; k < 7; k++) { px(ctx, '#d8c9a0', b.x + 8 + (k % 2) * 3, y.y + 3 + k * 5, 14, 3); }
     for (const fx of [y.x + 3, y.x + y.w - 9]) for (let k = 0; k < 4; k++) { px(ctx, '#3f8a35', fx, y.y + 6 + k * 8, 6, 3); px(ctx, ['#ff7a9a', '#ffd84a', '#fff', '#ff9a4a'][(k + fx) % 4 | 0], fx + 1, y.y + 4 + k * 8, 3, 3); }
+    }
     softShade(ctx, b.x, b.y + b.h - 1, b.w);
     const art = villageArt(v);                                         // 11-16 이미지 AI 건물 그림이 있으면 벽·지붕·문·창 대신 (이름표만 위에)
     if (art) {

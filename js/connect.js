@@ -13,7 +13,8 @@ G.connect = (() => {
 
   function init(S) {
     S.sel = null; S.ships = []; S.shipMult = 1; S.slotBonus = 0; S.connectHint = true; S.deals = {}; S.report = null; S.newPending = 0;
-    S.newQ = ['sprout', 'fake', ...(Math.random() < 0.5 ? ['sprout', 'fake'] : ['fake', 'sprout'])];   // 2단계: 새싹 → 페이퍼컴퍼니, 4단계: 둘 중 하나
+    // 8.13단계: 새싹 2 · 페이퍼컴퍼니 3. 처음 둘은 새싹 → 페이퍼컴퍼니(차이를 먼저 보여 줌), 나머지 셋은 섞음
+    S.newQ = ['sprout', 'fake', ...['sprout', 'fake', 'fake'].sort(() => Math.random() - 0.5)];
   }
   const slots = (S, sh) => C.CONNECT_SLOTS[sh.tier || 0] + (S.slotBonus || 0);
   const busy = (S, sh) => S.ships.filter(s => s.shop === sh).length;
