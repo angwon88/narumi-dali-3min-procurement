@@ -64,7 +64,9 @@ G.C = {
   CONNECT_SHIP_SPEED: 170, CONNECT_SHIP_SEC: [3, 5],   // 수레 속도(px/초)와 납품 시간 범위(초)
   CONNECT_BROKER_MIN: 2,   // 브로커는 도착까지 이 초 이상 남은 수레의 계약을 먼저 노림
   CONTRACT_AUTO: 1, CONTRACT_AUTO_DELAY: 0.7,   // 단가계약: 직접 계약하면 같은 물건 다음 1건 자동 체결(값 고정, 어느 마을이든 — 실제 단가계약도 여러 기관이 함께 씀), 카드가 뜨고 0.7초 뒤. 11-16 8.1단계 3 → 2, 8.2단계 2 → 1 (한가하다는 소감). 태풍 긴급 계약은 자동 제외(connect.js)
-  CONNECT_BROKER_SPEED: [210, 260], CONNECT_BROKER_GRAB: 1.0,   // 브로커가 수레를 쫓는 속도(px/초)와 등장 뒤 출발까지
+  CONNECT_BROKER_SPEED: [210, 260], CONNECT_BROKER_GRAB: 1.0,   // (수레 추격일 때) 브로커가 수레를 쫓는 속도(px/초)와 등장 뒤 출발까지
+  CONNECT_BROKER_MODE: 'card',   // 11-16 8.5단계: 'card' = 아직 계약 안 한 카드를 노려 그 마을로 걸어감(먼저 계약하거나 브로커를 눌러 막음) / 'ship' = 7.1단계 수레 추격(나오자마자 빼앗아 대처하기 어렵다는 소감)
+  CONNECT_CARD_BROKER_SPEED: [110, 150],   // 'card'일 때 걷는 속도(px/초). 화면 끝 → 마을까지 약 3~5초 + 두리번 BROKER_GRAB초
   NEWSHOP_AT: [33, 45, 96],   // 새 공방: 2단계에 새싹 → 페이퍼컴퍼니, 4단계에 둘 중 하나. 겉모습은 같고 달이가 실사해 고름 (11-16 8.0단계: 15·40·65·85 → 단계에 맞춤)
   WRONG_FAKE_TRUST: -20, WRONG_FAKE_SCORE: -800, WRONG_SPROUT_TRUST: -5,   // 잘못 고른 실사
   STOCK: false,   // 원자재 비축 (시험판에서 끔). 폭등도 함께 끄려면 EVENTS.surge
@@ -88,4 +90,4 @@ G.C = {
   GRADE: { S: [20000, 80], A: [13000, 60], B: [6000, 0] },   // 2026-11-03 덜어내기 뒤 2분 기준 (봇 0.7 ≈ 16,000~25,000 · 0.45 ≈ 10,000~19,000)
 };
 G.FONT = 'Galmuri11';
-G.VERSION = 'v8.4 시험 · 업무 4단계';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)
+G.VERSION = 'v8.5 시험 · 업무 4단계';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)

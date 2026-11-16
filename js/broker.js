@@ -15,7 +15,11 @@ G.broker = (() => {
       path: [], face: 1, stun: false, timer: 0, shown: false, freeze: 0, blockCD: 0 };
     Object.assign(S.stats, { brokerWon: 0, brokerBlocked: 0, brokerCaught: 0 });
   }
-  const SP = C.CONNECT ? C.CONNECT_BROKER_SPEED : C.BROKER_SPEED, GRAB = C.CONNECT ? C.CONNECT_BROKER_GRAB : C.BROKER_GRAB;
+  const SHIP = C.CONNECT && C.CONNECT_BROKER_MODE === 'ship', CARD = C.CONNECT && !SHIP;   // 계약 연결: 수레 추격(7.1) / 카드 가로채기(8.5)
+  const SP = SHIP ? C.CONNECT_BROKER_SPEED : CARD ? C.CONNECT_CARD_BROKER_SPEED : C.BROKER_SPEED, GRAB = SHIP ? C.CONNECT_BROKER_GRAB : C.BROKER_GRAB;
+  // 노릴 수 있는 카드: 아직 계약 안 했고 시간이 넉넉한 것 (카드 가로채기)
+  const cardTargets = S => G.requests.active(S).filter(r => !r.broker && !r.ship && r.left > 8);
+  const hasTarget = S => SHIP ? S.ships.length > 0 : CARD ? cardTargets(S).length > 0 : true;
   const speed = S => U.clamp(SP[0] + (SP[1] - SP[0]) * (S.elapsed - C.BROKER_FIRST_AT) / (C.GAME_SECONDS - C.BROKER_FIRST_AT), SP[0], SP[1]) * (S.hard ? C.HARD.brokerSpeed : 1) * (S.rush ? 1.15 : 1);
 
   // 문 앞 → 길 → (조달청 건물 피해서) 아래 길 → 마을 앞마당
@@ -30,7 +34,7 @@ G.broker = (() => {
   // (2026-11-02 조정: 페이퍼컴퍼니 공방에 들르게 했더니 공방 실사로 너무 쉽게 막혀 분리. 막는 법 = 먼저 납품 / 브로커를 눌러 적발)
   function plan(S) {
     const bk = S.bk;
-    if (C.CONNECT) {                                                  // 계약 연결: 달리는 수레만 노림. 가장 값비싼 수레부터
+    if (SHIP) {                                                       // 계약 연결(수레 추격): 달리는 수레만 노림. 가장 값비싼 수레부터
       const r = nextShip(S, C.CONNECT_BROKER_MIN); if (!r) return false;
       const left = r.ship.x < 480;
       Object.assign(bk, { state: 'grab', timer: 0, req: r, shop: null, item: null, x: left ? 34 : C.VIEW.w - 34, y: ROAD_Y, face: left ? 1 : -1, stun: false, path: [], way: null, wayT: 0 });
@@ -40,10 +44,7 @@ G.broker = (() => {
       return true;
     }
     let reqs = G.requests.active(S).filter(r => !r.broker && r.left > 8).sort((a, b) => b.price - a.price);
-    if (C.CONNECT) {                                                  // 계약 연결: 경주가 되는 납품 중 계약을 먼저, 없으면 체결 전 카드
-      const open = G.requests.active(S).filter(r => !r.broker).sort((a, b) => b.price - a.price);
-      reqs = open.filter(r => r.ship && G.connect.secLeft(S, r) >= C.CONNECT_BROKER_MIN).concat(open.filter(r => !r.ship && r.left > 8));
-    }
+    if (CARD) reqs = cardTargets(S).sort((a, b) => b.price - a.price);   // 11-16 카드 가로채기: 아직 계약 안 한 카드만, 비싼 것부터
     for (const r of reqs) {
       const yx = r.vill.yard.x + r.vill.yard.w / 2;
       // 2026-11-03: 가장자리 마을(학교·도서관)은 달릴 거리가 짧아 알아챌 틈이 없었음 → 먼저 화면 끝에 나타나 BROKER_GRAB초 두리번(이때도 잡을 수 있음)
@@ -51,8 +52,8 @@ G.broker = (() => {
       r.broker = true;
       if (!bk.shown) {
         bk.shown = true;
-        G.director.banner(S, '브로커 등장!', '계약을 가로채 불량품을 넣으려 해요 · 먼저 납품하거나, 브로커를 눌러 나르미로 적발!');
-        G.narmi.say('저 너구리, 수상해요!', 2.4);
+        if (CARD) G.narmi.say('브로커가 계약을 노려요! 먼저 계약하거나 브로커를 눌러요', 3);
+        else { G.director.banner(S, '브로커 등장!', '계약을 가로채 불량품을 넣으려 해요 · 먼저 납품하거나, 브로커를 눌러 나르미로 적발!'); G.narmi.say('저 너구리, 수상해요!', 2.4); }
       }
       G.audio.play('whoosh');
       return true;
@@ -83,10 +84,10 @@ G.broker = (() => {
     if (bk.stun) return;                                              // 나르미가 붙잡는 중
     if (bk.state === 'off') {
       if (S.elapsed < C.BROKER_FIRST_AT || C.BROKER === false || S.elapsed < (S.brokerPauseUntil || 0)) return;   // 필살기 뒤 잠시 쉼
-      if (C.CONNECT && !bk.alarmed && bk.wait <= 1 && S.ships.length) {  // 등장 1초 전 경보
+      if (C.CONNECT && !bk.alarmed && bk.wait <= 1 && hasTarget(S)) {  // 등장 1초 전 경보
         bk.alarmed = true; bk.alarmT = 0; G.audio.play(S.rush ? 'warn' : 'siren'); S.shakeT = Math.max(S.shakeT || 0, 0.25);
       }
-      if ((bk.wait -= dt) <= 0 && !plan(S)) { bk.wait = C.CONNECT ? 0.2 : 1; if (C.CONNECT && !S.ships.length) bk.alarmed = false; }
+      if ((bk.wait -= dt) <= 0 && !plan(S)) { bk.wait = C.CONNECT ? 0.2 : 1; if (C.CONNECT && !hasTarget(S)) bk.alarmed = false; }
       return;
     }
     if (bk.state === 'caught') { if ((bk.timer += dt) >= 1.2) rest(S, C.BROKER_REST * 1.5 * (S.hard ? C.HARD.brokerRest : 1)); return; }
@@ -95,10 +96,11 @@ G.broker = (() => {
       S.stats.brokerBlocked++; flee(S, '들켰다! 브로커 도망', '#9be37a'); return;
     }
     if (bk.state === 'grab') {                                         // 두리번 (등장 예고)
-      if (C.CONNECT && !bk.req.ship) {                                 // 노린 수레가 벌써 도착: 다른 수레로, 없으면 돌아감
+      if (SHIP && !bk.req.ship) {                                      // 노린 수레가 벌써 도착: 다른 수레로, 없으면 돌아감
         const n = nextShip(S, 1);
         if (n) { bk.req.broker = false; bk.req = n; n.broker = true; } else { flee(S, '쳇, 벌써 납품했네…', '#ffd6a0'); return; }
       }
+      if (CARD && (bk.req.ship || bk.req.state !== 'open')) { cardSaved(S); return; }   // 두리번하는 사이 계약 완료
       if (bk.req.state !== 'open') { flee(S, '쳇, 벌써 납품했네…', '#ffd6a0'); return; }
       if ((bk.timer += dt) >= GRAB) { bk.state = 'run'; bk.face = bk.req.vill.yard.x + 110 > bk.x ? 1 : -1; bk.path = pathTo(bk, bk.req.vill); }
       return;
@@ -117,7 +119,8 @@ G.broker = (() => {
         if (!S.bumpTip) { S.bumpTip = true; G.narmi.say('지금이에요! 브로커를 눌러요 (Space)', 2.4); }
         return;
       }
-      if (C.CONNECT) { chase(S, dt); return; }
+      if (SHIP) { chase(S, dt); return; }
+      if (CARD && (r.ship || r.state !== 'open')) { cardSaved(S); return; }   // 브로커가 닿기 전에 계약 완료(또는 계약이 끝남)
       if (r.state !== 'open') {                                       // 달이가 먼저 납품했거나 시간 초과
         const next = G.requests.active(S).find(q => q.item === bk.item && !q.broker && q.left > 6);
         if (next) { bk.req.broker = false; bk.req = next; next.broker = true; bk.path = pathTo(bk, next.vill); }
@@ -151,6 +154,16 @@ G.broker = (() => {
     if (Math.abs(dx) > 1) bk.face = dx > 0 ? 1 : -1;
     if (d <= st) { bk.x = bk.way.x; bk.y = bk.way.y; bk.wayT = 0; } else { bk.x += dx / d * st; bk.y += dy / d * st; }
   }
+  // 카드 가로채기: 브로커가 닿기 전에 계약했으면 지켜냄 (시간 초과로 끝났으면 그냥 돌아감)
+  function cardSaved(S) {
+    const bk = S.bk, r = bk.req;
+    if (r && (r.ship || r.state === 'done')) {
+      S.stats.brokerBlocked++; S.score += C.BROKER_BLOCK_SCORE;
+      G.fx.add(S, bk.x, bk.y - 46, '먼저 계약! 계약 지켜냄 +' + C.BROKER_BLOCK_SCORE, '#ffe48a', 16);
+      flee(S); return;
+    }
+    flee(S, '쳇, 허탕이네…', '#ffd6a0');
+  }
   // 부정 납품: 그 계약은 불량품으로 실패
   function dumpGoods(S, r) {
     if (r.ship) { S.bk.loot = r.item; G.connect.cancel(S, r); }       // 계약 연결: 수레의 물건을 빼앗아 달아남
@@ -160,10 +173,10 @@ G.broker = (() => {
     G.villages.onFail(S, r.vid);
     G.audio.play('scam'); S.shakeT = Math.max(S.shakeT || 0, 0.2);
     const y = r.vill.yard;
-    G.fx.add(S, y.x + y.w / 2, y.y + 10, C.CONNECT ? '납품 실패! 브로커가 물건을 빼앗았어요' : '부정 납품! 브로커가 불량품을 넣었어요', '#ff8a7a', 16);
+    G.fx.add(S, y.x + y.w / 2, y.y + 10, SHIP ? '납품 실패! 브로커가 물건을 빼앗았어요' : '부정 계약! 브로커가 계약을 가로챘어요', '#ff8a7a', 16);
     G.fx.add(S, y.x + y.w / 2, y.y + 10, '신뢰 ' + C.TRUST_BROKER, '#ff8a7a');
-    if (!S.firstBrokerWin) { S.firstBrokerWin = true; G.narmi.say(C.CONNECT ? '물건을 뺏겼어요! 브로커를 누르거나 달이로 길을 막아요' : '계약을 뺏겼어요! 브로커를 눌러 막아요', 2.8); }
-    S.bk.req = null; flee(S, C.CONNECT ? '히히, 내 거야!' : '히히, 낙찰!', '#ff8a7a');
+    if (!S.firstBrokerWin) { S.firstBrokerWin = true; G.narmi.say(SHIP ? '물건을 뺏겼어요! 브로커를 누르거나 달이로 길을 막아요' : CARD ? '계약을 뺏겼어요! 노리는 카드를 먼저 계약하거나 브로커를 눌러요' : '계약을 뺏겼어요! 브로커를 눌러 막아요', 2.8); }
+    S.bk.req = null; flee(S, SHIP ? '히히, 내 거야!' : '히히, 낙찰!', '#ff8a7a');
   }
 
   // ---------- 나르미로 적발 ----------
@@ -300,7 +313,7 @@ G.broker = (() => {
     const k = t < 0.15 ? t / 0.15 : t > 1.25 ? Math.max(0, (1.5 - t) / 0.25) : 1, h = 62 * k, y = 262 - h / 2;
     ctx.save(); ctx.fillStyle = 'rgba(24,10,12,.86)'; ctx.fillRect(0, y, W, h);
     ctx.fillStyle = '#e5332a'; ctx.fillRect(0, y, W, 4 * k); ctx.fillRect(0, y + h - 4 * k, W, 4 * k);
-    if (k > 0.6) { ctx.globalAlpha = k; G.soft.J(ctx, '브로커 출현!', W / 2, 256, 34, '#fff', { stroke: [['#c81e16', 7]] }); G.soft.J(ctx, '수레를 노려요 · 브로커를 누르거나 달이로 막아요', W / 2, 282, 14, '#ffd84a'); }
+    if (k > 0.6) { ctx.globalAlpha = k; G.soft.J(ctx, '브로커 출현!', W / 2, 256, 34, '#fff', { stroke: [['#c81e16', 7]] }); G.soft.J(ctx, SHIP ? '수레를 노려요 · 브로커를 누르거나 달이로 막아요' : '계약을 노려요 · 먼저 계약하거나 브로커를 눌러요', W / 2, 282, 14, '#ffd84a'); }
     ctx.restore();
   }
   // 제재 도장 (브로커가 사라져도 남아서 찍힘)
@@ -320,8 +333,10 @@ G.broker = (() => {
   function bubbleMark(ctx, r, b) {
     if (!r.broker || r.state !== 'open') return;
     const blink = Math.floor(r.t * 4) % 2 === 0;
-    px(ctx, blink ? '#9a5ad0' : '#5a2a8a', b.w - 44, -11, 44, 11);
-    ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('브로커!', b.w - 22, -5);
+    if (!CARD) {                                                       // 카드 가로채기는 왼쪽 탭이 '브로커!' (겹치지 않게)
+      px(ctx, blink ? '#9a5ad0' : '#5a2a8a', b.w - 44, -11, 44, 11);
+      ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('브로커!', b.w - 22, -5);
+    }
     ctx.strokeStyle = blink ? '#e5533d' : 'rgba(229,83,61,.5)'; ctx.lineWidth = 2; ctx.strokeRect(-2, -2, b.w + 4, b.h + 4); ctx.lineWidth = 1;
   }
   return { init, update, draw, drawAlarm, drawSanction, pathTo, hit, request, caught, bubbleMark, raccoon, face };

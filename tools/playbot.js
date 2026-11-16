@@ -67,7 +67,7 @@ window.PlayBot = {
       }
     }
     if ((st.think = (st.think || 0) - DT) > 0) return;
-    const cards = G.requests.active(S).filter(r => !r.ship).sort((a, b) => a.left - b.left);
+    const cards = G.requests.active(S).filter(r => !r.ship).sort((a, b) => (b.broker - a.broker) || a.left - b.left);   // 8.5단계: 브로커가 노리는 카드부터
     for (const r of cards) {
       if (G.connect.autoCovers(S, r)) continue;                        // 단가계약이 처리함
       const cand = S.shops.filter(s => G.shops.isOpen(S, s) && !(avoidFake && suspicious(s)) && G.connect.fit(S, s, r) === 'ok');
