@@ -54,7 +54,7 @@ G.connect = (() => {
     launch(S, r, sh, bought);
     S.deals[r.item] = { sh, item: r.item, left: C.CONTRACT_AUTO, price: bought.paid, best: bought.best };
     S.sel = null;
-    if (!S.firstShip) { S.firstShip = true; G.narmi.say('단가계약! ' + name + ' 다음 ' + C.CONTRACT_AUTO + '건은 자동으로 계약돼요', 2.8); }
+    if (!S.firstShip) { S.firstShip = true; G.narmi.say('단가계약! 다음 ' + name + ' ' + C.CONTRACT_AUTO + '건은 다른 마을 것도 자동이에요', 3); }
     return true;
   }
   function launch(S, r, sh, b) {
@@ -103,14 +103,14 @@ G.connect = (() => {
       if (d.left <= 0) {
         delete S.deals[r.item];
         const b = d.sh.w.body, name = G.ITEM[r.item].name;
-        G.fx.add(S, b.x + b.w / 2, b.y + 110, name + ' 단가계약 끝 · 다시 계약해요', '#ffd6a0');
+        if (C.CONTRACT_AUTO > 1) G.fx.add(S, b.x + b.w / 2, b.y + 110, name + ' 단가계약 끝 · 다시 계약해요', '#ffd6a0');   // 자동이 1건이면 매번 떠서 생략
       }
     }
   }
   // 말풍선 탭: [글자, 색]. 없으면 기본(나라장터·긴급)
   function tab(S, r) {
     if (r.state !== 'open') return null;
-    if (r.ship) return r.auto ? ['자동 납품', '#2e9b3a'] : ['납품 중', '#2e9b3a'];
+    if (r.ship) return r.auto ? ['단가계약', '#2e9b3a'] : ['납품 중', '#2e9b3a'];   // 8.2단계: '자동 납품' → '단가계약' (왜 다른 마을로도 가는지 보이게)
     const d = S.deals[r.item]; if (!d || r.urgent) return null;          // 긴급 계약은 빨간 '긴급 ×2' 탭 그대로
     if (d.sh.q[r.item] < r.minQ) return ['직접 계약', '#d97a00'];
     return ['자동 대기', '#2f6fb5'];
