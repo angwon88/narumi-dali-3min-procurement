@@ -10,7 +10,7 @@ G.screens = (() => {
     G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, floats: [], bagCap: C.BAG_START, scoreMult: 1, hard: !!G.settings.hard };   // 하드 모드는 판 시작 때 고정
     G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S); G.gifts.init(G.S); G.events.init(G.S); G.connect.init(G.S); G.broker.init(G.S); G.missions.init(G.S); G.ult.init(G.S);
     G.dali.reset(); G.narmi.reset(); G.input.reset();
-    G.screen = 'play';
+    G.screen = 'stage';                                                // 1단계 시작 안내부터 (missions.js)
   }
   function finish() {
     const key = G.S.hard ? 'best_hard' : 'best', best = G.store.get(key, 0);   // 최고 기록은 모드별
@@ -32,7 +32,7 @@ G.screens = (() => {
   const ultLabel = () => G.settings.ultAuto ? 'AI 조사: 자동 사용' : 'AI 조사: 직접 사용(Q)';
   const BTN_MODE = { x: W - 178, y: 122, w: 166, h: 30 };             // 2026-11-03 보통 / 하드 모드
   const modeLabel = () => G.settings.hard ? '하드 모드' : '보통 모드';
-  const MODE_TIP = ['보통 / 하드 모드 (눌러서 바꾸기)', '보통: 필요한 물건 초록 테두리 · 구매 발판 깜빡임 · 남은 임무 알림', '하드: 힌트 없음 · 계약이 빡빡하고 브로커가 거세요', '      계약 시간 -32% · 브로커가 더 자주, 더 빠르게', '최고 기록은 모드별로 따로 저장돼요'];
+  const MODE_TIP = ['보통 / 하드 모드 (눌러서 바꾸기)', '보통: 맞는 공방 초록 테두리 · 조건 안내', '하드: 힌트 없음 · 계약이 빡빡하고 브로커가 거세요', '      계약 시간 -32% · 브로커가 더 자주, 더 빠르게', '최고 기록은 모드별로 따로 저장돼요'];
   let ultTipOn = false, thanksTipOn = false;                                                // [?]를 누르면 설명을 켜고 끔 (휴대폰용)
   function titleUpdate() {
     if (ui.clicked(BTN_SOUND)) { G.audio.toggle(); return; }
@@ -84,19 +84,19 @@ G.screens = (() => {
   }
   G.soft = { rr, J, pill, softShadow, noShadow, bg: c => titleBg(c), ciPlate: (...a) => ciPlate(...a) };   // 결과 화면도 같이 씀 (2026-11-03)
   const LX = 300;                                                       // 왼쪽 단 가운데
-  // 5대 임무: 크림색 둥근 판 + 임무 색 동그라미 번호
+  // 조달 업무 4단계: 크림색 둥근 판 + 단계 색 동그라미 번호
   function titleMissions(ctx) {
     const px = LX - 175, py = 214, pw = 350, ph = 172;
     softShadow(ctx, 18, 6, .28); rr(ctx, px, py, pw, ph, 20); ctx.fillStyle = 'rgba(255,251,240,.93)'; ctx.fill(); noShadow(ctx);
     rr(ctx, LX - 70, py - 13, 140, 26, 13); ctx.fillStyle = '#2f4f8a'; ctx.fill();
-    J(ctx, '조달관 5대 임무', LX, py + 1, 16, '#fff');
+    J(ctx, '조달 업무 4단계', LX, py + 1, 16, '#fff');
     G.missions.LIST.forEach((m, i) => {
-      const y = py + 34 + i * 27, x = px + 26;
-      if (i) { ctx.fillStyle = 'rgba(120,100,60,.12)'; ctx.fillRect(x, y - 13, pw - 52, 1); }
+      const y = py + 39 + i * 34, x = px + 26;
+      if (i) { ctx.fillStyle = 'rgba(120,100,60,.12)'; ctx.fillRect(x, y - 17, pw - 52, 1); }
       ctx.fillStyle = m.col; ctx.beginPath(); ctx.arc(x + 10, y, 11, 0, 7); ctx.fill();
       J(ctx, String(i + 1), x + 10, y + 1, 15, '#fff');
       G.icons.draw(ctx, m.icon, x + 38, y, 18);
-      J(ctx, m.name, x + 58, y + 1, 18, '#3a3022', { align: 'left' });
+      J(ctx, m.name, x + 58, y + 1, 19, '#3a3022', { align: 'left' });
     });
   }
   // 타이틀 배경: 이미지 AI 일러스트를 한 번만 살짝 흐리게 만들어 둠
@@ -168,6 +168,7 @@ G.screens = (() => {
   }
   // 달이 이동을 뺀 한 프레임 진행 (debug.js의 시간 건너뛰기도 이것을 쓴다)
   function step(S, dt) {
+    if (S.stageUI) return;                                           // 단계 안내·카드가 떠 있는 동안은 멈춤
     if (S.ultCut) { G.ult.cutUpdate(S, dt); return; }                // AI 조사 컷인 1.1초: 게임 멈춤
     S.timeLeft -= dt; S.elapsed += dt;
     G.director.update(S, dt);
@@ -175,7 +176,6 @@ G.screens = (() => {
     G.connect.update(S, dt);
     G.narmi.update(dt, S);
     G.broker.update(S, dt);
-    G.missions.update(S, dt);
     G.ult.update(S, dt);
     G.shops.update(S, dt);
     G.requests.deliver(S);
@@ -189,8 +189,15 @@ G.screens = (() => {
     if (S.trust <= C.TRUST_DANGER) { S.warnT = (S.warnT || 0) - dt; if (S.warnT <= 0) { G.audio.play('warn'); S.warnT = 2; } } else S.warnT = 0;
     if (S.timeLeft <= 10 && Math.ceil(S.timeLeft) !== Math.ceil(S.timeLeft + dt)) G.audio.play('tick');
     G.fx.update(S, dt);
-    if (S.timeLeft <= 0) { S.timeLeft = 0; G.screen = 'end'; endT = C.END_HOLD; G.audio.play('end'); }
+    if (S.timeLeft <= 0) { S.timeLeft = 0; G.audio.play('end'); }
+    if (G.missions.update(S, dt)) G.screen = 'stage';                // 단계 경계(시간 기준): 멈추고 '방금 한 일 → 실제로는' 카드
   }
+  // 단계 시작 안내 · 끝 카드 (게임 멈춤). 마지막 카드 뒤에는 결과 화면
+  function stageUpdate(dt) {
+    const go = G.missions.tick(G.S, dt);
+    if (go === 'finish') finish(); else if (go === 'play') G.screen = 'play';
+  }
+  function stageDraw(ctx) { playDraw(ctx); G.missions.drawStage(ctx, G.S); }
   // 2026-11-04 결전(마지막 20초): 화면 가장자리 붉은 맥박 + 'RUSH' 띠, 마지막 5초는 가운데 큰 숫자
   function comboPopDraw(ctx, S) {                                       // 2026-11-04 '5연속 납품!' 스티커 (마을 위)
     const c = S.comboPop; if (!c) return;
@@ -204,7 +211,7 @@ G.screens = (() => {
     ctx.restore();
   }
   function rushDraw(ctx, S) {
-    comboPopDraw(ctx, S);
+    if (!C.QUIET) comboPopDraw(ctx, S);
     if (!S.rush || S.timeLeft <= 0) return;
     const pulse = 0.5 + 0.5 * Math.sin(S.rushT * (S.timeLeft <= 5 ? 9 : 5)), a = 0.18 + 0.22 * pulse;
     for (const [x, y, w, h, gx0, gy0, gx1, gy1] of [[0, C.HUD_H, W, 26, 0, C.HUD_H, 0, C.HUD_H + 26], [0, H - 26, W, 26, 0, H, 0, H - 26], [0, C.HUD_H, 26, H, 0, 0, 26, 0], [W - 26, C.HUD_H, 26, H, W, 0, W - 26, 0]]) {
@@ -250,21 +257,20 @@ G.screens = (() => {
     G.events.drawOverlay(ctx, G.S);
     G.ult.draw(ctx, G.S);
     G.broker.drawSanction(ctx, G.S);
-    G.missions.drawStamp(ctx, G.S);
     ctx.restore();
     if (S0.flashT > 0) { ctx.fillStyle = 'rgba(255,216,74,' + (S0.flashT * 0.9).toFixed(2) + ')'; ctx.fillRect(0, 0, W, H); }   // 혁신 성공 판정 금빛 번쩍임
     G.villages.dangerEdge(ctx, G.S);
     G.director.draw(ctx, G.S);
     ui.hud(ctx, G.S);
     G.broker.drawAlarm(ctx, G.S);
-    ui.comboBadge(ctx, G.S);
+    if (!C.QUIET) ui.comboBadge(ctx, G.S);
     rushDraw(ctx, G.S);
     G.ult.drawCut(ctx, G.S);
     G.events.drawBoards(ctx, G.S);
     G.fx.drawParts(ctx, G.S);                                         // 파편·동전은 HUD 위로 (저금통까지 날아가게)
     if (G.debug) G.debug.draw(ctx);
     ui.joystick(ctx);
-    G.ult.drawTip(ctx);
+    if (G.S.stage >= 2) G.ult.drawTip(ctx);
     const tl = G.S.timeLeft;                                   // 마지막 10초 카운트다운
     if (tl > 0 && tl <= 10 && G.screen === 'play') {
       const n = Math.ceil(tl), f = tl - Math.floor(tl);
@@ -279,7 +285,7 @@ G.screens = (() => {
   const BTN_TITLE = { x: W / 2 + 4, y: 302, w: 106, h: 36 };
   const BTN_PSOUND = { x: W / 2 - 110, y: 350, w: 106, h: 32 }, BTN_PMUSIC = { x: W / 2 + 4, y: 350, w: 106, h: 32 }, BTN_PULT = { x: W / 2 - 110, y: 392, w: 180, h: 32 }, BTN_PULTQ = { x: W / 2 + 78, y: 392, w: 32, h: 32 };
   function pauseUpdate() {
-    if (G.input.hit('escape') || G.input.hit('p') || ui.clicked(BTN_RESUME)) G.screen = 'play';
+    if (G.input.hit('escape') || G.input.hit('p') || ui.clicked(BTN_RESUME)) G.screen = G.S.stageUI ? 'stage' : 'play';
     else if (ui.clicked(BTN_RESTART)) newGame();
     else if (ui.clicked(BTN_TITLE)) G.screen = 'title';
     else if (ui.clicked(BTN_PSOUND)) G.audio.toggle();
@@ -298,8 +304,7 @@ G.screens = (() => {
     rr(ctx, W / 2 - 92, py + 4, 184, 40, 20); ctx.fillStyle = '#2f4f8a'; ctx.fill();
     J(ctx, '잠깐 쉬는 중', W / 2, py + 25, 26, '#fff');
     if (S) {                                                         // 지금 상황 한 줄
-      const k = G.missions.count(S);
-      J(ctx, '남은 시간 ' + G.U.fmtTime(S.timeLeft) + ' · 점수 ' + S.score + ' · 임무 ' + k + '/5', W / 2, py + 66, 15, '#6a5a3a');
+      J(ctx, '남은 시간 ' + G.U.fmtTime(S.timeLeft) + ' · 점수 ' + S.score + ' · ' + (S.stage + 1) + '단계', W / 2, py + 66, 15, '#6a5a3a');
       J(ctx, (S.hard ? '하드 모드 · ' : '보통 모드 · ') + '시간이 멈춰 있어요', W / 2, py + 88, 14, S.hard ? '#d9342b' : '#9a8a6a');
     }
     pill(ctx, BTN_RESUME, '계속하기', 'main', t || 0);
@@ -336,12 +341,13 @@ G.screens = (() => {
     title: [titleUpdate, titleDraw], play: [playUpdate, playDraw], pause: [pauseUpdate, pauseDraw],
     intro: [dt => G.intro.update(dt), ctx => G.intro.draw(ctx)],
     levelup: [dt => G.levelup.update(dt), (ctx, t) => { playDraw(ctx); G.levelup.draw(ctx, t); }],
+    stage: [stageUpdate, stageDraw],
     end: [endUpdate, endDraw], result: [resultUpdate, resultDraw],
   };
   return {
     newGame, step,
     update(dt) { const f = table[G.screen]; if (f) f[0](dt); },
     draw(ctx, t) { const f = table[G.screen]; if (f) f[1](ctx, t); },
-    autoPause() { if (G.screen === 'play') G.screen = 'pause'; },
+    autoPause() { if (G.screen === 'play' || G.screen === 'stage') G.screen = 'pause'; },
   };
 })();

@@ -18,7 +18,7 @@ G.C = {
   INNOV_TRIAL: 3, INNOV_TRIAL_FAIL: 0.15, INNOV_MATURE_MULT: 1.2,   // 11-04 1.8→1.2: 혁신 공방만 쓰면 늘 정답이 되던 문제 (가성비 비교가 계속 필요하게)
     // 혁신제품 시범 사용, '보완 필요' 15%(2026-11-03 2분판이라 25 → 15), 성공 판정 뒤 ×1.8
   LEVEL_REQ: [3, 6, 10, 14, 19, 25, 32, 40],   // 2분 기준
-  FINAL_RUSH_AT: 100, FINAL_RUSH_MULT: 1.5,   // 마지막 20초
+  FINAL_RUSH_AT: 999, FINAL_RUSH_MULT: 1.5,   // 마지막 20초 결전. 11-16 8.0단계: 4단계(태풍)와 겹쳐서 끔(999 = 일어나지 않음, 되살리려면 100)
   STORM: { warnAt: 88, start: 90, end: 110, limit: 18, mult: 2, slow: 0.9 },
   MAX_REQ_PER_VILLAGE: 2, MAX_REQ_TOTAL: 4,   // 개편(2026-11-02): 6 → 4, '빨리'보다 '잘 고르기'
   REQ_LIMIT_MULT: 1.3, REQ_INTERVAL_MULT: 1.15,   // 개편: 구간표의 제한 시간 ×1.3, 요청 간격 ×1.15 (계약 조건을 읽을 시간)
@@ -46,7 +46,7 @@ G.C = {
   // 덜어내기 (2026-11-03): 레벨업 카드·세금 저금통(마을 선물)·나르미 데이터 단계 끔. 능력은 혁신제품 지정으로만
   LEVELUP: false, GIFTS: false, DATA_LEVELS: false,
   COMPETE: false,                   // 2026-11-03 경쟁 유지(한 공방에 몰아주면 옆 공방 폐업·독점) 끔: 터치 조작에선 잘 안 보이고 공방이 갑자기 닫혀 헷갈림
-  BROKER: true, BROKER_FIRST_AT: 30, BROKER_SPEED: [115, 165], BROKER_GRAB: 1.5, BROKER_REST: 5,   // 2026-11-02 강화: 0:55→0:45, 100~145→115~165, 쉬는 시간 7→5 / 11-03 BROKER_GRAB: 등장 뒤 두리번(알아챌 틈) 1.0→1.5
+  BROKER: true, BROKER_FIRST_AT: 62, BROKER_SPEED: [115, 165], BROKER_GRAB: 1.5, BROKER_REST: 5,   // 2026-11-02 강화: 0:55→0:45, 100~145→115~165, 쉬는 시간 7→5 / 11-03 BROKER_GRAB: 등장 뒤 두리번(알아챌 틈) 1.0→1.5
   TRUST_BROKER: -12, BROKER_BLOCK_SCORE: 150, BROKER_CATCH_BONUS: 300, BROKER_CATCH_TIME: 0.5, BROKER_BLOCK_SEC: 1.0, BROKER_BLOCK_CD: 2.5,   // 달이가 닿으면 브로커 1초 멈칫(검거 아님), 2.5초에 한 번
   REQ_FIRST_AT: 2, REQ_INTERVAL: 6.0, REQ_LIMIT: 35, REQ_EMPTY_FILL: 1,   // 기본값. 실제 구간별 값은 director.js
   COMBO_STEP: 0.1, COMBO_MAX_MULT: 2.0,   // 제때 연속 납품마다 점수 +10%, 최대 ×2
@@ -65,7 +65,7 @@ G.C = {
   CONNECT_BROKER_MIN: 2,   // 브로커는 도착까지 이 초 이상 남은 수레의 계약을 먼저 노림
   CONTRACT_AUTO: 3, CONTRACT_AUTO_DELAY: 0.7,   // 단가계약: 직접 계약하면 같은 물건 다음 3건 자동 체결(값 고정), 카드가 뜨고 0.7초 뒤
   CONNECT_BROKER_SPEED: [210, 260], CONNECT_BROKER_GRAB: 1.0,   // 브로커가 수레를 쫓는 속도(px/초)와 등장 뒤 출발까지
-  NEWSHOP_AT: [15, 40, 65, 85],   // 새 공방: 새싹 → 페이퍼컴퍼니 → 둘이 섞여 한 번씩. 겉모습은 같고 달이가 실사해 고름
+  NEWSHOP_AT: [33, 45, 96],   // 새 공방: 2단계에 새싹 → 페이퍼컴퍼니, 4단계에 둘 중 하나. 겉모습은 같고 달이가 실사해 고름 (11-16 8.0단계: 15·40·65·85 → 단계에 맞춤)
   WRONG_FAKE_TRUST: -20, WRONG_FAKE_SCORE: -800, WRONG_SPROUT_TRUST: -5,   // 잘못 고른 실사
   STOCK: false,   // 원자재 비축 (시험판에서 끔). 폭등도 함께 끄려면 EVENTS.surge
   // 사건 켜고 끄기 (false면 그 사건이 아예 일어나지 않음 — 빼고 싶을 때 여기 한 곳만 바꾸면 됨)
@@ -73,14 +73,19 @@ G.C = {
   STORM: { limit: 24, mult: 2, every: 6, speed: 0.9 },   // 긴급 계약 제한 시간·점수 배율, 태풍 중 긴급 계약 간격(초), 달이 이동 배율(비)
   // 사건 배치 (2026-11-02, 반쯤 랜덤): 모든 사건이 매 판 한 번씩, 아래 '자리'에 섞어서 배치. 자리 안에서 시작 시점도 흔듦
   EVENT_SLOTS: [[58, 66]],   // 2분·사건 2개 기준 (폭등은 첫 자리에 못 오니 늘 태풍 → 폭등)   // 각 자리의 시작 시점 범위(초)
-  EVENT_DUR: { dust: 15, storm: 20, surge: 20 },     // 사건 길이(초)
+  EVENT_DUR: { dust: 15, storm: 40, surge: 20 },     // 사건 길이(초). 태풍은 4단계 끝까지(판이 먼저 끝남)
   EVENT_NOT_FIRST: ['surge'],                        // 첫 자리(1:00 무렵)에 오면 안 되는 사건 (비축할 시간이 필요)
-  EVENT_FIXED: false,                                // true면 고정 순서 (시연 영상 촬영용)
-  EVENT_FIXED_AT: { dust: 40, storm: 44, surge: 82 },
-  FORECAST_SEC: 15,                                  // 사건 예보: 시작 15초 전
+  EVENT_FIXED: true,                                 // true면 고정 시점. 11-16 8.0단계: 태풍은 늘 4단계 시작과 함께
+  EVENT_FIXED_AT: { dust: 40, storm: 90.5, surge: 82 },
+  FORECAST_SEC: 0,                                   // 사건 예보(초 전). 0 = 예보 없음 (11-16: 단계 시작 안내가 대신함, 전에는 15)
   PREP_BONUS: 100, PREP_TRUST: 2,                    // 예보 보고 미리 준비한 물건을 사건 중 납품하면 보너스                             // 원자재 가격 폭등 배율
   GIFT_STEP: 7, GIFT_TRUST: 3, GIFT_SCORE: 100,   // 세금 저금통: 7만원마다 마을 선물
+  // 업무 4단계 (2026-11-16, 개편안.md 8.0단계): 한 판을 시간 기준 4단계로 나눔. 단계 이름·목표·사실 문장은 missions.js
+  STAGE_AT: [0, 30, 60, 90],   // 각 단계가 시작하는 시각(초). 마지막 단계는 GAME_SECONDS까지
+  STAGE_INTRO_SEC: 2.6, STAGE_CARD_SEC: 7,   // 단계 시작 안내 · 끝 카드가 저절로 넘어가는 시간(초, 게임은 멈춤)
+  STAGE_ULT_START: 2,   // 3단계(브로커) 시작 때 AI 조사 칸을 이만큼 채워 줌(3칸 중). 30초 안에 한 번은 써 보게: 한 명만 적발하면 충전
+  QUIET: true,   // 화면 정보 줄이기: 상단은 시간·단계·점수만, 성장 배너·신뢰/세금 글자·콤보 표시 숨김(값은 그대로 계산)
   GRADE: { S: [20000, 80], A: [13000, 60], B: [6000, 0] },   // 2026-11-03 덜어내기 뒤 2분 기준 (봇 0.7 ≈ 16,000~25,000 · 0.45 ≈ 10,000~19,000)
 };
 G.FONT = 'Galmuri11';
-G.VERSION = 'v7.1 시험 · 단가계약·달이 실사';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)
+G.VERSION = 'v8.0 시험 · 업무 4단계';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)

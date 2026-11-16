@@ -5,13 +5,13 @@ G.result = (() => {
   const C = G.C, W = C.VIEW.w;
   let t = 0, stamped = false;
 
-  // S등급은 점수·신뢰 + 조달관 5대 임무를 모두 해야 (2026-11-03). 점수는 S인데 임무가 모자라면 A + 안내
+  // S등급은 점수·신뢰 + 조달 업무 4단계를 모두 한 번씩 해내야 (11-03 5대 임무 → 11-16 4단계). 점수는 S인데 업무가 모자라면 A + 안내
   function grade(S) {
     S.gradeNote = '';
     let g0 = 'C';
     for (const g of ['S', 'A', 'B']) {
       const [sc, tr] = C.GRADE[g];
-      if (S.score >= sc && S.trust >= tr && (g !== 'S' || G.missions.count(S) >= 5)) { g0 = g; break; }
+      if (S.score >= sc && S.trust >= tr && (g !== 'S' || G.missions.count(S) >= G.missions.LIST.length)) { g0 = g; break; }
     }
     // 2026-11-03 S가 아니면 S까지 무엇이 모자란지 정확히 (점수 · 마을 신뢰 · 남은 임무 이름)
     if (g0 !== 'S') {
@@ -19,8 +19,8 @@ G.result = (() => {
       if (S.score < sc) need.push('점수 +' + (sc - S.score).toLocaleString());
       if (S.trust < tr) need.push('신뢰 +' + Math.ceil(tr - S.trust));
       const left = G.missions.LIST.filter(m => !S.missions || S.missions[m.id] == null);
-      if (left.length === 1) need.push("임무 '" + left[0].name + "'");
-      else if (left.length) need.push('임무 ' + left.length + '개');
+      if (left.length === 1) need.push("업무 '" + left[0].name + "'");
+      else if (left.length) need.push('업무 ' + left.length + '가지');
       S.gradeNote = 'S까지: ' + need.join(' · ');
       S.gradeLeft = left.map(m => m.name);
     }
@@ -201,23 +201,23 @@ G.result = (() => {
       }
     }
 
-    // 2. 조달관 5대 임무 카드: 둥근 카드 + 임무 색 머리 + ✔ 도장
-    const cw = 170, ch = 64, gap = 9, cx0 = (W - (cw * 5 + gap * 4)) / 2, cy = 184;
+    // 2. 조달 업무 4단계 카드: 둥근 카드 + 단계 색 머리 + ✔ 도장
+    const NM = G.missions.LIST.length, cw = 214, ch = 64, gap = 10, cx0 = (W - (cw * NM + gap * (NM - 1))) / 2, cy = 184;
     const late = s.reqExpired || 0, qf = s.qFail || 0, stop = (s.brokerBlocked || 0) + (s.brokerCaught || 0);
     const info = {
       value: ['가성비 ' + (s.valueBest || 0) + '번', '합격 ' + S.delivered + (qf || late ? ' · 불합격 ' + qf + ' · 늦음 ' + late : '건')],
-      paper: ['적발 ' + (s.caught || 0) + '곳', '실사 ' + ((s.certified || 0) + (s.caught || 0)) + '번'],
+      paper: ['실사 ' + ((s.certified || 0) + (s.caught || 0)) + '곳', '적발 ' + (s.caught || 0) + ' · 새싹 등록 ' + (s.certified || 0) + ' · 혁신제품 ' + (s.innov || 0)],
       broker: ['차단 ' + stop + '번', s.brokerWon ? '뺏긴 계약 ' + s.brokerWon + '건' : '한 번도 안 뺏김!'],
       sprout: ['혁신제품 ' + (s.innov || 0) + '곳', '새싹 실적 ' + (s.sproutBuy || 0) + ' · 공방 성장 ' + (s.shopGrow || 0)],
-      prep: ['대응 ' + ((s.prepared || 0) + (s.urgentDone || 0)) + '번', '긴급 해결 ' + (s.urgentDone || 0) + (G.C.STOCK === false ? '' : ' · 비축 방출 ' + (s.released || 0))],
+      prep: ['긴급 해결 ' + (s.urgentDone || 0) + '건', '태풍 긴급 계약 ' + (s.urgentMade || 0) + '건 중'],
     };
     const mk = G.missions.count(S);
-    J(ctx, mk === 5 ? '★ 5대 임무 완수! 완벽한 조달관 ★' : '조달관 5대 임무 ' + mk + '/5', W / 2, cy - 13, 15, mk === 5 ? '#ffe45a' : '#fff6dc', { stroke: [['rgba(40,28,10,.6)', 4]] });
+    J(ctx, mk === NM ? '★ 조달 업무 4단계 완수! 완벽한 조달관 ★' : '조달 업무 4단계 ' + mk + '/' + NM, W / 2, cy - 13, 15, mk === NM ? '#ffe45a' : '#fff6dc', { stroke: [['rgba(40,28,10,.6)', 4]] });
     G.missions.LIST.forEach((m, i) => {
       const x = cx0 + (cw + gap) * i, on = S.missions && S.missions[m.id] != null, [main, sub] = info[m.id];
       K.softShadow(ctx, 10, 4, .3); K.rr(ctx, x, cy, cw, ch, 14); ctx.fillStyle = on ? 'rgba(255,251,240,.97)' : 'rgba(225,220,208,.94)'; ctx.fill(); K.noShadow(ctx);
       ctx.save(); K.rr(ctx, x, cy, cw, ch, 14); ctx.clip(); ctx.fillStyle = on ? m.col : '#8a909a'; ctx.fillRect(x, cy, cw, 22); ctx.restore();
-      J(ctx, (i + 1) + '  ' + m.name, x + cw / 2, cy + 12, 14, '#fff');
+      J(ctx, (i + 1) + '단계  ' + m.name, x + cw / 2, cy + 12, 14, '#fff');
       J(ctx, main, x + cw / 2 - (on ? 14 : 0), cy + 38, 19, on ? m.col : '#6a6a6a');
       J(ctx, sub, x + cw / 2, cy + 55, 12, '#7a6a4a');
       if (on) {

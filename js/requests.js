@@ -110,7 +110,7 @@ G.requests = (() => {
     G.audio.play('fail');
     G.villages.onFail(S, r.vid);
     const b = G.ui.bubbleRect(r);
-    G.fx.add(S, b.x + b.w / 2, b.y - 4, '늦었어요… 신뢰 ' + C.TRUST_FAIL, '#ff8a7a');
+    G.fx.add(S, b.x + b.w / 2, b.y - 4, C.QUIET ? '늦었어요… 계약 실패' : '늦었어요… 신뢰 ' + C.TRUST_FAIL, '#ff8a7a');
   }
 
   // 수상한 공방 물건 납품 → 검수에서 불량이 드러남 (개편: 요청은 남아 다시 조달해야 함). 신뢰도 -15, 마을 피해, 낸 돈은 낭비된 세금
@@ -126,7 +126,7 @@ G.requests = (() => {
     S.catchStreak = 0;
     const y = r.vill.yard;
     G.fx.add(S, y.x + y.w / 2, y.y + 16, '표시는 ★★★, 실제는 불량! 페이퍼컴퍼니', '#ff8a7a', 16);
-    G.fx.add(S, y.x + y.w / 2, y.y + 16, '신뢰 ' + C.TRUST_FRAUD + ' · 세금 ' + b.paid + '만원 낭비', '#ff8a7a');
+    G.fx.add(S, y.x + y.w / 2, y.y + 16, (C.QUIET ? '' : '신뢰 ' + C.TRUST_FRAUD + ' · ') + '세금 ' + b.paid + '만원 낭비', '#ff8a7a');
     if (!S.firstScam) { S.firstScam = true; G.narmi.say('연기도 안 나던 공방이었는데…', 2.5); }
   }
 
@@ -139,7 +139,7 @@ G.requests = (() => {
     G.audio.play('fail');
     const y = r.vill.yard;
     G.fx.add(S, y.x + y.w / 2, y.y + 16, '품질 미달! ★' + r.minQ + ' 이상이 조건이에요', '#ff8a7a', 16);
-    G.fx.add(S, y.x + y.w / 2, y.y + 16, '신뢰 ' + C.TRUST_QFAIL + ' · 세금 ' + b.paid + '만원 낭비', '#ff8a7a');
+    G.fx.add(S, y.x + y.w / 2, y.y + 16, (C.QUIET ? '' : '신뢰 ' + C.TRUST_QFAIL + ' · ') + '세금 ' + b.paid + '만원 낭비', '#ff8a7a');
     if (!S.firstQFail) { S.firstQFail = true; G.narmi.say('계약서의 별 개수를 꼭 확인해요!', 2.6); }
   }
   // 부정 낙찰 (기획서 3.7): 방치된 수상한 공방이 이 요청을 따내고 납품하지 않음 → 요청 실패·신뢰도 -15·마을 피해
@@ -181,7 +181,7 @@ G.requests = (() => {
       if (sh.sprout) {
         const I = G.shops.graduate(S, sh);
         S.score += C.SPROUT_GRAD_SCORE; G.score.trust(S, C.SPROUT_GRAD_TRUST);
-        G.fx.add(S, y.x + y.w / 2, y.y - 4, '혁신 성장 보너스 +' + C.SPROUT_GRAD_SCORE + ' · 신뢰 +' + C.SPROUT_GRAD_TRUST, '#ffd84a', 16);
+        G.fx.add(S, y.x + y.w / 2, y.y - 4, '혁신 성장 보너스 +' + C.SPROUT_GRAD_SCORE, '#ffd84a', 16);
         G.director.banner(S, '새싹 ' + who + ', 혁신제품 지정!', (I ? '혁신 보상 ' + I.product + ': ' + I.effect + ' · ' : '') + '공공기관 첫 구매로 성장 · 납품 점수 ×' + C.INNOV_MATURE_MULT);
       } else G.director.banner(S, who + ' 혁신제품 성공 판정!', '시범 사용 통과 · 공공기관 판로 열림 · 이제 납품 점수 ×' + C.INNOV_MATURE_MULT);
       sh.mature = true; sh.stampT = 0;

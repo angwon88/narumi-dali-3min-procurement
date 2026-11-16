@@ -5,10 +5,12 @@ G.fx = (() => {
   function add(S, x, y, text, col, size) {
     if (!S.floats) S.floats = [];
     if (S.ultQuiet) return;                                            // 11-04 AI 조사 스캔 중엔 도장이 대신 알려 줌
+    const Q = G.C.QUIET;                                               // 11-16 8.0단계: 글자 줄이기. 상단에서 뺀 값(신뢰·세금)만 알리는 줄은 생략, 동시 표시도 줄임
+    if (Q && /^(마을 )?신뢰 [+-]?\d+$|^세금 \+|세금 \d+만원 지킴$/.test(text)) return;
     if (S.floats.some(f => f.text === text && f.age < 0.5 && Math.abs(f.ax - x) < 40)) return;   // 11-04 같은 글자가 같은 자리에 또 뜨면 생략
     let near = S.floats.filter(f => f.age < 0.7 && Math.abs(f.ax - x) < 60 && Math.abs(f.ay - y) < 30);
-    if (near.length >= 3) { near[0].age = LIFE; near = near.slice(1); }   // 한 자리에 최대 3줄: 가장 오래된 것부터 지움
-    const live = S.floats.filter(f => f.age < LIFE); if (live.length >= 12) live[0].age = LIFE;   // 화면 전체 최대 12개
+    if (near.length >= (Q ? 2 : 3)) { near[0].age = LIFE; near = near.slice(1); }   // 한 자리에 최대 3줄: 가장 오래된 것부터 지움
+    const live = S.floats.filter(f => f.age < LIFE); if (live.length >= (Q ? 6 : 12)) live[0].age = LIFE;   // 화면 전체 최대 12개
     const up = near.reduce((a, f) => a + Math.max(16, f.size + 6), 0);   // 먼저 뜬 글자 크기만큼 위로 (큰 글자와도 안 겹치게)
     S.floats.push({ ax: x, ay: y, x, y: y - up, text, col: col || '#fff', size: size || 12, age: 0 });
   }

@@ -187,7 +187,8 @@ G.shops = (() => {
     S.stats.shopGrow = (S.stats.shopGrow || 0) + 1; if (sh.tier >= 2) S.stats.shopFactory = (S.stats.shopFactory || 0) + 1;
     const b = sh.w.body, who = sh.w.cat.name + '공방 ' + sh.w.side;
     G.fx.burst(S, b.x + b.w / 2, b.y + 10, true, sh.tier >= 2 ? 40 : 24);
-    if (sh.tier >= 2) { G.director.banner(S, who + G.U.josa(who, '이', '가') + ' 공장으로 성장했어요!', '일자리가 늘었어요 · 값 10% 인하 · 원자재 가격 폭등에도 끄떡없어요'); G.audio.play('gift'); }
+    if (sh.tier >= 2 && C.QUIET) { G.fx.add(S, b.x + b.w / 2, b.y + 110, who + ' → 공장! 값 10% 인하', '#ffe48a', 16); G.audio.play('gift'); }   // 8.0단계: 성장은 배너 대신 공방 아래 한 줄
+    else if (sh.tier >= 2) { G.director.banner(S, who + G.U.josa(who, '이', '가') + ' 공장으로 성장했어요!', '일자리가 늘었어요 · 값 10% 인하 · 원자재 가격 폭등에도 끄떡없어요'); G.audio.play('gift'); }
     else { G.fx.add(S, b.x + b.w / 2, b.y + 110, who + ' → 작업장! 값 5% 인하', '#ffe48a', 16); G.audio.play('ok'); }
   }
   // ---------- 경쟁 유지 (기획서 3.8) ----------
@@ -330,7 +331,8 @@ G.shops = (() => {
       // 연출: 한순간 멈춤 + 화면 흔들림 + 파편 + 동전이 세금 저금통(HUD)으로
       S.hitStop = 0.15; S.shakeT = 0.35;
       G.fx.burst(S, b.x + b.w / 2, b.y + 32);
-      G.fx.coins(S, b.x + b.w / 2, b.y + 32, 326, 32, 8, () => { S.saved = round1(S.saved + C.CATCH_BANK); G.gifts.add(S, C.CATCH_BANK); });
+      if (C.QUIET) S.saved = round1(S.saved + C.CATCH_BANK);           // 8.0단계: 상단에 아낀 세금 칸이 없어 동전 연출 없이 바로 더함
+      else G.fx.coins(S, b.x + b.w / 2, b.y + 32, 326, 32, 8, () => { S.saved = round1(S.saved + C.CATCH_BANK); G.gifts.add(S, C.CATCH_BANK); });
       G.narmi.say('페이퍼컴퍼니 적발!', 1.8);
       G.audio.play('catch');
       G.fx.add(S, b.x + b.w / 2, b.y + 8, '마을 신뢰 +' + C.TRUST_CATCH, '#9be37a');

@@ -17,10 +17,7 @@ G.director = (() => {
 
   const EVENTS = [
     { at: 4, extra: { vid: 'school', item: 'chair' } },        // 시작하자마자 두 번째 요청
-    { at: 6, open: { village: 'clinic', cat: 'health' }, banner: '보건소가 문을 열었어요!', sub: '보건 공방도 영업 시작' },
-    { at: 15, open: { village: 'fire', cat: 'safety' }, banner: '소방서가 문을 열었어요!', sub: '안전 공방도 영업 시작' },
-    { at: 24, open: { village: 'library' }, banner: '도서관이 문을 열었어요!', sub: '공방 거리가 바빠져요' },
-    { at: 8, hook: 'tipReg' },
+    // 11-16 8.0단계: 마을·업종 개방은 단계가 시작될 때(missions.js의 open). 개방 배너와 등록 업체 안내는 뺌
     { at: 14, hook: 'tipStock' },                                  // 원자재 비축 안내                                     // 등록 업체 안내
     { at: 26, hook: 'firstFake', flag: 'fake' },   // 2분 기준 첫 수상한 공방
     ...(C.CONNECT ? C.NEWSHOP_AT.map(at => ({ at, hook: 'newShop' })) : C.SPROUT_AT.map(at => ({ at, hook: 'sprout' }))),          // 개편: 새싹 공방(스타트업) 개업                 // 첫 수상한 공방 확정 등장 (적발 기회를 늘리려고 1:00 → 0:50)
@@ -44,7 +41,7 @@ G.director = (() => {
     }
     const list = EVENTS.slice();
     for (const p of plan) {
-      list.push({ at: Math.max(1, p.at - C.FORECAST_SEC), hook: 'forecast', arg: p });
+      if (C.FORECAST_SEC > 0) list.push({ at: Math.max(1, p.at - C.FORECAST_SEC), hook: 'forecast', arg: p });
       list.push({ at: p.at, hook: p.id + 'Start', arg: p });
       list.push({ at: p.at + C.EVENT_DUR[p.id], hook: p.id + 'End', arg: p });
     }

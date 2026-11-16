@@ -124,7 +124,7 @@ G.events = (() => {
     endForecast(S, 'storm');
     S.storm = { t: 0, clock: C.STORM.every, drops: Array.from({ length: 110 }, () => ({ x: Math.random() * C.VIEW.w, y: C.HUD_H + Math.random() * (C.VIEW.h - C.HUD_H), v: 380 + Math.random() * 220 })) };
     S.stats.urgentMade = S.stats.urgentMade || 0; S.stats.urgentDone = S.stats.urgentDone || 0;
-    G.director.banner(S, '태풍 상륙! 긴급조달 시작', '소방서·보건소·학교가 급해요 · 긴급 계약 점수 ×' + C.STORM.mult + ' · 비 때문에 조금 느려요');
+    if (!C.QUIET) G.director.banner(S, '태풍 상륙! 긴급조달 시작', '소방서·보건소·학교가 급해요 · 긴급 계약 점수 ×' + C.STORM.mult + ' · 비 때문에 조금 느려요');   // 8.0단계: 4단계 시작 안내가 대신함
     G.audio.play('warn'); S.shakeT = Math.max(S.shakeT || 0, 0.3);
     for (const [vid, item] of [['fire', 'helmet'], ['clinic', 'kit'], ['school', 'lamp']]) if (makeUrgent(S, vid, item)) S.stats.urgentMade++;
   }

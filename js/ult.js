@@ -18,6 +18,7 @@ G.ult = (() => {
     }
   }
   function input(S) {
+    if (C.QUIET && S.stage < 2) return;                                // 3단계(브로커)부터
     if (!(G.ui.clicked(BTN) || G.input.hit('q'))) return;
     if (S.ultFx || S.ultCut) return;
     if (!ready(S)) { G.fx.add(S, BTN.x + BTN.w / 2, 60, '브로커를 ' + (C.ULT_NEED - S.ultCharge) + '명 더 적발하면 AI 조사!', '#cfd8e3'); return; }

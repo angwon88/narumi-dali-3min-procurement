@@ -32,7 +32,17 @@ G.ui = (() => {
     const tf = Math.max(0, S.timeLeft / C.GAME_SECONDS);
     ctx.fillStyle = '#2f4f8a'; ctx.fillRect(0, C.HUD_H - 4, C.VIEW.w, 4);
     ctx.fillStyle = S.timeLeft <= 20 ? '#ff6b5b' : '#ffd84a'; ctx.fillRect(0, C.HUD_H - 4, Math.round(C.VIEW.w * tf), 4);
-    G.ult.drawHud(ctx, S);
+    if (!C.QUIET || S.stage >= 2) G.ult.drawHud(ctx, S);                // AI 조사 버튼은 3단계(브로커)부터
+    if (C.QUIET) {                                                   // 11-16 8.0단계: 시간 · 현재 단계(이름·목표) · 점수만. 신뢰·아낀 세금은 결과 화면에서
+      for (let i = 1; i < C.STAGE_AT.length; i++) { ctx.fillStyle = '#1e2a3a'; ctx.fillRect(Math.round(C.VIEW.w * (1 - C.STAGE_AT[i] / C.GAME_SECONDS)) - 1, C.HUD_H - 4, 2, 4); }   // 시간 막대의 단계 눈금
+      const lo = S.timeLeft <= 10;
+      T(ctx, '⏱', 20, 22, 16, '#fff');
+      T(ctx, G.U.fmtTime(S.timeLeft), 64, 22, 24, lo ? (Math.floor(S.timeLeft * 2) % 2 ? '#ff6b5b' : '#ffb3a8') : '#fff');
+      G.missions.drawHud(ctx, S, 112);
+      T(ctx, '점수', 600, 22, 12, '#8fa3b8', 'left'); T(ctx, String(S.score), 632, 22, 18, '#ffe48a', 'left');
+      T(ctx, '‖', C.VIEW.w - 22, 22, 18, '#fff');
+      return;
+    }
     const low = S.timeLeft <= 30;
     T(ctx, '⏱', 20, 22, 16, '#fff');
     T(ctx, G.U.fmtTime(S.timeLeft), 64, 22, 24, low ? (Math.floor(S.timeLeft * 2) % 2 ? '#ff6b5b' : '#ffb3a8') : '#fff');
@@ -58,7 +68,6 @@ G.ui = (() => {
     T(ctx, '나르미', nx + 22, 14, 12, '#cfd8e3', 'left'); T(ctx, ready ? '출동 OK' : Math.ceil(cd) + '초', nx + 22, 30, 12, ready ? '#9be37a' : '#8fa3b8', 'left');
     const nextLv = C.DATA_LV[S.dataLv || 0];                         // 나르미 데이터: 다음 단계까지
 
-    G.missions.drawHud(ctx, S, 572);                                  // 조달관 5대 임무 칸
     T(ctx, '‖', C.VIEW.w - 22, 22, 18, '#fff');
   }
   // 콤보 배지 (HUD 바로 아래 왼쪽)

@@ -10,8 +10,11 @@ const { chromium } = require(process.env.PW || tryReq('playwright') || 'playwrig
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => m.type() === 'error' && errs.push(m.text()));
   await p.goto('http://127.0.0.1:8767/' + (process.argv[2] || 'dist/index.html')); await p.waitForTimeout(1500);
   await p.addScriptTag({ url: '/tools/playbot.js' });
+  // 8.0단계: 제출판(dist)에는 개발 표시(DEV)와 +5초·+10초 버튼이 없어야 함
+  const dev = await p.evaluate(() => !!G.debug || document.documentElement.innerHTML.includes('DEV 경과'));
+  if (dev && !(process.argv[2] || '').startsWith('index')) errs.push('제출판에 개발 기능(DEV·+5초)이 들어 있음');
   const out = [];
-  for (let i = 0; i < 6; i++) out.push(await p.evaluate(sp => { const r = PlayBot.run({ inspect: true, speed: sp }); G.screen = 'end'; G.screens.update(2); for (let k = 0; k < 90; k++) G.screens.update(1 / 60); return r.점수 + '/' + r.신뢰 + ' ' + G.S.grade; }, i < 3 ? 0.7 : 0.45));
+  for (let i = 0; i < 6; i++) out.push(await p.evaluate(sp => { const r = PlayBot.run({ inspect: true, speed: sp }); G.S.stageUI = null; G.screen = 'end'; G.screens.update(2); for (let k = 0; k < 90; k++) G.screens.update(1 / 60); return r.점수 + '/' + r.신뢰 + ' ' + G.S.grade; }, i < 3 ? 0.7 : 0.45));
   await p.evaluate(() => { localStorage.clear(); });
   console.log('점수/신뢰 등급: ' + out.join(' | ') + ' · 오류 ' + errs.length + (errs.length ? '\n  ' + errs.slice(0, 5).join('\n  ') : ''));
   await b.close(); process.exit(errs.length ? 1 : 0);

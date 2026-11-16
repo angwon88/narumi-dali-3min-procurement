@@ -140,10 +140,10 @@ G.intro = (() => {
       if (k > 0.55) stampBox(ctx, cx + 175, top + 128, '긴급조달!', '#0f8a96', (k - 0.55) * 5);
       if (G.C.CONNECT) G.connect.vehicle(ctx, cx + 40 + Math.min(1, k * 1.4) * 60, top + 262, 1, 'helmet', false, tt);
       else G.spr.drawChar(ctx, 'dali', 'walk', 'e', tt, cx + 40 + Math.min(1, k * 1.4) * 60, top + 262, 1.0);
-    } else if (i === 4) {                              // ⑤ 조달관 5대 임무 (missions.js)
+    } else if (i === 4) {                              // ⑤ 조달 업무 4단계 (missions.js)
       const K = G.soft;
       G.missions.LIST.forEach((m, j) => {
-        const y = top + 4 + j * 54, show = k > 0.06 + j * 0.1;
+        const y = top + 12 + j * 68, show = k > 0.06 + j * 0.1;
         if (!show) return;
         K.softShadow(ctx, 8, 3, .25); K.rr(ctx, cx - 300, y, 600, 46, 14); ctx.fillStyle = 'rgba(255,251,240,.97)'; ctx.fill(); K.noShadow(ctx);
         ctx.fillStyle = m.col; ctx.beginPath(); ctx.arc(cx - 274, y + 23, 15, 0, 7); ctx.fill();
@@ -194,7 +194,7 @@ G.intro = (() => {
     ['카드를 누르고, 맞는 공방을 눌러 계약!', '한 번 계약하면 다음 ' + G.C.CONTRACT_AUTO + '건은 자동! · ✔ 없는 새 공방은 달이가 실사해 설비가 없으면 적발해요'],
     ['납품은 자동! 브로커는 막고, 새싹은 키워요', '수레를 쫓는 브로커를 눌러 적발, 달이로 길막기 · 3명 잡으면 AI 조사 · 새싹과 계약하면 혁신제품으로'],
     ['위기 대응: 긴급조달', '태풍이 오면 긴급 계약(점수 ×2)을 먼저 해결해요'],
-    ['조달관 5대 임무', '다섯 가지를 모두 해내면 S등급! 화면 위 임무 칸에 도장이 찍혀요'],
+    ['조달 업무 4단계', '한 단계에 한 가지씩! 단계가 끝나면 실제 조달청 이야기가 나와요 · 네 가지를 모두 해내면 S등급'],
   ];
   // 2026-11-03 타이틀·결과와 같은 톤: 일러스트 배경 + 둥근 장면 액자 + 스티커 제목 + 크림색 설명 알약
   function draw(ctx) {

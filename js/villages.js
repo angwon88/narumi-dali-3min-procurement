@@ -20,8 +20,9 @@ G.villages = (() => {
     S.score += C.TIER_SCORE; G.score.trust(S, C.TIER_TRUST);
     S.stats.villageUp = (S.stats.villageUp || 0) + 1;
     const what = UP[vid][s.tier - 1], b = v.body;
-    if (s.tier >= 2) { G.director.banner(S, v.name + G.U.josa(v.name, '이', '가') + ' 새로 단장했어요! (' + what + ')', '납품 점수 ×' + C.VILLAGE_T2_SCORE + ' · 마을 신뢰 +' + C.VILLAGE_T2_TRUST + ' 추가'); G.audio.play('gift'); }
-    else { G.fx.add(S, b.x + b.w / 2, b.y - 50, v.name + ' 단장! ' + what + ' · 계약 시간 +15%', '#ffe48a', 16); G.audio.play('ok'); }
+    if (s.tier >= 2 && C.QUIET) { G.fx.add(S, b.x + b.w / 2, b.y - 50, v.name + ' 새 단장! ' + what, '#ffe48a', 16); G.audio.play('gift'); }   // 8.0단계: 배너 대신 한 줄
+    else if (s.tier >= 2) { G.director.banner(S, v.name + G.U.josa(v.name, '이', '가') + ' 새로 단장했어요! (' + what + ')', '납품 점수 ×' + C.VILLAGE_T2_SCORE + ' · 마을 신뢰 +' + C.VILLAGE_T2_TRUST + ' 추가'); G.audio.play('gift'); }
+    else { G.fx.add(S, b.x + b.w / 2, b.y - 50, v.name + ' 단장! ' + what, '#ffe48a', 16); G.audio.play('ok'); }
     G.fx.burst(S, b.x + b.w / 2, b.y + 20, true, 30);
   }
   const limitMult = (S, vid) => S.vstate && S.vstate[vid] && S.vstate[vid].tier >= 1 ? C.VILLAGE_LIMIT_MULT : 1;

@@ -82,12 +82,13 @@ window.PlayBot = {
     G.screens.newGame(); const S = G.S, DT = 1 / 60; G.screen = 'pause';
     const st = {};
     for (let i = 0; i < 180 * 60 && S.timeLeft > 0 && S.elapsed < until; i++) {
+      while (S.stageUI && S.timeLeft > 0) G.missions.advance(S);       // 8.0단계: 단계 시작 안내·끝 카드는 바로 넘김 (마지막 카드는 남겨 둠 → 결과 화면은 부른 쪽에서)
       this.tick(S, opt, st);
       G.screens.step(S, DT); G.screen = 'pause';
       while (S.pendingLevels > 0) { G.levelup.open(S); G.levelup.choose(S, S.offer[0]); G.screen = 'pause'; }
     }
     const st2 = S.stats;
-    return { 배달: S.delivered, 불합격: st2.qFail || 0, 가성비: st2.valueBest || 0, 가성비놓침: st2.valueMiss || 0, 놓침: st2.reqExpired, 속음: (st2.scammed || 0) + (st2.stolen || 0), 적발: st2.caught || 0, 검증: S.data, 데이터단계: S.dataLv, 만료: st2.certExpired || 0, 요청: st2.reqMade, 점수: S.score, 신뢰: Math.round(S.trust), 아낀세금: S.saved, 낭비: S.wasted, 레벨: S.level, 선물: (S.gifts || []).length, 최대콤보: S.maxCombo || 0, 브로커승: st2.brokerWon || 0, 브로커막음: st2.brokerBlocked || 0, 브로커적발: st2.brokerCaught || 0, 새싹: st2.sprouts || 0, 필살기: st2.ult || 0, 수레취소: st2.shipStolen || 0, 자동: st2.autoDeal || 0, 오판: st2.wrongCheck || 0, 지정기회: st2.sprouts || 0, 긴급: st2.urgentDone || 0, 새싹실적: st2.sproutBuy || 0, 혁신지정: st2.innov || 0 };
+    return { 배달: S.delivered, 불합격: st2.qFail || 0, 가성비: st2.valueBest || 0, 가성비놓침: st2.valueMiss || 0, 놓침: st2.reqExpired, 속음: (st2.scammed || 0) + (st2.stolen || 0), 적발: st2.caught || 0, 검증: S.data, 데이터단계: S.dataLv, 만료: st2.certExpired || 0, 요청: st2.reqMade, 점수: S.score, 신뢰: Math.round(S.trust), 아낀세금: S.saved, 낭비: S.wasted, 레벨: S.level, 선물: (S.gifts || []).length, 최대콤보: S.maxCombo || 0, 브로커승: st2.brokerWon || 0, 브로커막음: st2.brokerBlocked || 0, 브로커적발: st2.brokerCaught || 0, 새싹: st2.sprouts || 0, 필살기: st2.ult || 0, 수레취소: st2.shipStolen || 0, 자동: st2.autoDeal || 0, 오판: st2.wrongCheck || 0, 지정기회: st2.sprouts || 0, 긴급: st2.urgentDone || 0, 새싹실적: st2.sproutBuy || 0, 혁신지정: st2.innov || 0, 업무: G.missions.count(S), 긴급발생: st2.urgentMade || 0, 실사: (st2.caught || 0) + (st2.certified || 0) };
   },
   avg(opt, n = 5) {
     const rs = []; for (let i = 0; i < n; i++) rs.push(this.run(opt));

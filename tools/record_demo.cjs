@@ -36,11 +36,12 @@ window.REC = (() => {
   cv.width = 1920; cv.height = 1080;
   const M = G.missions.LIST;
   const CAP = {
-    value:  { tag: '조달관 5대 임무 1', col: M[0].col, text: '조건(★)을 맞춘 공방 중 가장 싼 곳에서 사요' },
-    paper:  { tag: '조달관 5대 임무 2', col: M[1].col, text: '너무 싸고 좋은 새 공방? 나르미 실사로 페이퍼컴퍼니 적발!' },
-    broker: { tag: '조달관 5대 임무 3', col: M[2].col, text: '계약을 가로채는 브로커를 눌러 차단 · 입찰참가자격 제한' },
-    sprout: { tag: '조달관 5대 임무 4', col: M[3].col, text: '새싹 공방의 첫 고객이 되어 혁신제품으로 키워요' },
-    crisis: { tag: '조달관 5대 임무 5', col: M[4].col, text: '태풍엔 긴급조달 · 원자재는 쌀 때 비축해요' },
+    // 11-16 8.0단계: 임무가 4단계로 바뀌어 깨지지 않게만 맞춤. 단계 안내·카드 장면은 아직 반영 안 함 → 다시 녹화하기 전에 손봐야 함
+    value:  { tag: '1단계 ' + M[0].name, col: M[0].col, text: M[0].desc },
+    paper:  { tag: '2단계 ' + M[1].name, col: M[1].col, text: M[1].desc },
+    broker: { tag: '3단계 ' + M[2].name, col: M[2].col, text: M[2].desc },
+    sprout: { tag: '2단계 ' + M[1].name, col: '#d39e00', text: '새싹 공방의 첫 고객이 되어 혁신제품으로 키워요' },
+    crisis: { tag: '4단계 ' + M[3].name, col: M[3].col, text: M[3].desc },
     ult:    { tag: 'AI 조사', col: '#0f6f94', text: '브로커 3명 적발 → 데이터로 한 번에 찾아내는 AI 조사' },
     rush:   { tag: '결전', col: '#d9342b', text: '최후의 20초 · 브로커 총출동, 점수 1.5배!' },
   };

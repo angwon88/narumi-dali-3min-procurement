@@ -13,7 +13,7 @@ G.connect = (() => {
 
   function init(S) {
     S.sel = null; S.ships = []; S.shipMult = 1; S.slotBonus = 0; S.connectHint = true; S.deals = {}; S.report = null; S.newPending = 0;
-    S.newQ = ['sprout', 'fake', ...(Math.random() < 0.5 ? ['sprout', 'fake'] : ['fake', 'sprout'])];
+    S.newQ = ['sprout', 'fake', ...(Math.random() < 0.5 ? ['sprout', 'fake'] : ['fake', 'sprout'])];   // 2단계: 새싹 → 페이퍼컴퍼니, 4단계: 둘 중 하나
   }
   const slots = (S, sh) => C.CONNECT_SLOTS[sh.tier || 0] + (S.slotBonus || 0);
   const busy = (S, sh) => S.ships.filter(s => s.shop === sh).length;
@@ -121,7 +121,7 @@ G.connect = (() => {
       const sh = S.newQ[0] === 'sprout' ? G.shops.spawnSprout(S) : G.shops.spawnFake(S, null, true);
       if (!sh) return;                                                  // 자리가 없으면 다음 프레임에 다시
       S.newQ.shift(); S.newPending--;
-      G.director.banner(S, '새 공방 개업! (' + sh.w.cat.name + ' ' + sh.w.side + ')', '눌러서 달이를 보내요 · 실사 보고서를 보고 등록 또는 적발');
+      G.director.banner(S, '새 공방 개업! (' + sh.w.cat.name + ' ' + sh.w.side + ')', '눌러서 달이를 보내요 · 보고서를 보고 등록 또는 적발');
       G.audio.play('banner');
     }
   }
@@ -160,7 +160,7 @@ G.connect = (() => {
       S.score = Math.max(0, S.score + C.WRONG_FAKE_SCORE); G.score.trust(S, C.WRONG_FAKE_TRUST); G.score.breakCombo(S); S.catchStreak = 0;
       const r = G.requests.active(S).filter(q => G.ITEM[q.item].cat === sh.cat && !q.ship).sort((a, c) => a.left - c.left)[0];
       if (r) G.requests.stolen(S, r, sh);
-      G.director.banner(S, '부정 낙찰! 페이퍼컴퍼니였어요', '생산 설비가 없었어요 · 점수 ' + C.WRONG_FAKE_SCORE + ' · 신뢰 ' + C.WRONG_FAKE_TRUST);
+      G.director.banner(S, '부정 낙찰! 페이퍼컴퍼니였어요', '생산 설비가 없었어요 · 점수 ' + C.WRONG_FAKE_SCORE);
       G.audio.play('scam');
     } else {                                                            // 새싹을 적발: 혁신제품 기회 상실
       G.score.trust(S, C.WRONG_SPROUT_TRUST);

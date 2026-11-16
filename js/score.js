@@ -8,7 +8,7 @@ G.score = (() => {
     S.combo = 0; S.maxCombo = 0; S.comboT = 0;
   }
   const comboMult = S => Math.min(C.COMBO_MAX_MULT, 1 + C.COMBO_STEP * Math.max(0, S.combo - 1));
-  function breakCombo(S) { if (S.combo >= 3) G.fx.add(S, G.dali.x, G.dali.y - 70, '콤보 끊김…', '#ff8a7a'); S.combo = 0; }
+  function breakCombo(S) { if (S.combo >= 3 && !C.QUIET) G.fx.add(S, G.dali.x, G.dali.y - 70, '콤보 끊김…', '#ff8a7a'); S.combo = 0; }
   function trust(S, d) { S.trust = Math.max(0, Math.min(100, S.trust + d)); }
   // 제때 납품: 100 + 시간 보너스(남은 비율×50) + 절감 점수(절감액×20)
   function delivered(S, r, bagItem) {
@@ -34,13 +34,13 @@ G.score = (() => {
     G.audio.play('deliver', S.combo);
     const v = r.vill.yard;
     const star = (r.urgent ? '  긴급 ×' + C.STORM.mult : '') + (sh && sh.mature ? '  ★혁신 ×' + C.INNOV_MATURE_MULT : '');   // 성공 판정 뒤 혁신 납품은 금빛 파편과 함께
-    G.fx.add(S, v.x + v.w / 2, v.y + 16, '+' + pts + star + (S.combo >= 2 ? '  콤보 ' + S.combo + '!' : ''), '#ffe48a', 16);
+    G.fx.add(S, v.x + v.w / 2, v.y + 16, '+' + pts + star + (S.combo >= 2 && !C.QUIET ? '  콤보 ' + S.combo + '!' : ''), '#ffe48a', 16);
     if (star) G.fx.burst(S, v.x + v.w / 2, v.y + 10, true, 24);
-    if (saving > 0) {                                            // 2026-11-04 손맛: 아낀 세금 동전이 위쪽 '아낀 세금' 칸으로 날아가 쌓임
+    if (saving > 0 && !C.QUIET) {                                // 2026-11-04 손맛 (8.0단계: 상단에 아낀 세금 칸이 없어 생략, 값은 위에서 이미 더함): 아낀 세금 동전이 위쪽 '아낀 세금' 칸으로 날아가 쌓임
       G.fx.add(S, v.x + v.w / 2, v.y + 16, '세금 +' + saving + '만원', '#9be37a');
       G.fx.coins(S, v.x + v.w / 2, v.y + 8, 340, 17, Math.min(6, 1 + Math.ceil(saving / 1.5)), () => { S.savedPop = 0.35; });
     }
-    if (S.combo >= 5 && S.combo % 5 === 0) {                     // 5·10·15연속 납품: 크게 + 폭죽
+    if (S.combo >= 5 && S.combo % 5 === 0 && !C.QUIET) {                     // 5·10·15연속 납품: 크게 + 폭죽
       S.comboPop = { n: S.combo, t: 0, x: v.x + v.w / 2 };
       G.fx.burst(S, v.x + v.w / 2, v.y - 10, true, 40); G.fx.burst(S, v.x + v.w / 2 - 50, v.y - 30, true, 20); G.fx.burst(S, v.x + v.w / 2 + 50, v.y - 30, true, 20);
       G.audio.play('gift'); S.shakeT = Math.max(S.shakeT || 0, 0.2);
