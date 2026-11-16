@@ -89,7 +89,10 @@ G.villages = (() => {
       ctx.beginPath(); ctx.arc(b.x + 20 + i * 36, b.y + b.h - 8 - k * 20, 6 + k * 10, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
     }
   }
-  function darkWindows(ctx, b) { ctx.fillStyle = '#3b4250'; for (let i = 0; i < 4; i++) ctx.fillRect(b.x + 40 + i * 44, b.y + 30, 24, 16); }
+  function darkWindows(ctx, b, v) {
+    const art = G.world.villageArt(v, true); if (art) { ctx.drawImage(art.im, art.x, art.y); return; }   // 11-16 건물 그림이면 유리창이 꺼진 그림으로
+    ctx.fillStyle = '#3b4250'; for (let i = 0; i < 4; i++) ctx.fillRect(b.x + 40 + i * 44, b.y + 30, 24, 16);
+  }
 
   function draw(ctx, S) {
     for (const v of G.world.villages) {
@@ -110,7 +113,7 @@ G.villages = (() => {
         const fade = Math.min(1, s.hurtT / 0.5);      // 마지막 0.5초 서서히 회복
         ctx.globalAlpha = fade;
         if (v.id === 'school') {
-          darkWindows(ctx, b);
+          darkWindows(ctx, b, v);
           person(ctx, y.x + 150, y.y + 34, '#e86a5c', true); person(ctx, y.x + 170, y.y + 36, '#5b8fb9', true);
           G.world.text(ctx, '…', y.x + 160, y.y + 14, 12, '#fff');
         } else if (v.id === 'clinic') {
@@ -120,16 +123,17 @@ G.villages = (() => {
         } else if (v.id === 'fire') {
           ctx.fillStyle = '#7d8590'; ctx.fillRect(b.x + 2, b.y + 26, 30, 44);
           ctx.fillStyle = '#6a7179'; for (let k = 0; k < 6; k++) ctx.fillRect(b.x + 2, b.y + 30 + k * 7, 30, 2);
-          darkWindows(ctx, b);
+          darkWindows(ctx, b, v);
         } else if (v.id === 'library') {
-          darkWindows(ctx, b);
+          darkWindows(ctx, b, v);
           ctx.fillStyle = '#fffdf6'; ctx.fillRect(b.x + 1, b.y + 44, 32, 16);
           ctx.fillStyle = '#3a3a3a'; ctx.fillRect(b.x + 16, b.y + 38, 2, 6);
           G.world.text(ctx, '휴관', b.x + 17, b.y + 53, 12, '#d9342b');
         }
         ctx.globalAlpha = 1;
       }
-      face(ctx, b.x + b.w - 12, b.y + 11, hurt ? -1 : s.happyT > 0 ? 1 : 0);
+      const art = G.world.villageArt(v);                                // 건물 그림이면 지붕 높이가 달라서 얼굴을 지붕 위로 맞춤
+      face(ctx, b.x + b.w - 12, art ? Math.max(b.y + 11, art.y + 20) : b.y + 11, hurt ? -1 : s.happyT > 0 ? 1 : 0);
     }
   }
 

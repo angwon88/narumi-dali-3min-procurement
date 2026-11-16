@@ -207,6 +207,11 @@ G.world = (() => {
     fire:    { roof: '#5a2a24', kind: 'brick' },
     library: { roof: '#4a3a78', kind: 'stone' },
   };
+  // 마을 건물 그림(tools/make_sprite.cjs로 만든 PNG): 칸 아래쪽에 붙이고 가운데 맞춤. dark = 유리창이 꺼진 그림(피해 연출)
+  function villageArt(v, dark) {
+    const im = G.img && G.img['village_' + v.id + (dark ? '_dark' : '')]; if (!im || !im.naturalWidth) return null;
+    const b = v.body; return { im, x: b.x + Math.round((b.w - im.naturalWidth) / 2), y: b.y + b.h - im.naturalHeight };
+  }
   function drawVillage(ctx, v) {
     const y = v.yard, b = v.body, wall = shade(v.col, 1), VL = VLOOK[v.id] || { roof: shade(v.col, 0.5), kind: 'plank' };
     // 앞마당: 잔디 + 가장자리 꽃밭 + 디딤돌 길
@@ -215,6 +220,12 @@ G.world = (() => {
     for (let k = 0; k < 7; k++) { px(ctx, '#d8c9a0', b.x + 8 + (k % 2) * 3, y.y + 3 + k * 5, 14, 3); }
     for (const fx of [y.x + 3, y.x + y.w - 9]) for (let k = 0; k < 4; k++) { px(ctx, '#3f8a35', fx, y.y + 6 + k * 8, 6, 3); px(ctx, ['#ff7a9a', '#ffd84a', '#fff', '#ff9a4a'][(k + fx) % 4 | 0], fx + 1, y.y + 4 + k * 8, 3, 3); }
     softShade(ctx, b.x, b.y + b.h - 1, b.w);
+    const art = villageArt(v);                                         // 11-16 이미지 AI 건물 그림이 있으면 벽·지붕·문·창 대신 (이름표만 위에)
+    if (art) {
+      ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(art.im, art.x, art.y); ctx.restore();
+      label(ctx, v.name, b.x + b.w / 2, art.y + 13);
+      return;
+    }
     if (VL.kind === 'stone') { px(ctx, wall, b.x, b.y + 18, b.w, b.h - 18); for (let yy = b.y + 22, r = 0; yy < b.y + b.h; yy += 8, r++) { px(ctx, shade(v.col, 0.85), b.x, yy + 7, b.w, 1); for (let xx = b.x + (r % 2 ? 10 : 0); xx < b.x + b.w; xx += 20) px(ctx, shade(v.col, 0.85), xx, yy, 1, 8); } for (let xx = b.x + 34; xx < b.x + b.w - 10; xx += 44) { px(ctx, '#e6def0', xx, b.y + 22, 5, b.h - 26); px(ctx, '#c8bcd8', xx + 4, b.y + 22, 1, b.h - 26); } }
     else wallPattern(ctx, VL.kind, b.x, b.y + 18, b.w, b.h - 22, wall);
     px(ctx, '#9a9184', b.x - 1, b.y + b.h - 4, b.w + 2, 4); px(ctx, '#b5ad9f', b.x - 1, b.y + b.h - 4, b.w + 2, 1);   // 주춧돌
@@ -284,5 +295,5 @@ G.world = (() => {
     ctx.drawImage(staticLayer(), 0, 0);
     drawOffice(ctx, performance.now() / 1000);
   }
-  return { shade, CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, roofPerch: { x: 480, y: 242 } };
+  return { shade, CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, villageArt, roofPerch: { x: 480, y: 242 } };
 })();
