@@ -38,6 +38,7 @@ G.C = {
   VILLAGE_LIMIT_MULT: 1.15, VILLAGE_T2_SCORE: 1.2, VILLAGE_T2_TRUST: 1,   // 1단계 새 계약 시간 +15%, 2단계 납품 점수 ×1.2·신뢰 +1
   TIER_SCORE: 100, TIER_TRUST: 2,
   // 새싹 공방 (개편 2단계): 실적 없는 스타트업. 품질은 좋지만 처음엔 조금 비쌈. 정상 납품 실적 SPROUT_GOAL건 → 혁신제품 지정
+  EASY: { limit: 1.35, brokerSpeed: 0.8 },   // 11-16 8.18단계 초보 모드: 계약 시간 ×1.35 · 브로커 속도 ×0.8 + 다음 할 일 화살표(connect.js drawCoach)
   HARD: { limit: 0.68, brokerRest: 0.7, brokerSpeed: 1.15, fakeEvery: 1 },   // 11-04 하드 모드: 계약 시간 -32% · 브로커 더 자주(쉬는 시간 -30%)·더 빠르게(+15%). 페이퍼컴퍼니를 늘리면 적발 점수가 늘어 오히려 쉬워져서 그대로
   SPROUT_AT: [15, 38, 62, 85],   // 11-03 4곳(혁신 보상 4호까지)   // 2분 기준
   SPROUT_PRICE_MULT: 1.25, SPROUT_GOAL: 2, SPROUT_TRUST: 2, SPROUT_SCORE: 80, SPROUT_GRAD_SCORE: 1000, SPROUT_GRAD_TRUST: 8,   // 2분 기준 실적 2건 (3분 때 3건)
@@ -95,4 +96,4 @@ G.C = {
   GRADE: { S: [20000, 80], A: [13000, 60], B: [6000, 0] },   // 2026-11-03 덜어내기 뒤 2분 기준 (봇 0.7 ≈ 16,000~25,000 · 0.45 ≈ 10,000~19,000)
 };
 G.FONT = 'Galmuri11';
-G.VERSION = 'v8.17 시험 · 업무 4단계';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)
+G.VERSION = 'v8.18 시험 · 업무 4단계';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)

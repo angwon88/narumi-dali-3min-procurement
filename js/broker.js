@@ -20,7 +20,7 @@ G.broker = (() => {
   // 노릴 수 있는 카드: 아직 계약 안 했고 시간이 넉넉한 것 (카드 가로채기)
   const cardTargets = S => G.requests.active(S).filter(r => !r.broker && !r.ship && r.left > 8);
   const hasTarget = S => SHIP ? S.ships.length > 0 : CARD ? cardTargets(S).length > 0 : true;
-  const speed = S => U.clamp(SP[0] + (SP[1] - SP[0]) * (S.elapsed - C.BROKER_FIRST_AT) / (C.GAME_SECONDS - C.BROKER_FIRST_AT), SP[0], SP[1]) * (S.hard ? C.HARD.brokerSpeed : 1) * (S.rush ? 1.15 : 1);
+  const speed = S => U.clamp(SP[0] + (SP[1] - SP[0]) * (S.elapsed - C.BROKER_FIRST_AT) / (C.GAME_SECONDS - C.BROKER_FIRST_AT), SP[0], SP[1]) * (S.hard ? C.HARD.brokerSpeed : S.easy ? C.EASY.brokerSpeed : 1) * (S.rush ? 1.15 : 1);
 
   // 문 앞 → 길 → (조달청 건물 피해서) 아래 길 → 마을 앞마당
   function pathTo(bk, v) {

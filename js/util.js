@@ -13,4 +13,5 @@ G.store = {
   set(k, v) { try { localStorage.setItem('sjcj.' + k, JSON.stringify(v)); } catch (e) { /* 무시 */ } },
 };
 // 설정 (타이틀 [설정]에서 바꿈, 11번 작업). buyMode: 'auto' = 0.4초 머무르면 구매, 'button' = E·Enter·[구매] 버튼
-G.settings = { buyMode: G.store.get('buyMode', 'auto'), ultAuto: G.store.get('ultAuto', true), hard: G.store.get('hard', false) };   // hard: 하드 모드(힌트 끔, 2026-11-03)   // ultAuto: 필살기 자동 발동(기본) / 수동(Q·버튼)
+G.settings = { buyMode: G.store.get('buyMode', 'auto'), ultAuto: G.store.get('ultAuto', true), hard: G.store.get('hard', false), easy: G.store.get('easy', false) };   // easy: 초보 모드(8.18단계, 화살표 안내)
+   // hard: 하드 모드(힌트 끔, 2026-11-03)   // ultAuto: 필살기 자동 발동(기본) / 수동(Q·버튼)

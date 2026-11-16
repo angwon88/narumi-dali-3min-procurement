@@ -295,7 +295,7 @@ G.connect = (() => {
         ctx.fillStyle = 'rgba(30,42,58,.92)'; ctx.fillRect(C.VIEW.w / 2 - w / 2, 196, w, 22); ctx.fillStyle = '#ffd84a'; ctx.fillRect(C.VIEW.w / 2 - w / 2, 196, w, 2);
         T(ctx, text, C.VIEW.w / 2, 208, 12, '#fff');
       }
-    } else if (S.connectHint && !S.hard) {                              // 첫 카드: 어디를 누를지
+    } else if (S.connectHint && !S.hard && !S.easy) {   // 초보 모드는 drawCoach가 대신                              // 첫 카드: 어디를 누를지
       const r = G.requests.active(S).find(q => !q.ship); if (!r) return;
       const b = G.ui.bubbleRect(r), y = b.y - 38 + Math.sin(S.elapsed * 5) * 3;
       ctx.fillStyle = '#ffd84a'; ctx.fillRect(b.x + b.w / 2 - 42, y, 84, 20);
@@ -303,5 +303,38 @@ G.connect = (() => {
       T(ctx, '카드를 눌러요', b.x + b.w / 2, y + 10, 12, '#2a2416');
     }
   }
-  return { init, update, tap, tapReport, decide, tab, autoCovers, dropDeals, drawReport, select, tapShop, sign, cancel, fit, slots, busy, hasSlot, needsCheck, secLeft, vehicle, drawShops, drawShips, drawOver };
+  // ---------- 초보 모드 (8.18단계): 지금 할 일 하나만 노란 화살표 + 한 줄로 짚어 줌 ----------
+  function coachArrow(ctx, S, x, y, text, up) {                       // up: 아래에서 위를 가리킴 (말풍선은 화살표 아래)
+    const bob = Math.sin(S.elapsed * 6) * 4, ay = up ? y + 6 - bob : y - 6 + bob, d = up ? 1 : -1;
+    ctx.fillStyle = '#ffd84a'; ctx.strokeStyle = '#7a5a00'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x - 11, ay + d * 14); ctx.lineTo(x + 11, ay + d * 14); ctx.lineTo(x, ay); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.lineWidth = 1;
+    ctx.font = '12px "Galmuri11 Bold", ' + G.FONT; const w = ctx.measureText(text).width + 16, bx = U.clamp(x - w / 2, 4, C.VIEW.w - w - 4), by = up ? ay + 16 : ay - 36;
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(bx + 2, by + 3, w, 20);
+    ctx.fillStyle = '#ffd84a'; ctx.fillRect(bx, by, w, 20); ctx.fillStyle = '#7a5a00'; ctx.fillRect(bx, by + 18, w, 2);
+    ctx.fillStyle = '#2a2416'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, bx + w / 2, by + 10);
+  }
+  function drawCoach(ctx, S) {
+    if (!C.CONNECT || !S.easy || S.stageUI || S.ultFx || S.ultCut) return;
+    const bk = S.bk;
+    if (bk && (bk.state === 'grab' || bk.state === 'run')) { coachArrow(ctx, S, bk.x, bk.y - 96, '브로커를 눌러 적발!'); return; }
+    const rp = S.report;
+    if (rp) {                                                           // 보고서: '생산 설비' 줄을 반짝 테두리로
+      if (rp.t < C.INSPECT_TIME) return;
+      const R = reportRect(rp.sh), on = 0.5 + Math.sin(S.elapsed * 8) * 0.5;
+      ctx.strokeStyle = 'rgba(255,190,0,' + (0.5 + on * 0.5).toFixed(2) + ')'; ctx.lineWidth = 3; ctx.strokeRect(R.x + 4, R.y + 36, R.w - 8, 16); ctx.lineWidth = 1;
+      coachArrow(ctx, S, R.x + R.w / 2, R.y + R.h + 2, '생산 설비 ✔ → 등록 · ✘ → 적발', true);
+      return;
+    }
+    const chk = S.shops.find(s => G.shops.isOpen(S, s) && needsCheck(s));
+    if (chk && !G.dali.path?.length) { const b = chk.w.body; coachArrow(ctx, S, b.x + b.w / 2, b.y + b.h + 26, '새 공방! 눌러서 달이 실사', true); return; }
+    if (S.sel) {
+      const r = S.sel, ok = S.shops.filter(s => G.shops.isOpen(S, s) && fit(S, s, r) === 'ok').sort((a, b) => G.shops.price(a, r.item) - G.shops.price(b, r.item));
+      if (ok.length) { const b = ok[0].w.body; coachArrow(ctx, S, b.x + b.w / 2, b.y + b.h + 26, ok.length > 1 ? '조건 맞는 곳 중 가장 싸요!' : '여기와 계약해요', true); }
+      else { const b = G.ui.bubbleRect(r); coachArrow(ctx, S, b.x + b.w / 2, b.y - 14, '지금 맞는 공방이 없어요 · 다른 카드'); }
+      return;
+    }
+    const cards = G.requests.active(S).filter(r => !r.ship && !autoCovers(S, r)).sort((a, b) => (b.broker - a.broker) || (b.urgent - a.urgent) || a.left - b.left);
+    if (cards.length) { const r = cards[0], b = G.ui.bubbleRect(r); coachArrow(ctx, S, b.x + b.w / 2, b.y - 14, r.broker ? '브로커가 노려요! 먼저 계약' : r.urgent ? '긴급 계약부터!' : '이 카드를 눌러요'); }
+  }
+  return { drawCoach, init, update, tap, tapReport, decide, tab, autoCovers, dropDeals, drawReport, select, tapShop, sign, cancel, fit, slots, busy, hasSlot, needsCheck, secLeft, vehicle, drawShops, drawShips, drawOver };
 })();

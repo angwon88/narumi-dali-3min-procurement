@@ -7,13 +7,13 @@ G.screens = (() => {
   let endT = 0;
 
   function newGame() {
-    G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, floats: [], bagCap: C.BAG_START, scoreMult: 1, hard: !!G.settings.hard };   // 하드 모드는 판 시작 때 고정
+    G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, floats: [], bagCap: C.BAG_START, scoreMult: 1, hard: !!G.settings.hard, easy: !G.settings.hard && !!G.settings.easy };   // 하드 모드는 판 시작 때 고정
     G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S); G.gifts.init(G.S); G.events.init(G.S); G.connect.init(G.S); G.broker.init(G.S); G.missions.init(G.S); G.ult.init(G.S);
     G.dali.reset(); G.narmi.reset(); G.input.reset();
     G.screen = 'stage';                                                // 1단계 시작 안내부터 (missions.js)
   }
   function finish() {
-    const key = G.S.hard ? 'best_hard' : 'best', best = G.store.get(key, 0);   // 최고 기록은 모드별
+    const key = G.S.hard ? 'best_hard' : G.S.easy ? 'best_easy' : 'best', best = G.store.get(key, 0);   // 최고 기록은 모드별
     G.S.newBest = G.S.score > best;
     if (G.S.newBest) G.store.set(key, G.S.score);
     G.result.start(G.S);
@@ -31,8 +31,8 @@ G.screens = (() => {
   const BTN_ULT = { x: W - 178, y: 86, w: 166, h: 30 }, BTN_ULTQ = { x: W - 214, y: 86, w: 30, h: 30 };
   const ultLabel = () => G.settings.ultAuto ? 'AI 조사: 자동 사용' : 'AI 조사: 직접 사용(Q)';
   const BTN_MODE = { x: W - 178, y: 122, w: 166, h: 30 };             // 2026-11-03 보통 / 하드 모드
-  const modeLabel = () => G.settings.hard ? '하드 모드' : '보통 모드';
-  const MODE_TIP = ['보통 / 하드 모드 (눌러서 바꾸기)', '보통: 맞는 공방 초록 테두리 · 조건 안내', '하드: 힌트 없음 · 계약이 빡빡하고 브로커가 거세요', '      계약 시간 -32% · 브로커가 더 자주, 더 빠르게', '최고 기록은 모드별로 따로 저장돼요'];
+  const modeLabel = () => G.settings.hard ? '하드 모드' : G.settings.easy ? '초보 모드' : '보통 모드';
+  const MODE_TIP = ['보통 / 초보 / 하드 모드 (눌러서 바꾸기)', '초보: 다음에 누를 곳을 화살표로 알려 줘요', '      계약 시간 +35% · 브로커가 느려요', '보통: 맞는 공방 초록 테두리 · 조건 안내', '하드: 힌트 없음 · 계약 시간 -32% · 브로커가 거세요', '최고 기록은 모드별로 따로 저장돼요'];
   let ultTipOn = false, thanksTipOn = false;                                                // [?]를 누르면 설명을 켜고 끔 (휴대폰용)
   function titleUpdate() {
     if (ui.clicked(BTN_SOUND)) { G.audio.toggle(); return; }
@@ -40,7 +40,10 @@ G.screens = (() => {
     if (ui.clicked(BTN_ULT)) { G.ult.toggleAuto(); return; }
     if (ui.clicked(BTN_ULTQ)) { ultTipOn = !ultTipOn; return; }
     if (ui.clicked(G.thanks.BTN)) { thanksTipOn = !thanksTipOn; return; }
-    if (ui.clicked(BTN_MODE)) { G.settings.hard = !G.settings.hard; G.store.set('hard', G.settings.hard); return; }
+    if (ui.clicked(BTN_MODE)) {                                        // 보통 → 초보 → 하드 → 보통
+      const m = G.settings.hard ? 'normal' : G.settings.easy ? 'hard' : 'easy';
+      G.settings.hard = m === 'hard'; G.settings.easy = m === 'easy'; G.store.set('hard', G.settings.hard); G.store.set('easy', G.settings.easy); return;
+    }
     if (ui.clicked(BTN_INTRO)) { G.intro.start(() => { G.screen = 'title'; }); return; }
     if (ui.clicked(BTN_START) || G.input.hit('enter') || G.input.hit(' ')) { if (G.intro.seen()) newGame(); else G.intro.start(newGame); }
   }
@@ -70,9 +73,9 @@ G.screens = (() => {
       rr(ctx, 8, 4, r.w - 16, r.h * 0.38, R * 0.7); ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fill();
       J(ctx, label, r.w / 2, r.h / 2 + 2, 28, '#fff', { stroke: [['#a8501a', 6]] });
     } else {
-      softShadow(ctx, 8, 3, .25); rr(ctx, 0, 0, r.w, r.h, R); ctx.fillStyle = kind === 'q' ? (hot ? '#fff0a0' : '#ffd84a') : kind === 'hard' ? (hot ? '#ff7a6a' : '#e5533d') : kind === 'ult' ? (hot ? '#ffffff' : 'rgba(225,246,255,.92)') : (hot ? '#ffffff' : 'rgba(255,252,244,.88)'); ctx.fill(); noShadow(ctx);
+      softShadow(ctx, 8, 3, .25); rr(ctx, 0, 0, r.w, r.h, R); ctx.fillStyle = kind === 'q' ? (hot ? '#fff0a0' : '#ffd84a') : kind === 'hard' ? (hot ? '#ff7a6a' : '#e5533d') : kind === 'easy' ? (hot ? '#6fd47a' : '#2e9b3a') : kind === 'ult' ? (hot ? '#ffffff' : 'rgba(225,246,255,.92)') : (hot ? '#ffffff' : 'rgba(255,252,244,.88)'); ctx.fill(); noShadow(ctx);
       ctx.strokeStyle = kind === 'ult' ? 'rgba(47,140,190,.55)' : 'rgba(47,79,138,.25)'; ctx.lineWidth = 1.5; rr(ctx, .75, .75, r.w - 1.5, r.h - 1.5, R); ctx.stroke(); ctx.lineWidth = 1;
-      J(ctx, label, r.w / 2, r.h / 2 + 1, kind === 'q' ? 18 : r.h >= 40 ? 21 : 15, kind === 'ult' ? '#1d5f85' : kind === 'hard' ? '#fff' : '#2f4f8a');
+      J(ctx, label, r.w / 2, r.h / 2 + 1, kind === 'q' ? 18 : r.h >= 40 ? 21 : 15, kind === 'ult' ? '#1d5f85' : kind === 'hard' || kind === 'easy' ? '#fff' : '#2f4f8a');
     }
     ctx.restore();
   }
@@ -142,13 +145,13 @@ G.screens = (() => {
     pill(ctx, BTN_MUSIC, musicLabel(), 'sub', t);
     pill(ctx, BTN_ULT, ultLabel(), 'ult', t);
     pill(ctx, BTN_ULTQ, '?', 'q', t);
-    pill(ctx, BTN_MODE, modeLabel(), G.settings.hard ? 'hard' : 'sub', t);
+    pill(ctx, BTN_MODE, modeLabel(), G.settings.hard ? 'hard' : G.settings.easy ? 'easy' : 'sub', t);
     pill(ctx, G.thanks.BTN, '감사 선물 ' + G.thanks.got().length + '/' + G.thanks.LIST.length, 'sub', t);
     if (thanksTipOn || ui.hover(G.thanks.BTN)) ui.tip(ctx, 14, G.thanks.BTN.y + G.thanks.BTN.h + 6, G.thanks.tipLines());
     if (ui.hover(BTN_MODE)) ui.tip(ctx, BTN_MODE.x - 150, BTN_MODE.y + BTN_MODE.h + 6, MODE_TIP);
     if (ultTipOn || ui.hover(BTN_ULT) || ui.hover(BTN_ULTQ)) ui.tip(ctx, BTN_ULTQ.x - 170, BTN_ULT.y + BTN_ULT.h + 6, ui.ULT_TIP);
-    const hk = G.settings.hard ? '_hard' : '', best = G.store.get('best' + hk, 0);
-    if (best) J(ctx, (hk ? '하드 ' : '') + '최고 점수 ' + best + ' · 최고 등급 ' + G.store.get('bestGrade' + hk, '-'), W - 18, H - 18, 15, '#fff3b0', { align: 'right', stroke: [['rgba(40,28,10,.55)', 4]] });
+    const hk = G.settings.hard ? '_hard' : G.settings.easy ? '_easy' : '', best = G.store.get('best' + hk, 0);
+    if (best) J(ctx, (hk === '_hard' ? '하드 ' : hk ? '초보 ' : '') + '최고 점수 ' + best + ' · 최고 등급 ' + G.store.get('bestGrade' + hk, '-'), W - 18, H - 18, 15, '#fff3b0', { align: 'right', stroke: [['rgba(40,28,10,.55)', 4]] });
     J(ctx, C.CONNECT ? '카드 → 공방을 눌러 계약 · 새 공방은 달이가 실사 · Space 브로커 · M 소리' : '터치·클릭으로 이동 · Space 브로커 · Enter 시작 · M 소리', LX, 515, 14, '#fff', { stroke: [['rgba(40,28,10,.5)', 4]] });
     if (G.VERSION) T(ctx, G.VERSION, 10, H - 9, 12, 'rgba(255,255,255,.6)', 'left');
     if (G.input.hit('m')) G.audio.toggle();
@@ -253,6 +256,7 @@ G.screens = (() => {
     G.shops.drawDoorInfo(ctx, G.S);
     G.shops.drawHover(ctx, G.S);
     G.connect.drawReport(ctx, G.S);
+    G.connect.drawCoach(ctx, G.S);                                      // 초보 모드: 다음에 할 일 화살표 (보고서보다 위층)
     G.fx.draw(ctx, G.S);
     G.events.drawOverlay(ctx, G.S);
     G.ult.draw(ctx, G.S);
@@ -305,7 +309,7 @@ G.screens = (() => {
     J(ctx, '잠깐 쉬는 중', W / 2, py + 25, 26, '#fff');
     if (S) {                                                         // 지금 상황 한 줄
       J(ctx, '남은 시간 ' + G.U.fmtTime(S.timeLeft) + ' · 점수 ' + S.score + ' · ' + (S.stage + 1) + '단계', W / 2, py + 66, 15, '#6a5a3a');
-      J(ctx, (S.hard ? '하드 모드 · ' : '보통 모드 · ') + '시간이 멈춰 있어요', W / 2, py + 88, 14, S.hard ? '#d9342b' : '#9a8a6a');
+      J(ctx, (S.hard ? '하드 모드 · ' : S.easy ? '초보 모드 · ' : '보통 모드 · ') + '시간이 멈춰 있어요', W / 2, py + 88, 14, S.hard ? '#d9342b' : '#9a8a6a');
     }
     pill(ctx, BTN_RESUME, '계속하기', 'main', t || 0);
     pill(ctx, BTN_RESTART, '처음부터', 'sub', 0); pill(ctx, BTN_TITLE, '타이틀로', 'sub', 0);
