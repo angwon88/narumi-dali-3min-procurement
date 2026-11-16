@@ -59,7 +59,10 @@ G.connect = (() => {
     return true;
   }
   function launch(S, r, sh, b) {
-    const d = sh.w.door, door = { x: d.x + d.w / 2, y: d.y + 14 }, path = [door, ...G.broker.pathTo(door, r.vill)];
+    const d = sh.w.door, door = { x: d.x + d.w / 2, y: d.y + 14 }, yard = { x: r.vill.yard.x + r.vill.yard.w / 2, y: r.vill.yard.y + 18 };
+    // 8.20단계: 드론은 하늘로 곧게 (조달청 건물 위로 지나감). 수레(그림 없음)·수레 추격 모드는 예전처럼 길을 따라
+    const fly = C.DRONE_STRAIGHT && G.img && G.img.drone_small && G.img.drone_small.naturalWidth && C.CONNECT_BROKER_MODE !== 'ship';
+    const path = fly ? [door, yard] : [door, ...G.broker.pathTo(door, r.vill)];
     let len = 0; for (let i = 1; i < path.length; i++) len += Math.hypot(path[i].x - path[i - 1].x, path[i].y - path[i - 1].y);
     const dur = U.clamp(len / C.CONNECT_SHIP_SPEED, C.CONNECT_SHIP_SEC[0], C.CONNECT_SHIP_SEC[1]);
     r.ship = { r, b, shop: sh, path, len, dur, p: 0, x: door.x, y: door.y, face: 1 };
