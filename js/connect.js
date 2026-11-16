@@ -258,7 +258,23 @@ G.connect = (() => {
     }
   }
   // 납품 수레 (전기 납품 트럭을 받으면 트럭으로)
+  // 11-16 8.19단계 배송 드론(참가자가 만든 그림): 그림 안의 드론 범위 [x0, y0, x1, y1]와 화면 폭. 고속 드론은 혁신 보상
+  const DRONE = { small: { box: [95, 70, 415, 330], w: 40 }, fast: { box: [80, 60, 722, 344], w: 56 } };
+  function drone(ctx, x, y, face, item, fast, t) {
+    const D = DRONE[fast ? 'fast' : 'small'], im = G.img['drone_' + (fast ? 'fast' : 'small')];
+    const [x0, y0, x1, y1] = D.box, s = D.w / (x1 - x0), h = (y1 - y0) * s, hover = 30 + Math.sin(t * 5 + x * 0.05) * 2.5;
+    G.spr.shadow(ctx, x, y + 1, fast ? 16 : 12);                          // 땅 그림자 (떠 있는 느낌)
+    const top = Math.round(y - hover - h);
+    ctx.save(); ctx.translate(Math.round(x), 0); ctx.scale(face, 1);
+    ctx.imageSmoothingEnabled = true; ctx.drawImage(im, x0, y0, x1 - x0, y1 - y0, -D.w / 2, top, D.w, h); ctx.imageSmoothingEnabled = false;
+    ctx.restore();
+    const ix = Math.round(x) + (fast ? face * 4 : 0), iy = top + h + 9;      // 집게 아래 물건 상자
+    ctx.fillStyle = '#1e2f52'; ctx.fillRect(ix - 1, top + h - 2, 2, 3);
+    ctx.fillStyle = '#3a3a3a'; ctx.fillRect(ix - 10, iy - 10, 20, 20); ctx.fillStyle = '#fffdf6'; ctx.fillRect(ix - 9, iy - 9, 18, 18);
+    G.icons.draw(ctx, item, ix, iy, 16);
+  }
   function vehicle(ctx, x, y, face, item, truck, t) {
+    if (G.img && G.img.drone_small && G.img.drone_small.naturalWidth && (!truck || (G.img.drone_fast && G.img.drone_fast.naturalWidth))) { drone(ctx, x, y, face, item, truck, t); return; }
     const bob = Math.floor(t * 12) % 2;
     G.spr.shadow(ctx, x, y + 1, truck ? 20 : 15);
     ctx.save(); ctx.translate(Math.round(x), Math.round(y) - bob); ctx.scale(face, 1);

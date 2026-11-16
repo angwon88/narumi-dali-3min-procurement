@@ -34,7 +34,7 @@ G.levelup = (() => {
     safety: { product: '전동 킥보드',      icon: 'scooter', effect: '이동 속도 +35%', apply: S => { S.speedMult *= 1.35; S.scooter = true; } },
   };
   if (C.CONNECT) {                                                     // 계약 연결: 걷기·가방이 없어 보상을 납품 쪽으로
-    Object.assign(INNOV.safety, { product: '전기 납품 트럭', icon: 'truck', effect: '납품 속도 +35%', apply: S => { S.shipMult *= 1.35; S.truck = true; } });
+    Object.assign(INNOV.safety, { product: G.C.FUTURE ? '고속 배송 드론' : '전기 납품 트럭', icon: 'truck', effect: '납품 속도 +35%', apply: S => { S.shipMult *= 1.35; S.truck = true; } });
     Object.assign(INNOV.furn, { product: '물류 창고', icon: 'depot', effect: '공방 동시 납품 +1건', apply: S => { S.slotBonus += 1; } });
   }
   function innovCard(S) {
