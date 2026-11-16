@@ -82,6 +82,7 @@ G.broker = (() => {
     const bk = S.bk; if (!bk) return;
     bk.t += dt; if (bk.alarmed) bk.alarmT = (bk.alarmT || 0) + dt;
     if (bk.stun) return;                                              // 나르미가 붙잡는 중
+    if (C.CONNECT && S.ultFx && !S.ultFx.bkDone && bk.state !== 'off' && bk.state !== 'caught') return;   // 8.14단계: AI 조사 빛이 닿을 때까지 그 자리에 멈춤 (빠져나가지 못하게)
     if (bk.state === 'off') {
       if (S.elapsed < C.BROKER_FIRST_AT || C.BROKER === false || S.elapsed < (S.brokerPauseUntil || 0)) return;   // 필살기 뒤 잠시 쉼
       if (C.CONNECT && !bk.alarmed && bk.wait <= 1 && hasTarget(S)) {  // 등장 1초 전 경보
@@ -160,6 +161,7 @@ G.broker = (() => {
     if (r && (r.ship || r.state === 'done')) {
       S.stats.brokerBlocked++; S.score += C.BROKER_BLOCK_SCORE;
       G.fx.add(S, bk.x, bk.y - 46, '먼저 계약! 계약 지켜냄 +' + C.BROKER_BLOCK_SCORE, '#ffe48a', 16);
+      if (!S.ultLock) G.ult.charge(S);                                  // 8.14단계: 먼저 계약으로 막아도 AI 조사 1칸
       flee(S); return;
     }
     flee(S, '쳇, 허탕이네…', '#ffd6a0');
@@ -187,9 +189,9 @@ G.broker = (() => {
     G.narmi.send(S, bk); G.audio.play('whoosh');
     return true;
   }
-  function caught(S) {
+  function caught(S, byUlt) {                                          // byUlt: AI 조사는 도망치는 브로커도 잡음 (8.14단계)
     const bk = S.bk; bk.stun = false;
-    if (bk.state !== 'grab' && bk.state !== 'run') return;
+    if (bk.state !== 'grab' && bk.state !== 'run' && !(byUlt && bk.state === 'flee')) return;
     if (bk.req) bk.req.broker = false;
     S.stats.brokerCaught++;
     S.score += C.BROKER_CATCH_BONUS; G.score.trust(S, C.TRUST_CATCH);

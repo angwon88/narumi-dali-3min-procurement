@@ -21,7 +21,7 @@ G.ult = (() => {
     if (C.QUIET && S.stage < 2) return;                                // 3단계(브로커)부터
     if (!(G.ui.clicked(BTN) || G.input.hit('q'))) return;
     if (S.ultFx || S.ultCut) return;
-    if (!ready(S)) { G.fx.add(S, BTN.x + BTN.w / 2, 60, '브로커를 ' + (C.ULT_NEED - S.ultCharge) + '명 더 적발하면 AI 조사!', '#cfd8e3'); return; }
+    if (!ready(S)) { G.fx.add(S, BTN.x + BTN.w / 2, 60, (C.CONNECT ? '브로커를 ' + (C.ULT_NEED - S.ultCharge) + '번 더 막으면 AI 조사!' : '브로커를 ' + (C.ULT_NEED - S.ultCharge) + '명 더 적발하면 AI 조사!'), '#cfd8e3'); return; }
     fire(S);
   }
   // 2026-11-04 대표 장면 연출: ① 컷인(1.1초, 게임 멈춤: 3D 나르미 + 큰 제목) → ② 스캔(적발할 때마다 도장 쾅) → ③ 결과 집계
@@ -40,8 +40,9 @@ G.ult = (() => {
       S.shakeT = 0.4; G.audio.play('whoosh'); G.narmi.say('데이터 일제 조사!', 1.4);
     }
   }
-  function hit(S, x, y, text, col, tax) {
-    const u = S.ultFx; u.hits.push({ x, y, text, col, t: 0 });
+  function hit(S, x, y, text, col, tax, small) {
+    const u = S.ultFx; u.hits.push({ x: Math.max(90, Math.min(C.VIEW.w - 90, x)), y: Math.max(C.HUD_H + 24, y), text, col, t: 0, small });   // 화면 끝에서도 도장이 잘리지 않게
+    if (small) { G.audio.play('click'); return; }                      // 11-16 작은 도장(정상 확인·계약 보호): 딱딱딱 소리만
     if (tax != null) { u.found++; u.tax = Math.round((u.tax + tax) * 10) / 10; G.audio.play('catch'); S.shakeT = Math.max(S.shakeT || 0, 0.25); }
     else { u.passed++; G.audio.play('ok'); }
   }
@@ -49,30 +50,39 @@ G.ult = (() => {
   const fakeTax = sh => G.ITEMS.filter(i => i.cat === sh.cat).reduce((a, i) => a + G.shops.price(sh, i.id), 0);
   // 2026-11-03 똑똑한 자동 발동: 충전이 다 되면 쓸모 있는 순간(페이퍼컴퍼니가 있거나, 브로커가 달리거나, 심사 중인 새 공방이 2곳 이상)에 저절로. Q·버튼으로 바로 쓸 수도 있음
   function worth(S) {
-    if (S.bk && (S.bk.state === 'run' || S.bk.state === 'grab')) return true;
-    if (C.CONNECT) return false;                                       // 새 공방 실사는 달이의 일: AI 조사가 대신하지 않음
+    if (S.bk && (S.bk.state === 'run' || S.bk.state === 'grab' || (C.CONNECT && S.bk.state === 'flee' && S.bk.x > 40 && S.bk.x < C.VIEW.w - 40))) return true;
     const open = S.shops.filter(sh => sh.status === 'open' && G.shops.isOpen(S, sh));
     return open.some(sh => sh.fake) || open.filter(sh => sh.isNew && !sh.verified && !sh.innov).length >= 2;
   }
-  const SUM = 2.6;                                                      // 결과 집계 보여 주는 시간
+  const ULT_PAUSE_TXT = C.ULT_BROKER_PAUSE;
+  const SUM = 2.6;                                                    // 결과 집계 보여 주는 시간
   function update(S, dt) {
     if (G.settings.ultAuto && !S.ultFx && !S.ultCut && ready(S) && worth(S)) fire(S);
     const u = S.ultFx; if (!u) return;
     u.t += dt; for (const h of u.hits) h.t += dt;
     const bx = Math.min(1, u.t / C.ULT_SCAN) * C.VIEW.w;
-    for (const sh of C.CONNECT ? [] : S.shops) {
+    // 11-16 8.14단계: 빛이 지나가는 순서대로 공방마다 도장(딱딱딱) — 새 공방은 실사(페이퍼컴퍼니 적발·새싹 통과), 등록 업체는 '✔ 정상'
+    for (const sh of S.shops) {
       if (u.done.has(sh.idx) || sh.w.body.x + sh.w.body.w / 2 > bx) continue;
       u.done.add(sh.idx);
-      if (sh.status === 'open' && G.shops.isOpen(S, sh) && (sh.fake || (sh.isNew && !sh.verified && !sh.innov))) {
-        const b = sh.w.body, fake = sh.fake, tax = fake ? fakeTax(sh) : null;
+      if (sh.status !== 'open' || !G.shops.isOpen(S, sh)) continue;
+      const b = sh.w.body;
+      if (sh.fake || (sh.isNew && !sh.verified && !sh.innov)) {
+        const fake = sh.fake, tax = fake ? fakeTax(sh) : null;
+        if (C.CONNECT && S.report && S.report.sh === sh) S.report = null;   // 달이가 보던 보고서는 닫음
         S.ultQuiet = true; G.shops.inspected(S, sh); S.ultQuiet = false;
         hit(S, b.x + b.w / 2, b.y + 40, fake ? '적발!' : '실사 통과', fake ? '#d9342b' : '#2e9b3a', tax);
-      }
+      } else if (C.CONNECT) { u.okShops = (u.okShops || 0) + 1; hit(S, b.x + b.w / 2, b.y + 34, '✔ 정상', '#2e9b3a', null, true); }
+    }
+    // 계약 카드마다 '보호' 도장: 브로커가 쉬는 동안(ULT_BROKER_PAUSE) 계약을 지킴
+    if (C.CONNECT) for (const r of G.requests.active(S)) {
+      const rb = G.ui.bubbleRect(r); if ((u.cards = u.cards || new Set()).has(r.id) || rb.x + rb.w / 2 > bx) continue;
+      u.cards.add(r.id); u.safe = (u.safe || 0) + 1; hit(S, rb.x + rb.w / 2, rb.y + rb.h / 2, '계약 보호', '#2f6fb5', null, true);
     }
     const bk = S.bk;
-    if (!u.bkDone && bk && (bk.state === 'run' || bk.state === 'grab') && bk.x <= bx) {
+    if (!u.bkDone && bk && (bk.state === 'run' || bk.state === 'grab' || (C.CONNECT && bk.state === 'flee' && bk.x > -20 && bk.x < C.VIEW.w + 20)) && bk.x <= bx) {   // 화면 안에서 도망치는 브로커도
       u.bkDone = true; const tax = bk.req ? bk.req.price : 0;
-      G.broker.caught(S); hit(S, bk.x, bk.y - 40, '브로커 적발!', '#7a3fb0', tax);
+      G.broker.caught(S, true); hit(S, bk.x, bk.y - 40, '브로커 적발!', '#7a3fb0', tax);
     }
     if (u.t > C.ULT_SCAN + 0.3 && u.sumT == null) { u.sumT = 0; G.audio.play(u.found ? 'gift' : 'ok'); }
     if (u.sumT != null) u.sumT += dt;
@@ -95,12 +105,12 @@ G.ult = (() => {
     ctx.restore();
     for (const h of u.hits) {                                               // 적발 도장: 크게 쾅 → 제자리 → 사라짐
       const a = h.t > 1.8 ? Math.max(0, 1 - (h.t - 1.8) / 0.4) : 1; if (a <= 0) continue;
-      const sc = h.t < 0.14 ? 2.4 - h.t / 0.14 * 1.4 : 1;
+      const sc = h.t < 0.14 ? 2.4 - h.t / 0.14 * 1.4 : 1, fs = h.small ? 15 : 22, hh = h.small ? 24 : 36;   // 작은 도장(정상·보호)은 작게
       ctx.save(); ctx.globalAlpha = a; ctx.translate(h.x, h.y); ctx.rotate(-0.12); ctx.scale(sc, sc);
-      ctx.font = '22px "Jua", sans-serif'; const w = ctx.measureText(h.text).width + 28;
-      K.softShadow(ctx, 8, 3, .35); K.rr(ctx, -w / 2, -18, w, 36, 10); ctx.fillStyle = h.col; ctx.fill(); K.noShadow(ctx);
-      ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2; K.rr(ctx, -w / 2 + 3, -15, w - 6, 30, 8); ctx.stroke(); ctx.lineWidth = 1;
-      K.J(ctx, h.text, 0, 1, 22, '#fff'); ctx.restore();
+      ctx.font = fs + 'px "Jua", sans-serif'; const w = ctx.measureText(h.text).width + (h.small ? 18 : 28);
+      K.softShadow(ctx, 8, 3, .35); K.rr(ctx, -w / 2, -hh / 2, w, hh, 10); ctx.fillStyle = h.col; ctx.fill(); K.noShadow(ctx);
+      ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2; K.rr(ctx, -w / 2 + 3, -hh / 2 + 3, w - 6, hh - 6, 8); ctx.stroke(); ctx.lineWidth = 1;
+      K.J(ctx, h.text, 0, 1, fs, '#fff'); ctx.restore();
     }
   }
   // 컷인 (HUD 위까지 덮음): 어두운 화면 + 대각선 띠 + 3D 나르미 + 큰 제목
@@ -110,13 +120,15 @@ G.ult = (() => {
       const K = G.soft, W = C.VIEW.w;
       if (u.sumT != null) {                                                    // 결과 집계
       const p = Math.min(1, u.sumT / 0.2), a = u.sumT > SUM - 0.4 ? Math.max(0, (SUM - u.sumT) / 0.4) : 1;
-      const main = u.found ? '부정 업체 ' + u.found + '곳 적발 · 세금 ' + u.tax + '만원 지킴' : u.passed ? '새 공방 ' + u.passed + '곳 실사 통과 · 수상한 곳 없음' : '수상한 곳 없음 · 깨끗해요!';
+      const ext = C.CONNECT ? '공방 ' + ((u.okShops || 0) + u.passed + u.found) + '곳 확인 · 계약 ' + (u.safe || 0) + '건 보호 · 브로커 ' + ULT_PAUSE_TXT + '초 출동 중단' : '';   // 8.14단계: 한 번에 몇 곳을 봤는지
+      const main = u.found ? '부정 ' + u.found + '건 적발 · 세금 ' + u.tax + '만원 지킴' : u.passed ? '새 공방 ' + u.passed + '곳 실사 통과' : '수상한 곳 없음 · 깨끗해요!', eh = ext ? 22 : 0;
       ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, 300); ctx.scale(0.8 + 0.2 * p, 0.8 + 0.2 * p);
-      ctx.font = '24px "Jua", sans-serif'; const w = Math.max(420, ctx.measureText(main).width + 60);
-      K.softShadow(ctx, 18, 6, .45); K.rr(ctx, -w / 2, -40, w, 84, 20); ctx.fillStyle = 'rgba(255,251,240,.97)'; ctx.fill(); K.noShadow(ctx);
+      ctx.font = '24px "Jua", sans-serif'; const w = Math.max(460, ctx.measureText(main).width + 60);
+      K.softShadow(ctx, 18, 6, .45); K.rr(ctx, -w / 2, -40, w, 84 + eh, 20); ctx.fillStyle = 'rgba(255,251,240,.97)'; ctx.fill(); K.noShadow(ctx);
       K.rr(ctx, -80, -54, 160, 28, 14); ctx.fillStyle = '#0f6f94'; ctx.fill(); K.J(ctx, 'AI 조사 결과', 0, -39, 17, '#fff');
       K.J(ctx, main, 0, -4, 24, u.found ? '#d9342b' : '#2e7d3a');
-      K.J(ctx, '실제로도 조달청은 데이터로 페이퍼컴퍼니 의심 업체를 골라내요', 0, 26, 14, '#6a5a3a');
+      if (ext) K.J(ctx, ext, 0, 22, 16, '#0f6f94');
+      K.J(ctx, '실제로도 조달청은 데이터로 페이퍼컴퍼니 의심 업체를 골라내요', 0, 26 + eh, 14, '#6a5a3a');
       ctx.restore();
     }
     }
