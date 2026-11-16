@@ -90,7 +90,7 @@ G.villages = (() => {
     }
   }
   function darkWindows(ctx, b, v) {
-    const art = G.world.villageArt(v, true); if (art) { ctx.drawImage(art.im, art.x, art.y); return; }   // 11-16 건물 그림이면 유리창이 꺼진 그림으로
+    const art = G.world.villageArt(v, true); if (art) { ctx.drawImage(art.im, art.x, art.y, art.w, art.h); return; }   // 11-16 건물 그림이면 유리창이 꺼진 그림으로
     ctx.fillStyle = '#3b4250'; for (let i = 0; i < 4; i++) ctx.fillRect(b.x + 40 + i * 44, b.y + 30, 24, 16);
   }
 

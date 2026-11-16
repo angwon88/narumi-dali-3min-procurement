@@ -3,6 +3,7 @@
 (() => {
   const C = G.C, cv = document.getElementById('game'), ctx = cv.getContext('2d');
   G.canvas = cv; G.ctx = ctx;
+  cv.width = C.VIEW.w * C.RES; cv.height = C.VIEW.h * C.RES;          // 8.8단계: 2배 해상도 (좌표는 그대로 960×540, screens.draw가 배율을 걺)
   G.input.bind(cv);
 
   function fit() {                                   // 비율 유지 확대(레터박스)

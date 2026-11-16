@@ -105,10 +105,10 @@ G.screens = (() => {
     const im = G.img.title_bg;
     if (!im || !im.naturalWidth) { G.world.draw(ctx); return false; }
     if (!bgCache) {
-      bgCache = document.createElement('canvas'); bgCache.width = W; bgCache.height = H;
-      const g = bgCache.getContext('2d'); g.filter = 'blur(2px)'; g.drawImage(im, -8, -8, W + 16, H + 16); g.filter = 'none';
+      bgCache = document.createElement('canvas'); bgCache.width = W * C.RES; bgCache.height = H * C.RES;
+      const g = bgCache.getContext('2d'); g.scale(C.RES, C.RES); g.filter = 'blur(2px)'; g.drawImage(im, -8, -8, W + 16, H + 16); g.filter = 'none';
     }
-    ctx.drawImage(bgCache, 0, 0); return true;
+    ctx.drawImage(bgCache, 0, 0, W, H); return true;
   }
   function titleDraw(ctx, t) {
     const art = titleBg(ctx);
@@ -347,7 +347,7 @@ G.screens = (() => {
   return {
     newGame, step,
     update(dt) { const f = table[G.screen]; if (f) f[0](dt); },
-    draw(ctx, t) { const f = table[G.screen]; if (f) f[1](ctx, t); },
+    draw(ctx, t) { const f = table[G.screen]; if (!f) return; ctx.setTransform(C.RES, 0, 0, C.RES, 0, 0); ctx.imageSmoothingEnabled = false; f[1](ctx, t); },   // 8.8단계: 모든 화면을 960×540 좌표 × RES배로
     autoPause() { if (G.screen === 'play' || G.screen === 'stage') G.screen = 'pause'; },
   };
 })();

@@ -212,9 +212,11 @@ G.world = (() => {
     library: { roof: '#4a3a78', kind: 'stone' },
   };
   // 마을 건물 그림(tools/make_sprite.cjs로 만든 PNG): 칸 아래쪽에 붙이고 가운데 맞춤. dark = 유리창이 꺼진 그림(피해 연출)
+  const ART = 2;                                                       // 건물 그림 PNG 배율 (tools/make_sprite.cjs 기본 2배)
   function villageArt(v, dark) {
     const im = G.img && G.img['village_' + v.id + (dark ? '_dark' : '')]; if (!im || !im.naturalWidth) return null;
-    const b = v.body; return { im, x: b.x + Math.round((b.w - im.naturalWidth) / 2), y: b.y + b.h - im.naturalHeight };
+    const b = v.body, w = im.naturalWidth / ART, h = im.naturalHeight / ART;   // 그림은 2배 크기로 만들어 둠(선명하게)
+    return { im, w, h, x: b.x + Math.round((b.w - w) / 2), y: b.y + b.h - h };
   }
   function drawVillage(ctx, v) {
     const y = v.yard, b = v.body, wall = shade(v.col, 1), VL = VLOOK[v.id] || { roof: shade(v.col, 0.5), kind: 'plank' };
@@ -226,7 +228,7 @@ G.world = (() => {
     softShade(ctx, b.x, b.y + b.h - 1, b.w);
     const art = villageArt(v);                                         // 11-16 이미지 AI 건물 그림이 있으면 벽·지붕·문·창 대신 (이름표만 위에)
     if (art) {
-      ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(art.im, art.x, art.y); ctx.restore();
+      ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(art.im, art.x, art.y, art.w, art.h); ctx.restore();
       label(ctx, v.name, b.x + b.w / 2, art.y + 13);
       return;
     }
@@ -261,8 +263,8 @@ G.world = (() => {
   let cache = null;
   function staticLayer() {
     if (cache) return cache;
-    cache = document.createElement('canvas'); cache.width = C.VIEW.w; cache.height = C.VIEW.h;
-    const g = cache.getContext('2d'); seed = 7;
+    cache = document.createElement('canvas'); cache.width = C.VIEW.w * C.RES; cache.height = C.VIEW.h * C.RES;
+    const g = cache.getContext('2d'); g.scale(C.RES, C.RES); g.imageSmoothingEnabled = false; seed = 7;
     drawGround(g); shops.forEach(s => drawShop(g, s)); villages.forEach(v => drawVillage(g, v));
     return cache;
   }
@@ -296,7 +298,7 @@ G.world = (() => {
 
   function draw(ctx) {
     if (G.screen === 'boot') return;
-    ctx.drawImage(staticLayer(), 0, 0);
+    ctx.drawImage(staticLayer(), 0, 0, C.VIEW.w, C.VIEW.h);
     drawOffice(ctx, performance.now() / 1000);
   }
   return { shade, CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, villageArt, roofPerch: { x: 480, y: 242 } };

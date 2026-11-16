@@ -1,6 +1,6 @@
 /* 그림 일부를 잘라 크기 맞추기 (2026-11-16, 광장 바닥용). 서버 켠 상태에서:
    node tools/crop_image.cjs <원본(저장소 안 경로)> <저장할 jpg> <잘라낼 x> <y> <폭> <높이> <결과 폭> <결과 높이>
-   예(광장): node tools/crop_image.cjs docs/licenses/원본_건물/광장_LeonardoAI.jpg assets/plaza.jpg 231 271 889 261 960 282 --mirror 675,415,40,135 --patch 675,415,64,420,620
+   예(광장): node tools/crop_image.cjs docs/licenses/원본_건물/광장_LeonardoAI.jpg assets/plaza.jpg 231 271 889 261 1920 564 --mirror 675,415,40,135 --patch 675,415,64,420,620
    광장 값: 원본의 원형 무늬 가운데(675, 415)가 조달청 가운데(480, 290)에 오도록, 건물·벤치·그림자가 없는 돌바닥만 */
 'use strict';
 const fs = require('fs');

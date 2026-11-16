@@ -2,18 +2,19 @@
    - 흰 배경을 투명하게 하고 건물만 잘라 냄. 벽 양옆에 딸려 나온 나무·울타리·땅 줄은 지움
    - 지붕(처마 포함) 폭을 칸 폭 + 8px(양쪽 처마 4px)에 맞추고, 높이는 1.15배까지만 늘림(납작한 칸에 맞추려고). 최대 높이 maxH
    - 마을: 유리창(밝은 파랑)이 꺼진 그림을 <이름>_dark.png로 함께 만듦 (피해 연출: 정전·휴관)
+   - 게임은 2배 해상도로 그리므로(config RES) 결과 PNG도 기본 2배 크기(마을 456×136까지). world.js가 절반 크기로 그림
    - 이름표·기분 얼굴·깃대·단장 장식·배지는 코드가 위에 그림 (world.js · villages.js)
-   사용: 서버 켠 상태에서 node tools/make_sprite.cjs <원본(저장소 안 경로)> <저장할 png> [칸 폭=220] [최대 높이=70]
+   사용: 서버 켠 상태에서 node tools/make_sprite.cjs <원본(저장소 안 경로)> <저장할 png> [칸 폭=220] [최대 높이=70] [배율=2]
    예: node tools/make_sprite.cjs docs/licenses/원본_건물/학교_LeonardoAI.jpg assets/village_school.png 220 70 */
 'use strict';
 const fs = require('fs');
 const tryReq = m => { try { return require.resolve(m, { paths: [process.cwd(), __dirname] }); } catch (e) { return null; } };
 const { chromium } = require(process.env.PW || tryReq('playwright') || 'playwright');
-const [src, out, slotW = '220', maxH = '70'] = process.argv.slice(2);
+const [src, out, slotW = '220', maxH = '70', scale = '2'] = process.argv.slice(2);
 (async () => {
   const b = await chromium.launch(), p = await b.newPage();
   await p.goto('http://127.0.0.1:8767/index.html');
-  const res = await p.evaluate(async ([src, slotW, maxH]) => {
+  const res = await p.evaluate(async ([src, slotW, maxH, scale]) => {
     const im = new Image(); im.src = '/' + src.split('/').map(encodeURIComponent).join('/'); await im.decode();
     const W = im.naturalWidth, H = im.naturalHeight, c = document.createElement('canvas'); c.width = W; c.height = H;
     const g = c.getContext('2d'); g.drawImage(im, 0, 0);
@@ -50,7 +51,7 @@ const [src, out, slotW = '220', maxH = '70'] = process.argv.slice(2);
     }
     for (let y = wallBot + 1; y < H; y++) for (let x = 0; x < W; x++) px[at(x, y) + 3] = 0;
     g.putImageData(d, 0, 0);
-    const OW = slotW + 8, s = OW / (maxR - minL + 1), OH = Math.min(maxH, Math.round((wallBot - roofTop + 1) * s * 1.15));
+    const OW = (slotW + 8) * scale, s = OW / (maxR - minL + 1), OH = Math.min(maxH * scale, Math.round((wallBot - roofTop + 1) * s * 1.15));
     const make = dark => {
       const o = document.createElement('canvas'); o.width = OW; o.height = OH;
       const og = o.getContext('2d'); og.imageSmoothingEnabled = true; og.imageSmoothingQuality = 'high';
@@ -67,7 +68,7 @@ const [src, out, slotW = '220', maxH = '70'] = process.argv.slice(2);
       return o.toDataURL('image/png');
     };
     return { size: [W, H], roofTop, wallTop, wallBot, roof: [minL, maxR], wall: [wallL, wallR], out: [OW, OH], png: make(false), dark: make(true) };
-  }, [src, +slotW, +maxH]);
+  }, [src, +slotW, +maxH, +scale]);
   fs.writeFileSync(out, Buffer.from(res.png.split(',')[1], 'base64'));
   fs.writeFileSync(out.replace(/\.png$/, '_dark.png'), Buffer.from(res.dark.split(',')[1], 'base64'));
   delete res.png; delete res.dark; console.log(out, JSON.stringify(res));
