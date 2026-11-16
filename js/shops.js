@@ -382,8 +382,9 @@ G.shops = (() => {
   }
   // 단서 ①: 굴뚝 연기 (정상만)
   function chimney(ctx, sh) {
-    const b = sh.w.body, x = sh.w.wndX + 4, y = b.y - 10;
-    ctx.fillStyle = '#7a3b2e'; ctx.fillRect(x, y, 10, 14); ctx.fillStyle = '#5c2a20'; ctx.fillRect(x - 1, y, 12, 3);
+    const b = sh.w.body, art = G.world.shopArt(sh.w), x = art ? (sh.w.side === 'B' ? b.x + 20 : b.x + b.w - 30) : sh.w.wndX + 4, y = b.y - 10;
+    if (art) { ctx.fillStyle = '#cfd8e0'; ctx.fillRect(x, y + 2, 10, 10); ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 1, y + 2, 8, 9); ctx.fillStyle = '#9aa8b4'; ctx.fillRect(x - 1, y, 12, 3); ctx.fillStyle = '#5ec8f2'; ctx.fillRect(x + 2, y + 6, 6, 1); }   // 8.21단계: 미래형 흰 환기구 (연기 단서는 그대로)
+    else { ctx.fillStyle = '#7a3b2e'; ctx.fillRect(x, y, 10, 14); ctx.fillStyle = '#5c2a20'; ctx.fillRect(x - 1, y, 12, 3); }
     if (sh.fake) return;
     for (let i = 0; i < 3; i++) {
       const k = ((sh.t / 1.5) + i / 3) % 1, r = 3 + k * 4;
@@ -394,6 +395,7 @@ G.shops = (() => {
   }
   // 단서 ②: 창문 안 일꾼 (수상한 공방은 커튼만)
   function windowView(ctx, sh) {
+    if (G.world.shopArt(sh.w)) return;                                 // 8.21단계: 공방 그림의 창은 위치가 달라 일꾼 창 생략(실사는 달이 보고서·연기 단서로)
     const x = sh.w.wndX, y = sh.w.body.y + 30;
     ctx.fillStyle = '#3a3a3a'; ctx.fillRect(x - 1, y - 1, 20, 20);
     if (sh.fake) {

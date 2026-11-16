@@ -235,9 +235,22 @@ G.world = (() => {
     ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
     px(ctx, 'rgba(255,255,255,.55)', x + 2, y + 2, 3, h - 6); px(ctx, 'rgba(255,255,255,.35)', x + 6, y + 2, 2, h / 2);
   }
+  // 공방 그림(tools/split_shops.cjs, 2배 크기): 폭 124(양옆 6px 처마), 세로 1.2배로 늘려 지붕 꼭대기가 공방 지붕 자리(y-2)에, 바닥은 공방 바닥에
+  function shopArt(s) {
+    const im = G.img && G.img['shop_' + s.cat.id]; if (!im || !im.naturalWidth) return null;
+    const b = s.body, w = 124, h = im.naturalHeight / 2 * 1.2;
+    return { im, w, h, x: b.x - 6, y: b.y + b.h - h };
+  }
   function drawShop(ctx, s) {
     const b = s.body, L = LOOK[s.cat.id] || { wall: s.cat.col, roof: shade(s.cat.col, 0.55), kind: 'plank' };
     softShade(ctx, b.x, b.y + b.h - 1, b.w);
+    const art = shopArt(s);                                             // 8.21단계 미래형 공방 그림: 벽·지붕·문·창 대신 (간판만 위에). B 공방은 좌우로 뒤집음
+    if (art) {
+      ctx.save(); if (s.side === 'B') { ctx.translate(b.x * 2 + b.w, 0); ctx.scale(-1, 1); }
+      ctx.imageSmoothingEnabled = true; ctx.drawImage(art.im, art.x, art.y, art.w, art.h); ctx.imageSmoothingEnabled = false; ctx.restore();
+      label(ctx, s.cat.name + '공방 ' + s.side, b.x + b.w / 2 + 4, b.y + 10, s.cat.col);
+      return;
+    }
     wallPattern(ctx, L.kind, b.x, b.y + 18, b.w, b.h - 22, L.wall);
     px(ctx, '#9a9184', b.x - 1, b.y + b.h - 5, b.w + 2, 5); px(ctx, '#b5ad9f', b.x - 1, b.y + b.h - 5, b.w + 2, 1);   // 주춧돌
     for (let xx = b.x + 8; xx < b.x + b.w; xx += 14) px(ctx, '#857c70', xx, b.y + b.h - 4, 1, 4);
@@ -377,5 +390,5 @@ G.world = (() => {
   }
   // 마을 이름표만 다시 그리기 (피해 연출이 덮은 뒤)
   function villageLabel(ctx, v) { const art = villageArt(v), b = v.body; label(ctx, v.name, b.x + b.w / 2, art ? art.y + 13 : b.y + 10, v.col, VICON[v.id]); }
-  return { shade, CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, villageArt, villageLabel, roofPerch };
+  return { shopArt, shade, CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, villageArt, villageLabel, roofPerch };
 })();

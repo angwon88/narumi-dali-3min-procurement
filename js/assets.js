@@ -6,6 +6,7 @@ G.ASSET_SRC = {
   ci_h: 'assets/ci_h.png', ci_v: 'assets/ci_v.png', mascot3d: 'assets/mascot3d.png', title_bg: 'assets/title_bg.jpg',
   hq: 'assets/village_procurement_hq.png',   // 11-16 8.17단계 미래형 조달청(참가자가 만든 그림). CI·메달·나르미는 코드가 위에. 없으면 코드 그림
   drone_small: 'assets/drone_small.png', drone_fast: 'assets/drone_fast.png',   // 11-16 8.19단계 배송 드론(참가자가 만든 그림). 없으면 코드 수레·트럭
+  shop_furn: 'assets/shop_furn.png', shop_elec: 'assets/shop_elec.png', shop_health: 'assets/shop_health.png', shop_safety: 'assets/shop_safety.png',   // 8.21단계 미래형 공방(원본 docs/licenses/원본_건물/공방4종.png, tools/split_shops.cjs). 없으면 코드 그림
   plaza: 'assets/plaza.jpg',   // 11-16 광장 바닥: Leonardo.ai 그림에서 돌바닥만 잘라 냄(원본 docs/licenses/원본_건물, tools/crop_image.cjs). 없으면 코드 돌길
   village_school: 'assets/village_school.png', village_school_dark: 'assets/village_school_dark.png',
   village_clinic: 'assets/village_clinic.png', village_clinic_dark: 'assets/village_clinic_dark.png',
