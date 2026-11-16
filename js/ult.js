@@ -36,9 +36,27 @@ G.ult = (() => {
   function cutUpdate(S, dt) {                                          // 컷인 동안은 screens.js가 게임을 멈추고 이것만 돌림
     const c = S.ultCut; c.t += dt;
     if (c.t >= CUT) {
-      S.ultCut = null; S.ultFx = { t: 0, done: new Set(), hits: [], found: 0, passed: 0, tax: 0 };
-      S.shakeT = 0.4; G.audio.play('whoosh'); G.narmi.say('데이터 일제 조사!', 1.4);
+      S.ultCut = null; S.ultFx = { t: 0, done: new Set(), hits: [], found: 0, passed: 0, tax: 0, chain: 0, gain: 0, hidden: hideouts(S) };
+      S.shakeT = 0.4; G.audio.play('whoosh'); G.narmi.say('숨은 브로커 조직까지 데이터로 찾아요!', 1.6);
     }
+  }
+  // 11-16 8.16단계 '숨은 브로커 조직': 스캔이 시작되면 건물 뒤·골목에 숨어 있던 브로커들이 들통나 고개를 내밀고, 빛이 닿을 때마다 한 명씩 적발(연속 적발 ×n)
+  //   실제 근거: 조달청은 데이터 분석으로 숨은 부정 의심 업체를 골라 입찰참가자격을 제한함(기획서 부록 B). 연출용이라 계약·신뢰에는 영향 없음, 점수만
+  const SPOTS = [[96, 196], [300, 196], [660, 196], [870, 196], [60, 330], [904, 330], [240, 404], [720, 404]];
+  function hideouts(S) {
+    if (!C.CONNECT) return [];
+    const n = C.ULT_HIDDEN[Math.min(C.ULT_HIDDEN.length - 1, Math.max(0, S.stage - 2))];
+    return SPOTS.slice().sort(() => Math.random() - 0.5).slice(0, n).map(([x, y]) => ({ x, y, t: 0, state: 'grab', face: x < 480 ? 1 : -1, timer: 0, freeze: 0, item: null, loot: null, hit: false }))
+      .sort((a, b) => a.x - b.x);
+  }
+  function chainHit(S, x, y) {                                         // 한 명 적발: 도장 + 서류 폭죽 + 흔들림 + 연속 적발 점수(뒤로 갈수록 큼)
+    const u = S.ultFx; u.chain++; u.chainT = 0;
+    const pts = C.ULT_HIDDEN_SCORE + 50 * (u.chain - 1); S.score += pts; u.gain += pts;
+    u.hits.push({ x: Math.max(110, Math.min(C.VIEW.w - 110, x)), y: Math.max(C.HUD_H + 30, y - 46), text: '입찰참가자격 제한', col: '#d9342b', t: 0 });
+    G.fx.burst(S, x, y - 30, 'paper', 26); G.fx.burst(S, x, y - 20);
+    S.hitStop = 0.07; S.shakeT = Math.max(S.shakeT || 0, 0.3);
+    G.audio.play('catch'); if (u.chain >= 3) setTimeout(() => G.audio.play('levelup'), 60);
+    S.stats.ultHidden = (S.stats.ultHidden || 0) + 1;
   }
   function hit(S, x, y, text, col, tax, small) {
     const u = S.ultFx; u.hits.push({ x: Math.max(90, Math.min(C.VIEW.w - 90, x)), y: Math.max(C.HUD_H + 24, y), text, col, t: 0, small });   // 화면 끝에서도 도장이 잘리지 않게
@@ -79,10 +97,16 @@ G.ult = (() => {
       const rb = G.ui.bubbleRect(r); if ((u.cards = u.cards || new Set()).has(r.id) || rb.x + rb.w / 2 > bx) continue;
       u.cards.add(r.id); u.safe = (u.safe || 0) + 1; hit(S, rb.x + rb.w / 2, rb.y + rb.h / 2, '계약 보호', '#2f6fb5', null, true);
     }
+    for (const h of u.hidden || []) {                                  // 숨은 브로커: 들통(고개 내밈) → 빛이 닿으면 적발 → 데굴데굴 굴러 사라짐
+      h.t += dt; if (h.hit) h.timer += dt;
+      if (!h.hit && h.x <= bx) { h.hit = true; h.state = 'caught'; h.timer = 0; chainHit(S, h.x, h.y); }
+    }
+    if (u.chainT != null) u.chainT += dt;
     const bk = S.bk;
     if (!u.bkDone && bk && (bk.state === 'run' || bk.state === 'grab' || (C.CONNECT && bk.state === 'flee' && bk.x > -20 && bk.x < C.VIEW.w + 20)) && bk.x <= bx) {   // 화면 안에서 도망치는 브로커도
       u.bkDone = true; const tax = bk.req ? bk.req.price : 0;
       G.broker.caught(S, true); hit(S, bk.x, bk.y - 40, '브로커 적발!', '#7a3fb0', tax);
+      if (C.CONNECT) { u.chain++; u.chainT = 0; }
     }
     if (u.t > C.ULT_SCAN + 0.3 && u.sumT == null) { u.sumT = 0; G.audio.play(u.found ? 'gift' : 'ok'); }
     if (u.sumT != null) u.sumT += dt;
@@ -103,6 +127,21 @@ G.ult = (() => {
       ctx.fillStyle = '#fff'; ctx.fillRect(bx, C.HUD_H, 3, H - C.HUD_H);
     }
     ctx.restore();
+    for (const h of u.hidden || []) {                                       // 숨은 브로커 + 조준 고리
+      if (h.hit && h.timer > 1.0) continue;
+      const pop = Math.min(1, h.t / 0.22), sc = pop < 1 ? pop * 1.15 : 1;
+      ctx.save(); ctx.translate(h.x, h.y); ctx.scale(sc, sc); ctx.translate(-h.x, -h.y);
+      if (h.hit) ctx.globalAlpha = Math.max(0, 1 - h.timer);
+      G.broker.raccoon(ctx, h, S);
+      ctx.restore();
+      if (!h.hit && pop >= 1) {                                             // 빨간 조준 고리가 돌며 좁혀짐
+        const r = 30 - Math.min(8, h.t * 6), a0 = h.t * 4;
+        ctx.save(); ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 2.5; ctx.setLineDash([7, 5]); ctx.lineDashOffset = -h.t * 30;
+        ctx.beginPath(); ctx.arc(h.x, h.y - 34, r, a0, a0 + Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = '#ff3b30'; for (const [dx, dy] of [[-r - 4, 0], [r + 4, 0], [0, -r - 4], [0, r + 4]]) ctx.fillRect(h.x + dx - 2, h.y - 34 + dy - 2, 4, 4);
+        ctx.restore(); ctx.lineWidth = 1;
+      }
+    }
     for (const h of u.hits) {                                               // 적발 도장: 크게 쾅 → 제자리 → 사라짐
       const a = h.t > 1.8 ? Math.max(0, 1 - (h.t - 1.8) / 0.4) : 1; if (a <= 0) continue;
       const sc = h.t < 0.14 ? 2.4 - h.t / 0.14 * 1.4 : 1, fs = h.small ? 15 : 22, hh = h.small ? 24 : 36;   // 작은 도장(정상·보호)은 작게
@@ -111,6 +150,14 @@ G.ult = (() => {
       K.softShadow(ctx, 8, 3, .35); K.rr(ctx, -w / 2, -hh / 2, w, hh, 10); ctx.fillStyle = h.col; ctx.fill(); K.noShadow(ctx);
       ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2; K.rr(ctx, -w / 2 + 3, -hh / 2 + 3, w - 6, hh - 6, 8); ctx.stroke(); ctx.lineWidth = 1;
       K.J(ctx, h.text, 0, 1, fs, '#fff'); ctx.restore();
+    }
+    if (u.chain >= 1 && u.chainT != null && u.chainT < 1.6 && u.sumT == null) {   // 가운데 위: '연속 적발 ×n!' (잡을 때마다 커지며 튀어나옴)
+      const p = Math.min(1, u.chainT / 0.12), sc = (1.7 - 0.7 * p) * (1 + Math.min(0.5, (u.chain - 1) * 0.12)), a = u.chainT > 1.2 ? Math.max(0, (1.6 - u.chainT) / 0.4) : 1;
+      const tg = ctx.createLinearGradient(0, -24, 0, 24); tg.addColorStop(0, '#fff17a'); tg.addColorStop(0.55, '#ffc93a'); tg.addColorStop(1, '#ff6a26');
+      ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, 150); ctx.rotate(-0.05); ctx.scale(sc, sc);
+      K.J(ctx, '연속 적발 ×' + u.chain + '!', 0, 0, 40, '#fff', { stroke: [['#fff', 14]] });
+      K.J(ctx, '연속 적발 ×' + u.chain + '!', 0, 0, 40, tg, { stroke: [['#b8281e', 7]] });
+      ctx.restore();
     }
   }
   // 컷인 (HUD 위까지 덮음): 어두운 화면 + 대각선 띠 + 3D 나르미 + 큰 제목
@@ -121,7 +168,7 @@ G.ult = (() => {
       if (u.sumT != null) {                                                    // 결과 집계
       const p = Math.min(1, u.sumT / 0.2), a = u.sumT > SUM - 0.4 ? Math.max(0, (SUM - u.sumT) / 0.4) : 1;
       const ext = C.CONNECT ? '공방 ' + ((u.okShops || 0) + u.passed + u.found) + '곳 확인 · 계약 ' + (u.safe || 0) + '건 보호 · 브로커 ' + ULT_PAUSE_TXT + '초 출동 중단' : '';   // 8.14단계: 한 번에 몇 곳을 봤는지
-      const main = u.found ? '부정 ' + u.found + '건 적발 · 세금 ' + u.tax + '만원 지킴' : u.passed ? '새 공방 ' + u.passed + '곳 실사 통과' : '수상한 곳 없음 · 깨끗해요!', eh = ext ? 22 : 0;
+      const main = u.chain ? '브로커 조직 ' + u.chain + '명 일망타진! +' + (u.gain + C.ULT_SCORE).toLocaleString() + '점' : u.found ? '부정 ' + u.found + '건 적발 · 세금 ' + u.tax + '만원 지킴' : u.passed ? '새 공방 ' + u.passed + '곳 실사 통과' : '수상한 곳 없음 · 깨끗해요!', eh = ext ? 22 : 0;   // 8.16단계
       ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, 300); ctx.scale(0.8 + 0.2 * p, 0.8 + 0.2 * p);
       ctx.font = '24px "Jua", sans-serif'; const w = Math.max(460, ctx.measureText(main).width + 60);
       K.softShadow(ctx, 18, 6, .45); K.rr(ctx, -w / 2, -40, w, 84 + eh, 20); ctx.fillStyle = 'rgba(255,251,240,.97)'; ctx.fill(); K.noShadow(ctx);
@@ -151,7 +198,7 @@ G.ult = (() => {
     K.J(ctx, '나르미의', tx, 214, 26, '#fff', { stroke: [['#1d3f78', 6]] });
     K.J(ctx, 'AI 데이터 일제 조사!', tx, 262, 50, '#fff', { stroke: [['#fff', 16]] });
     K.J(ctx, 'AI 데이터 일제 조사!', tx, 262, 50, tg, { stroke: [['#1d3f78', 8]] });
-    K.J(ctx, '페이퍼컴퍼니 · 브로커를 데이터로 한 번에 찾아요', tx, 312, 17, '#fff', { stroke: [['rgba(10,20,40,.7)', 5]] });
+    K.J(ctx, C.CONNECT ? '숨은 브로커 조직까지 데이터로 한 번에 찾아요' : '페이퍼컴퍼니 · 브로커를 데이터로 한 번에 찾아요', tx, 312, 17, '#fff', { stroke: [['rgba(10,20,40,.7)', 5]] });
     ctx.restore();
   }
   // HUD 버튼: 브로커 적발 칸 3개, 다 차면 반짝

@@ -306,6 +306,7 @@ G.broker = (() => {
   // 경보: 빨간 화면 테두리 + 큰 '브로커 출현!' 띠 (게임은 멈추지 않음, HUD 위)
   function drawAlarm(ctx, S) {
     const bk = S.bk; if (!C.CONNECT || !bk || !bk.alarmed || !(bk.state === 'off' || bk.state === 'grab' || bk.state === 'run')) return;
+    if (S.ultFx || S.ultCut) return;                                   // 8.16단계: AI 조사 중엔 경보 띠를 숨김(조사 연출이 주인공)
     const W = C.VIEW.w, H = C.VIEW.h, t = bk.alarmT || 0, a = 0.3 + 0.3 * (0.5 + 0.5 * Math.sin(t * 11)), B = 34, Y = C.HUD_H;
     for (const [x, y, w, h, x0, y0, x1, y1] of [[0, Y, W, B, 0, Y, 0, Y + B], [0, H - B, W, B, 0, H, 0, H - B], [0, Y, B, H - Y, 0, 0, B, 0], [W - B, Y, B, H - Y, W, 0, W - B, 0]]) {
       const g = ctx.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, 'rgba(230,30,20,' + a.toFixed(2) + ')'); g.addColorStop(1, 'rgba(230,30,20,0)');
