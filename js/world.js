@@ -326,9 +326,26 @@ G.world = (() => {
     return cache;
   }
   // 조달청 (2026-11-03 다시 그림): 박공지붕 · 큰 CI 간판 · 업적 메달 자리 · 기둥 · 유리문 · 계단 · 깃대. 충돌 영역(office.body)은 그대로
+  const roofPerch = { x: 480, y: 242 };                                // 나르미가 서는 지붕 자리 (조달청 그림이 있으면 drawOffice가 높이를 맞춤)
   function drawOffice(ctx, t) {
     const b = office.body, x = b.x, y = b.y, w = b.w, px = (c, X, Y, W, H) => { ctx.fillStyle = c; ctx.fillRect(Math.round(X), Math.round(Y), W, H); };
     px('rgba(0,0,0,.18)', x + 4, y + b.h - 2, w, 6);                                   // 그림자
+    const hq = G.img && G.img.hq;
+    if (hq && hq.naturalWidth) {                                                      // 11-16 8.17단계 미래형 조달청 그림(704×576): 벽 x 48~656이 건물 폭에, 옥상 판 y 145가 y-2에
+      const s = (w + 24) / 608, ox = x - 12 - 48 * s, oy = y + b.h - 540 * s, P = (ix, iy) => [ox + ix * s, oy + iy * s];   // 조금 크게(양옆 12px), 계단 아래를 건물 바닥에
+      ctx.imageSmoothingEnabled = true; ctx.drawImage(hq, ox, oy, hq.naturalWidth * s, hq.naturalHeight * s); ctx.imageSmoothingEnabled = false;
+      const ci = G.img.ci_h, [sx0, sy0] = P(112, 185), [sx1, sy1] = P(592, 245);        // 그림의 빈 간판에 공식 CI
+      // CI는 간판 폭을 거의 다 쓰게
+      if (ci && ci.naturalWidth) {
+        const ch = Math.round((sy1 - sy0) + 8), cw = ci.naturalWidth * ch / ci.naturalHeight, mx = (sx0 + sx1) / 2, my = (sy0 + sy1) / 2;
+        ctx.fillStyle = '#ffffff'; G.soft.rr(ctx, mx - cw / 2 - 5, my - ch / 2 - 2, cw + 10, ch + 4, 4); ctx.fill();
+        ctx.strokeStyle = '#1e2f52'; ctx.lineWidth = 1; G.soft.rr(ctx, mx - cw / 2 - 4.5, my - ch / 2 - 1.5, cw + 9, ch + 3, 4); ctx.stroke();
+        ctx.imageSmoothingEnabled = true; ctx.drawImage(ci, mx - cw / 2, my - ch / 2, cw, ch); ctx.imageSmoothingEnabled = false;
+      }
+      office.art = { band: P(0, 270)[1], top: P(0, 120)[1] };                         // 메달 줄(회색 띠)·옥상 가운데 높이 (missions.js·나르미가 씀)
+      roofPerch.y = Math.round(office.art.top + 4);
+      return;
+    }
     px('#e9edf3', x, y + 10, w, b.h - 10);                                            // 돌벽
     px('#d5dce6', x, y + 10, w, 3);
     for (let i = 0; i < 9; i++) px('#2f4f8a', x - 6 + i * 2, y + 10 - i * 2, w + 12 - i * 4, 2);   // 계단식 박공지붕
@@ -360,5 +377,5 @@ G.world = (() => {
   }
   // 마을 이름표만 다시 그리기 (피해 연출이 덮은 뒤)
   function villageLabel(ctx, v) { const art = villageArt(v), b = v.body; label(ctx, v.name, b.x + b.w / 2, art ? art.y + 13 : b.y + 10, v.col, VICON[v.id]); }
-  return { shade, CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, villageArt, villageLabel, roofPerch: { x: 480, y: 242 } };
+  return { shade, CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, villageArt, villageLabel, roofPerch };
 })();

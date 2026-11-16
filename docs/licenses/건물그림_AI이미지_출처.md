@@ -29,3 +29,4 @@
 - 옛날식 학교·광장 원본은 같은 폴더에 보관(지금은 안 씀)
 - 보건소: `원본_건물/미래보건소_LeonardoAI.jpg` → `assets/village_clinic.png` (`make_sprite.cjs --box 200,338,676,46,1310,48,1298`, 원본 가장자리 검은 띠 제외)
 - 소방서·도서관(미래형): 참가자가 만든 `assets/village_fire.png`·`village_library.png` (원본 Leonardo.ai 그림은 `원본_건물/`에 추가 예정). 꺼진 창 덧그림은 `tools/make_dark.cjs`로 다시 만듦
+- 조달청(미래형): 참가자가 만든 `assets/village_procurement_hq.png` (흰 배경판·dark 판은 `원본_건물/`에 보관, 원본 Leonardo.ai 그림 추가 예정). 간판의 CI는 공모전 제공 공식 자료

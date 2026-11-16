@@ -143,8 +143,8 @@ G.missions = (() => {
   function drawOffice(ctx, S) {
     const b = G.world.office.body, t = S.elapsed || 0;
     LIST.forEach((m, i) => {
-      const cx = b.x + 29 + i * 27, cy = b.y + 54, at = S.missions && S.missions[m.id];
-      if (at == null) { ctx.strokeStyle = 'rgba(80,90,110,.5)'; ctx.setLineDash([2, 2]); ctx.beginPath(); ctx.arc(cx, cy, 7, 0, 7); ctx.stroke(); ctx.setLineDash([]); return; }
+      const art = G.world.office.art, cx = b.x + 29 + i * 27, cy = art ? Math.round(art.band) : b.y + 54, at = S.missions && S.missions[m.id];   // 미래형 그림이면 회색 띠 위에
+      if (at == null) { if (art) { ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(cx, cy, 7, 0, 7); ctx.fill(); } ctx.strokeStyle = 'rgba(80,90,110,.5)'; ctx.setLineDash([2, 2]); ctx.beginPath(); ctx.arc(cx, cy, 7, 0, 7); ctx.stroke(); ctx.setLineDash([]); return; }
       const k = Math.min(1, (t - at) / 0.4), sc = k < 1 ? 1 + Math.sin(k * Math.PI) * 0.8 : 1;
       ctx.save(); ctx.translate(cx, cy); ctx.scale(sc, sc);
       ctx.fillStyle = '#d9342b'; ctx.fillRect(-5, 2, 3, 8); ctx.fillStyle = '#2f6fb5'; ctx.fillRect(2, 2, 3, 8);   // 리본
