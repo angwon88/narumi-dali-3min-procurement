@@ -340,7 +340,7 @@ G.broker = (() => {
       px(ctx, blink ? '#9a5ad0' : '#5a2a8a', b.w - 44, -11, 44, 11);
       ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('브로커!', b.w - 22, -5);
     }
-    ctx.strokeStyle = blink ? '#e5533d' : 'rgba(229,83,61,.5)'; ctx.lineWidth = 2; ctx.strokeRect(-2, -2, b.w + 4, b.h + 4); ctx.lineWidth = 1;
+    ctx.strokeStyle = blink ? '#e5533d' : 'rgba(229,83,61,.5)'; ctx.lineWidth = 2; G.soft.rr(ctx, -2, -2, b.w + 4, b.h + 4, 11); ctx.stroke(); ctx.lineWidth = 1;
   }
   return { init, update, draw, drawAlarm, drawSanction, pathTo, hit, request, caught, bubbleMark, raccoon, face };
 })();

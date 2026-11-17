@@ -307,7 +307,7 @@ G.connect = (() => {
     const c = S.sel;
     if (c) {
       const b = G.ui.bubbleRect(c), name = G.ITEM[c.item].name, on = 0.65 + Math.sin(S.elapsed * 7) * 0.35;
-      ctx.strokeStyle = 'rgba(255,216,74,' + on.toFixed(2) + ')'; ctx.lineWidth = 4; ctx.strokeRect(b.x - 3, b.y - 3, b.w + 6, b.h + 6); ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255,216,74,' + on.toFixed(2) + ')'; ctx.lineWidth = 4; G.soft.rr(ctx, b.x - 3, b.y - 3, b.w + 6, b.h + 6, 12); ctx.stroke(); ctx.lineWidth = 1;
       if (!S.hard) {
         const text = name + ' ★' + c.minQ + ' 이상 · 맞는 공방을 눌러요';
         ctx.font = '12px ' + G.FONT; const w = ctx.measureText(text).width + 22;
