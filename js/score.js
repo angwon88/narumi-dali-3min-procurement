@@ -34,7 +34,8 @@ G.score = (() => {
     G.audio.play('deliver', S.combo);
     const v = r.vill.yard;
     const star = (r.urgent ? '  긴급 ×' + C.STORM.mult : '') + (sh && sh.mature ? '  ★혁신 ×' + C.INNOV_MATURE_MULT : '');   // 성공 판정 뒤 혁신 납품은 금빛 파편과 함께
-    G.fx.add(S, v.x + v.w / 2, v.y + 16, '+' + pts + star + (S.combo >= 2 && !C.QUIET ? '  콤보 ' + S.combo + '!' : ''), '#ffe48a', 16);
+    const vb = C.QUIET && bagItem.best === true ? '  가성비 최고!' : '';   // 8.26단계: 점수와 가성비를 한 줄로 (두 줄이 쌓여 카드와 겹치던 문제)
+    G.fx.add(S, v.x + v.w / 2, v.y + 24, '+' + (pts + (vb ? C.VALUE_BONUS : 0)) + star + vb + (S.combo >= 2 && !C.QUIET ? '  콤보 ' + S.combo + '!' : ''), vb ? '#7fe0ff' : '#ffe48a', 16);
     if (star) G.fx.burst(S, v.x + v.w / 2, v.y + 10, true, 24);
     if (saving > 0 && !C.QUIET) {                                // 2026-11-04 손맛 (8.0단계: 상단에 아낀 세금 칸이 없어 생략, 값은 위에서 이미 더함): 아낀 세금 동전이 위쪽 '아낀 세금' 칸으로 날아가 쌓임
       G.fx.add(S, v.x + v.w / 2, v.y + 16, '세금 +' + saving + '만원', '#9be37a');
@@ -48,7 +49,7 @@ G.score = (() => {
     // 개편: 가성비 판정 (산 순간 기준, 조건을 맞춘 곳 중 가장 쌌나)
     if (bagItem.best === true) {
       S.score += C.VALUE_BONUS; S.stats.valueBest = (S.stats.valueBest || 0) + 1;
-      G.fx.add(S, v.x + v.w / 2, v.y + 16, '가성비 최고! +' + C.VALUE_BONUS, '#7fe0ff', 16);
+      if (!C.QUIET) G.fx.add(S, v.x + v.w / 2, v.y + 16, '가성비 최고! +' + C.VALUE_BONUS, '#7fe0ff', 16);
     } else if (bagItem.best === false) {
       S.stats.valueMiss = (S.stats.valueMiss || 0) + 1;
       G.fx.add(S, v.x + v.w / 2, v.y + 16, bagItem.q > r.minQ ? '과잉 품질 · 조건 맞는 더 싼 곳이 있었어요' : '조건 맞는 더 싼 곳이 있었어요', '#ffd6a0');

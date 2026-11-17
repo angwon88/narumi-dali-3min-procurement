@@ -140,18 +140,18 @@ G.ui = (() => {
   // 검수표 (개편): 납품 순간 마을 위에 '계약 ★ / 납품 ★ → 합격·불합격' 도장
   function checks(ctx, S) {
     for (const c of S.checks || []) {
-      const k = Math.min(1, c.t / 0.15), sc = 1.6 - 0.6 * k, a = c.t > C.CHECK_SEC - 0.3 ? (C.CHECK_SEC - c.t) / 0.3 : 1;
-      const w = 188, h = 52;
-      ctx.save(); ctx.globalAlpha = Math.max(0, a); ctx.translate(Math.max(w / 2 + 4, Math.min(C.VIEW.w - w / 2 - 4, c.x)), c.y - c.t * 6); ctx.scale(sc, sc); ctx.rotate(-0.05);
-      ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-w / 2 + 3, -h / 2 + 4, w, h);
-      ctx.fillStyle = '#fffdf6'; ctx.fillRect(-w / 2, -h / 2, w, h);
-      const col = c.ok ? '#2e9b3a' : '#d9342b';
-      ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.strokeRect(-w / 2 + 1.5, -h / 2 + 1.5, w - 3, h - 3); ctx.lineWidth = 1;
-      T(ctx, '계약', -w / 2 + 18, -10, 12, '#6a5a3a'); G.icons.stars(ctx, -w / 2 + 32, -17, c.minQ, 3, 2);
-      T(ctx, '납품', 14, -10, 12, '#6a5a3a');
-      if (c.fake) T(ctx, '불량!', 54, -10, 12, '#d9342b'); else G.icons.stars(ctx, 28, -17, c.realQ, 3, 2);
-      ctx.fillStyle = col; ctx.fillRect(-w / 2 + 6, 5, w - 12, 18);
-      T(ctx, c.ok ? '검수 합격 ✔' : c.fake ? '검수 불합격 ✘ 표시와 달라요' : '검수 불합격 ✘ 품질 미달', 0, 14, 12, '#fff');
+      // 8.26단계: 작고 둥근 검수표 (전에는 188×52로 둘이 뜨면 화면 가운데를 가림). 계약 ★ / 납품 ★ → 합격·불합격
+      const k = Math.min(1, c.t / 0.15), sc = 1.25 - 0.25 * k, a = c.t > C.CHECK_SEC - 0.3 ? (C.CHECK_SEC - c.t) / 0.3 : 1;
+      const K = G.soft, w = c.ok ? 132 : 150, h = 36, col = c.ok ? '#2e9b3a' : '#d9342b';
+      ctx.save(); ctx.globalAlpha = Math.max(0, a); ctx.translate(Math.max(w / 2 + 4, Math.min(C.VIEW.w - w / 2 - 4, c.x)), c.y + 30 - c.t * 6); ctx.scale(sc, sc);
+      ctx.fillStyle = 'rgba(10,20,40,.25)'; K.rr(ctx, -w / 2 + 1, -h / 2 + 3, w, h, 9); ctx.fill();
+      ctx.fillStyle = '#ffffff'; K.rr(ctx, -w / 2, -h / 2, w, h, 9); ctx.fill();
+      ctx.save(); K.rr(ctx, -w / 2, -h / 2, w, h, 9); ctx.clip(); ctx.fillStyle = col; ctx.fillRect(-w / 2, 2, w, h / 2); ctx.restore();
+      ctx.strokeStyle = col; ctx.lineWidth = 1.5; K.rr(ctx, -w / 2 + .75, -h / 2 + .75, w - 1.5, h - 1.5, 8.5); ctx.stroke(); ctx.lineWidth = 1;
+      T(ctx, '계약', -w / 2 + 16, -8, 12, '#7a8696'); G.icons.stars(ctx, -w / 2 + 29, -12, c.minQ, 3, 1);
+      T(ctx, '납품', 14, -8, 12, '#7a8696');
+      if (c.fake) T(ctx, '불량!', 46, -8, 12, '#d9342b'); else G.icons.stars(ctx, 27, -12, c.realQ, 3, 1);
+      T(ctx, c.ok ? '검수 합격 ✔' : c.fake ? '불합격 ✘ 표시와 달라요' : '불합격 ✘ 품질 미달', 0, 10, 12, '#fff');
       ctx.restore();
     }
   }

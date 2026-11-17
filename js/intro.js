@@ -13,23 +13,43 @@ G.intro = (() => {
     if (adv || t >= PANEL) { idx++; t = 0; G.audio.play('click'); if (idx >= 5) done(); }
   }
   // ---------- 장면 그림 ----------
+  // 8.26단계: 게임과 같은 미래형 마을 그림이 있으면 그걸로 (바닥을 상자 바닥에 맞춤)
+  const VID = { '학교': 'school', '보건소': 'clinic', '소방서': 'fire', '도서관': 'library' };
   function house(ctx, x, y, w, h, wall, roof, label) {
+    const im = G.C.FUTURE && G.img['village_' + VID[label]];
+    if (im && im.naturalWidth) {
+      const iw = w + 20, ih = im.naturalHeight * iw / im.naturalWidth; ctx.imageSmoothingEnabled = true; ctx.drawImage(im, x - 10, y + h - ih, iw, ih); ctx.imageSmoothingEnabled = false;
+      G.world.label(ctx, label, x + w / 2, y + h - ih + 12, wall); return;
+    }
     ctx.fillStyle = wall; ctx.fillRect(x, y + 16, w, h - 16); ctx.fillStyle = roof; ctx.fillRect(x - 3, y, w + 6, 20);
     T(ctx, label, x + w / 2, y + 10, 12, '#fff');
   }
   // 계약 카드 (게임 속 말풍선을 크게): 나라장터 탭 + 물건 + 예정가격 + 품질 조건 줄
   function card(ctx, x, y, item, price, minQ, hi) {
-    const w = 96, h = 104;
-    ctx.fillStyle = '#2f4f8a'; ctx.fillRect(x, y - 14, 56, 14);
-    ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('나라장터', x + 28, y - 7);
-    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x + 3, y + 4, w, h);
-    ctx.fillStyle = '#fffdf6'; ctx.fillRect(x, y, w, h); ctx.strokeStyle = '#3a3a3a'; ctx.lineWidth = 2; ctx.strokeRect(x + 1, y + 1, w - 2, h - 2); ctx.lineWidth = 1;
-    G.icons.draw(ctx, item, x + w / 2, y + 26, 34);
-    ctx.font = '12px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = '#2a2416'; ctx.fillText(G.ITEM[item].name, x + w / 2, y + 54);
-    T(ctx, '예정 ' + price + '만', x + w / 2, y + 68, 12, '#6a5a3a');
-    ctx.fillStyle = hi ? '#e5533d' : '#2a2416'; ctx.fillRect(x + 4, y + 78, w - 8, 22);
+    const w = 96, h = 104, K = G.soft;                                  // 8.26단계: 게임과 같은 둥근 카드
+    ctx.fillStyle = 'rgba(20,30,50,.22)'; K.rr(ctx, x + 2, y + 3, w, h, 11); ctx.fill();
+    ctx.fillStyle = '#ffffff'; K.rr(ctx, x, y, w, h, 11); ctx.fill();
+    ctx.save(); K.rr(ctx, x, y, w, h, 11); ctx.clip(); ctx.fillStyle = '#2f4f8a'; ctx.fillRect(x, y, w, 17); ctx.restore();
+    ctx.font = '11px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText('나라장터', x + 8, y + 9);
+    ctx.strokeStyle = 'rgba(30,47,82,.45)'; ctx.lineWidth = 1.25; K.rr(ctx, x + .75, y + .75, w - 1.5, h - 1.5, 10.5); ctx.stroke(); ctx.lineWidth = 1;
+    G.icons.draw(ctx, item, x + w / 2, y + 38, 28);
+    ctx.font = '12px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = '#1e2a3a'; ctx.textAlign = 'center'; ctx.fillText(G.ITEM[item].name, x + w / 2, y + 62);
+    T(ctx, '예정 ' + price + '만', x + w / 2, y + 74, 12, '#7a8696');
+    ctx.fillStyle = hi ? '#e5533d' : '#1e2f52'; K.rr(ctx, x + 4, y + 80, w - 8, 20, 10); ctx.fill();
     const sw = minQ * 16 - 2, sx = Math.round(x + w / 2 - (sw + 24) / 2);
-    G.icons.stars(ctx, sx, y + 82, minQ, minQ, 2); T(ctx, '이상', sx + sw + 14, y + 89, 12, '#fff');
+    G.icons.stars(ctx, sx, y + 83, minQ, minQ, 2); T(ctx, '이상', sx + sw + 14, y + 90, 12, '#fff');
+  }
+  // 긴급 계약 카드 (게임과 같은 둥근 모양, 빨간 띠)
+  function urgentCard(ctx, bx, by, item, price) {
+    const K = G.soft, w = 84, h = 90;
+    ctx.fillStyle = 'rgba(20,30,50,.22)'; K.rr(ctx, bx + 2, by + 3, w, h, 10); ctx.fill();
+    ctx.fillStyle = '#ffffff'; K.rr(ctx, bx, by, w, h, 10); ctx.fill();
+    ctx.save(); K.rr(ctx, bx, by, w, h, 10); ctx.clip(); ctx.fillStyle = '#d9342b'; ctx.fillRect(bx, by, w, 16); ctx.restore();
+    ctx.strokeStyle = '#e5533d'; ctx.lineWidth = 2; K.rr(ctx, bx + 1, by + 1, w - 2, h - 2, 9); ctx.stroke(); ctx.lineWidth = 1;
+    ctx.font = '11px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText('긴급 ×2', bx + 7, by + 8);
+    G.icons.draw(ctx, item, bx + w / 2, by + 40, 28);
+    ctx.font = '12px "Galmuri11 Bold", ' + G.FONT; ctx.fillStyle = '#1e2a3a'; ctx.textAlign = 'center'; ctx.fillText(G.ITEM[item].name, bx + w / 2, by + 64);
+    T(ctx, '예정 ' + price + '만', bx + w / 2, by + 78, 12, '#7a8696');
   }
   // 공방 (지붕·벽·창·문 + 가격표: 아이콘·품질·가격)
   function shop(ctx, x, y, label, roof, q, price, smoke, t) {
@@ -103,8 +123,10 @@ G.intro = (() => {
       G.spr.drawChar(ctx, G.C.CONNECT ? 'dali' : 'narmi', nk > 0 && nk < 1 ? 'walk' : 'rot', 'ne', tt, cx + 120 + nk * 75, top + 250 - nk * 108, 1.05);
       if (k > 0.5) {
         const bx = cx + 222, by = top + 132, f = Math.min(1, (k - 0.5) / 0.26);
-        ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(bx + 2, by + 3, 128, 70);
-        ctx.fillStyle = '#fffdf6'; ctx.fillRect(bx, by, 128, 70); ctx.fillStyle = '#1e2a3a'; ctx.fillRect(bx, by, 128, 16); T(ctx, '실사 보고서', bx + 64, by + 8, 12, '#fff');
+        const K = G.soft;                                                // 8.26단계: 게임과 같은 둥근 보고서
+        ctx.fillStyle = 'rgba(10,20,40,.28)'; K.rr(ctx, bx + 2, by + 3, 128, 70, 10); ctx.fill();
+        ctx.fillStyle = '#ffffff'; K.rr(ctx, bx, by, 128, 70, 10); ctx.fill();
+        ctx.save(); K.rr(ctx, bx, by, 128, 70, 10); ctx.clip(); ctx.fillStyle = '#1e2f52'; ctx.fillRect(bx, by, 128, 16); ctx.restore(); T(ctx, '실사 보고서', bx + 64, by + 8, 12, '#fff');
         [['사업장', true], ['생산 설비', false], ['납품 실적', false]].forEach(([n2, ok], j) => {
           T(ctx, n2, bx + 10, by + 26 + j * 15, 12, '#4a3f2a', 'left');
           T(ctx, f > 0.2 + j * 0.3 ? (ok ? '✔ 확인' : '✘ 없음') : '…', bx + 118, by + 26 + j * 15, 12, f > 0.2 + j * 0.3 ? (ok ? '#2e9b3a' : '#d9342b') : '#8a8f99', 'right');
@@ -115,7 +137,7 @@ G.intro = (() => {
       // 왼쪽: 아낀 세금 → 원자재 상자 → 폭등 (시험판은 비축을 꺼서 왼쪽에 보건소 긴급 계약)
       if (G.C.STOCK === false) {
         house(ctx, cx - 280, top + 150, 180, 80, '#7fb8a4', '#3f6f60', '보건소');
-        if (k > 0.3) { const bx = cx - 232, by = top + 30; ctx.fillStyle = '#d9342b'; ctx.fillRect(bx, by - 14, 56, 14); ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('긴급 ×2', bx + 28, by - 7); ctx.fillStyle = '#fffdf6'; ctx.fillRect(bx, by, 84, 90); ctx.strokeStyle = '#e5533d'; ctx.lineWidth = 3; ctx.strokeRect(bx + 1.5, by + 1.5, 81, 87); ctx.lineWidth = 1; G.icons.draw(ctx, 'kit', bx + 42, by + 28, 34); T(ctx, '구급상자', bx + 42, by + 56, 12, '#2a2416'); T(ctx, '예정 9만', bx + 42, by + 72, 12, '#6a5a3a'); }
+        if (k > 0.3) urgentCard(ctx, cx - 232, top + 30, 'kit', 9);
       } else {
       ctx.fillStyle = '#1e2a3a'; ctx.fillRect(cx - 330, top + 6, 120, 30); T(ctx, '아낀 세금', cx - 300, top + 21, 12, '#8fa3b8'); T(ctx, Math.max(3, 12 - Math.min(3, Math.floor(k * 8)) * 3) + '만원', cx - 238, top + 21, 12, '#9be37a');
       const crates = Math.min(3, Math.floor(k * 8));
@@ -139,10 +161,7 @@ G.intro = (() => {
       ctx.restore();
       house(ctx, cx + 80, top + 150, 180, 80, '#d9574a', '#7a2a22', '소방서');
       if (k > 0.15) {
-        const bx = cx + 128, by = top + 30;
-        ctx.fillStyle = '#d9342b'; ctx.fillRect(bx, by - 14, 56, 14); ctx.font = '10px Galmuri9, ' + G.FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('긴급 ×2', bx + 28, by - 7);
-        ctx.fillStyle = '#fffdf6'; ctx.fillRect(bx, by, 84, 90); ctx.strokeStyle = '#e5533d'; ctx.lineWidth = 3; ctx.strokeRect(bx + 1.5, by + 1.5, 81, 87); ctx.lineWidth = 1;
-        G.icons.draw(ctx, 'helmet', bx + 42, by + 28, 34); T(ctx, '안전모', bx + 42, by + 56, 12, '#2a2416'); T(ctx, '예정 7만', bx + 42, by + 72, 12, '#6a5a3a');
+        urgentCard(ctx, cx + 128, top + 30, 'helmet', 7);
       }
       if (k > 0.55) stampBox(ctx, cx + 175, top + 128, '긴급조달!', '#0f8a96', (k - 0.55) * 5);
       if (G.C.CONNECT) G.connect.vehicle(ctx, cx + 40 + Math.min(1, k * 1.4) * 60, top + 262, 1, 'helmet', false, tt);

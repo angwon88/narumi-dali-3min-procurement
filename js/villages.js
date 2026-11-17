@@ -20,9 +20,9 @@ G.villages = (() => {
     S.score += C.TIER_SCORE; G.score.trust(S, C.TIER_TRUST);
     S.stats.villageUp = (S.stats.villageUp || 0) + 1;
     const what = UP[vid][s.tier - 1], b = v.body;
-    if (s.tier >= 2 && C.QUIET) { G.fx.add(S, b.x + b.w / 2, b.y - 50, v.name + ' 새 단장! ' + what, '#ffe48a', 16); G.audio.play('gift'); }   // 8.0단계: 배너 대신 한 줄
+    if (s.tier >= 2 && C.QUIET) { G.fx.add(S, b.x + b.w / 2, b.y - 6, v.name + ' 새 단장! ' + what, '#ffe48a', 16); G.audio.play('gift'); }   // 8.0단계: 배너 대신 한 줄
     else if (s.tier >= 2) { G.director.banner(S, v.name + G.U.josa(v.name, '이', '가') + ' 새로 단장했어요! (' + what + ')', '납품 점수 ×' + C.VILLAGE_T2_SCORE + ' · 마을 신뢰 +' + C.VILLAGE_T2_TRUST + ' 추가'); G.audio.play('gift'); }
-    else { G.fx.add(S, b.x + b.w / 2, b.y - 50, v.name + ' 단장! ' + what, '#ffe48a', 16); G.audio.play('ok'); }
+    else { G.fx.add(S, b.x + b.w / 2, b.y - 6, v.name + ' 단장! ' + what, '#ffe48a', 16); G.audio.play('ok'); }
     G.fx.burst(S, b.x + b.w / 2, b.y + 20, true, 30);
   }
   const limitMult = (S, vid) => S.vstate && S.vstate[vid] && S.vstate[vid].tier >= 1 ? C.VILLAGE_LIMIT_MULT : 1;
@@ -63,7 +63,7 @@ G.villages = (() => {
     if (s.tier >= 2) {                                      // 증축 (위로 솟는 구조물)
       const rise = Math.round(16 * g), cx = b.x + b.w / 2 + 52;           // 마을 이름(가운데) 오른쪽에
       if (v.id === 'school') { px('#c9a94a', cx - 11, by - rise, 22, rise + 2); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx, by - rise + 8, 6, 0, 7); ctx.fill(); px('#3a3a3a', cx - 1, by - rise + 4, 2, 5); px('#3a3a3a', cx, by - rise + 8, 4, 1); }
-      if (v.id === 'clinic') { px('#fff', cx - 12, by - rise, 24, rise + 2); px('#e5533d', cx - 2, by - rise + 2, 4, 12); px('#e5533d', cx - 6, by - rise + 6, 12, 4); }
+      if (v.id === 'clinic') { px('#fff', cx - 12, by - rise, 24, rise + 2); px('#2e9b5a', cx - 2, by - rise + 2, 4, 12); px('#2e9b5a', cx - 6, by - rise + 6, 12, 4); }   // 8.26단계: 초록 십자
       if (v.id === 'fire') { const x = art0 ? cx - 8 : b.x + 40; px('#8a2a22', x, by - rise - 4, 16, rise + 6); px('#fff6b0', x + 4, by - rise, 8, 6); px(Math.floor(t * 4) % 2 ? '#ff3b30' : '#5ec8f2', x + 5, by - rise - 8, 6, 4); }
       if (v.id === 'library') { ctx.fillStyle = '#8b7ab8'; ctx.beginPath(); ctx.arc(cx, by + 2, 18 * g, Math.PI, 0); ctx.fill(); px('#ffe48a', cx - 1, by - 18 * g - 4, 2, 5); px('#fff6b0', cx - 6, by - 8, 4, 6); px('#fff6b0', cx + 2, by - 8, 4, 6); }
     }
@@ -74,7 +74,7 @@ G.villages = (() => {
       px(red ? '#d9342b' : '#f4f6f8', x, y, 34, 14); px(red ? '#a8231b' : '#c9d6e0', x + 22, y - 5, 12, 6);
       px('#2a2a2a', x + 5, y + 13, 7, 5); px('#2a2a2a', x + 23, y + 13, 7, 5);
       if (red) { px('#c0c6cc', x + 2, y - 3, 18, 2); px('#c0c6cc', x + 4, y - 6, 2, 4); px('#c0c6cc', x + 14, y - 6, 2, 4); }
-      else { px('#e5533d', x + 8, y + 3, 6, 2); px('#e5533d', x + 10, y + 1, 2, 6); }
+      else { px('#2e9b5a', x + 8, y + 3, 6, 2); px('#2e9b5a', x + 10, y + 1, 2, 6); }
       px(Math.floor(t * 4) % 2 ? '#5ec8f2' : '#e5533d', x + 26, y - 7, 4, 2);
     }
     // 창턱 책: 코드 그림의 창 자리에만 (건물 그림이면 생략)
