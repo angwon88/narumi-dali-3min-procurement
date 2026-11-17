@@ -489,6 +489,29 @@ G.shops = (() => {
   // 성장 모습 (2026-11-03 다시 그림: 건물 모양이 바뀌게)
   //   작업장: 줄무늬 차양(창·문 위), 지붕 위 노란 '작업장' 현판, 굴뚝 하나 더, 문 옆 원자재 상자
   //   공장: 지붕 전체가 톱니 지붕(채광창)으로 솟고, 줄무늬 큰 굴뚝·짙은 연기, 금빛 '공장' 현판, 깃발, 창에 불빛
+  // 8.24단계 미래형 공방 표시: 혁신(금)·새싹(초록)은 간판을 그 색으로 다시 쓰고, 작업장·공장은 건물 왼쪽 아래 작은 배지, 실적·시범 사용은 공방 아래
+  function artLook(ctx, sh) {
+    const b = sh.w.body, K = G.soft, sprout = sh.sprout && !(C.CONNECT && G.connect.needsCheck(sh));
+    if (sh.innov) G.world.label(ctx, '★혁신 ' + sh.w.cat.name + sh.w.side, b.x + b.w / 2 + 4, b.y + 10, '#ffc93a');
+    else if (sprout) G.world.label(ctx, '새싹 ' + sh.w.cat.name + sh.w.side, b.x + b.w / 2 + 4, b.y + 10, '#7cdc5a');
+    if (sh.innov || sprout) {                                             // 반짝임
+      for (let i = 0; i < 3; i++) { const k = ((sh.t * 0.8) + i / 3) % 1, x = b.x + 10 + ((i * 47 + Math.floor(sh.t)) % (b.w - 20)), y = b.y + 26 + i * 10; ctx.globalAlpha = 1 - k; ctx.fillStyle = sh.innov ? '#fff6b0' : '#d8ffc0'; ctx.fillRect(x, y - 3, 1, 7); ctx.fillRect(x - 3, y, 7, 1); ctx.globalAlpha = 1; }
+    }
+    if (sh.tier) {                                                        // 작업장·공장 배지
+      const t = sh.tier >= 2 ? '★ 공장' : '작업장', w = sh.tier >= 2 ? 44 : 40, x = b.x + 3, y = b.y + b.h - 15;
+      ctx.fillStyle = 'rgba(10,20,35,.25)'; K.rr(ctx, x + 1, y + 2, w, 13, 6.5); ctx.fill();
+      ctx.fillStyle = sh.tier >= 2 ? '#ffc93a' : '#fff3b0'; K.rr(ctx, x, y, w, 13, 6.5); ctx.fill();
+      ctx.strokeStyle = sh.tier >= 2 ? '#a06a00' : '#b8a040'; ctx.lineWidth = 1; K.rr(ctx, x + .5, y + .5, w - 1, 12, 6); ctx.stroke();
+      G.world.text(ctx, t, x + w / 2, y + 7, 12, '#5a3a00');
+    }
+    const pill = (text, bg) => { ctx.font = '12px ' + G.FONT; const w = ctx.measureText(text).width + 16, x = b.x + b.w / 2 - w / 2, y = b.y + b.h + 2; ctx.fillStyle = bg; K.rr(ctx, x, y, w, 15, 7.5); ctx.fill(); return [x, y, w]; };
+    if (sh.innov) { const [x, y, w] = pill(sh.mature ? '★ 혁신제품' : '시범 사용 ' + (C.INNOV_TRIAL - sh.trial) + '/' + C.INNOV_TRIAL, sh.mature ? '#e0a800' : '#5a3a00'); G.world.text(ctx, sh.mature ? '★ 혁신제품' : '시범 사용 ' + (C.INNOV_TRIAL - sh.trial) + '/' + C.INNOV_TRIAL, x + w / 2, y + 8, 12, '#fff'); }
+    else if (sprout) {                                                    // 새싹 실적 칸
+      const done = C.SPROUT_GOAL - sh.trial, w = 34 + C.SPROUT_GOAL * 14, x = b.x + b.w / 2 - w / 2, y = b.y + b.h + 2;
+      ctx.fillStyle = '#1f4a17'; K.rr(ctx, x, y, w, 15, 7.5); ctx.fill(); G.world.text(ctx, '실적', x + 16, y + 8, 12, '#fff');
+      for (let i = 0; i < C.SPROUT_GOAL; i++) { ctx.fillStyle = i < done ? '#9be37a' : '#4a6a40'; K.rr(ctx, x + 32 + i * 14, y + 4, 11, 8, 3); ctx.fill(); }
+    }
+  }
   function tierLook(ctx, sh) {
     if (!sh.tier) return;
     const b = sh.w.body, A = sh.w.side === 'A', g = sh.tierT == null ? 1 : Math.min(1, sh.tierT / 0.5);
@@ -562,6 +585,12 @@ G.shops = (() => {
   function certLook(ctx, S, sh) {
     if (sh.innov || sh.status !== 'open' || !sh.isNew) return;
     const b = sh.w.body, tx = sh.w.tagX;
+    if (G.world.shopArt(sh.w)) {                                          // 8.24단계: 미래형이면 간판 아래 둥근 알약
+      if (sh.verified && sh.stampT < 1) { stamp(ctx, sh, '✔ 실사', '#2e9b3a', b.x + b.w / 2, b.y + 44); return; }
+      const txt = sh.verified ? '✔ 실사 통과' : '실사 전', w = sh.verified ? 70 : 50, x = b.x + b.w / 2 - w / 2 + 4, y = b.y + 20;
+      ctx.fillStyle = sh.verified ? '#2e9b3a' : '#4a4f57'; G.soft.rr(ctx, x, y, w, 14, 7); ctx.fill(); T(ctx, txt, x + w / 2, y + 7, 12, '#fff');
+      return;
+    }
     if (sh.verified) {
       if (sh.stampT < 1) { stamp(ctx, sh, '✔ 실사', '#2e9b3a', tx + TAG_W / 2, b.y + 44); return; }
       ctx.fillStyle = '#2e9b3a'; ctx.fillRect(tx + 8, b.y + 15, TAG_W - 16, 11); T(ctx, '✔ 실사', tx + TAG_W / 2, b.y + 21, 12, '#fff');
@@ -577,6 +606,14 @@ G.shops = (() => {
   }
   function emptyLot(ctx, sh, S) {
     const b = sh.w.body;
+    if (G.world.shopArt(sh.w)) {                                          // 8.24단계 미래형: 점선 빈 터 + '빈 자리' 알약
+      const K = G.soft; ctx.fillStyle = '#d9e3ea'; ctx.fillRect(b.x - 7, b.y - 30, b.w + 14, b.h + 31);   // 아래 공방 그림·태양광 판을 가림
+      ctx.fillStyle = 'rgba(200,214,224,.8)'; K.rr(ctx, b.x + 2, b.y + 6, b.w - 4, b.h - 6, 8); ctx.fill();
+      ctx.strokeStyle = '#9fb4c4'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5; K.rr(ctx, b.x + 2.5, b.y + 6.5, b.w - 5, b.h - 7, 8); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1;
+      ctx.fillStyle = '#ffffff'; K.rr(ctx, b.x + b.w / 2 - 34, b.y + 26, 68, 18, 9); ctx.fill();
+      T(ctx, '빈 자리', b.x + b.w / 2, b.y + 35, 12, '#5a6a7a');
+      return;
+    }
     ctx.fillStyle = '#6fae4a'; ctx.fillRect(b.x - 3, b.y - 2, b.w + 6, b.h + 2);
     ctx.fillStyle = '#b89d66'; for (let x = b.x; x < b.x + b.w; x += 10) ctx.fillRect(x, b.y + b.h - 14, 3, 12);
     ctx.fillRect(b.x, b.y + b.h - 11, b.w, 2); ctx.fillRect(b.x, b.y + b.h - 6, b.w, 2);
@@ -601,9 +638,12 @@ G.shops = (() => {
       if (!S.openCats.has(sh.cat)) { shutter(ctx, b, 1, '준비 중'); continue; }
       if (sh.status === 'empty') { emptyLot(ctx, sh, S); continue; }
       if (sh.status === 'caught') { caughtView(ctx, sh); continue; }
+      if (G.world.shopArt(sh.w)) artLook(ctx, sh);                     // 8.24단계: 미래형 그림이면 간판 색·작은 배지로 (간판을 덮지 않게)
+      else {
       if (sh.innov) innovLook(ctx, sh);
       if (sh.sprout && !(C.CONNECT && G.connect.needsCheck(sh))) sproutLook(ctx, sh);   // 실사 전엔 새싹인지 모르게
       tierLook(ctx, sh);
+      }
       if (sh.status === 'open') {                                         // 나라장터 등록 표시 (2026-11-03)
         const reg = !sh.isNew || sh.verified || sh.innov, rx = b.x + 9, ry = b.y + 11;
         ctx.fillStyle = '#1e2a3a'; ctx.beginPath(); ctx.arc(rx, ry, 7, 0, 7); ctx.fill();

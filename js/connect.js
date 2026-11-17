@@ -179,9 +179,10 @@ G.connect = (() => {
     if (!C.CONNECT) return;
     const rp = S.report; if (!rp) return;
     const sh = rp.sh, R = reportRect(sh), f = rp.t / C.INSPECT_TIME, done = f >= 1;
-    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(R.x + 3, R.y + 4, R.w, R.h);
-    ctx.fillStyle = '#fffdf6'; ctx.fillRect(R.x, R.y, R.w, R.h);
-    ctx.fillStyle = '#1e2a3a'; ctx.fillRect(R.x, R.y, R.w, 18); T(ctx, !done ? '달이가 실사하는 중…' : S.hard ? '실사 보고서' : '실사 보고서 · 설비를 보고 고르세요', R.x + R.w / 2, R.y + 9, 12, '#fff');
+    const K = G.soft;                                                   // 8.24단계: 둥근 카드 모양
+    ctx.fillStyle = 'rgba(10,20,40,.3)'; K.rr(ctx, R.x + 2, R.y + 4, R.w, R.h, 12); ctx.fill();
+    ctx.fillStyle = '#ffffff'; K.rr(ctx, R.x, R.y, R.w, R.h, 12); ctx.fill();
+    ctx.save(); K.rr(ctx, R.x, R.y, R.w, R.h, 12); ctx.clip(); ctx.fillStyle = '#1e2f52'; ctx.fillRect(R.x, R.y, R.w, 18); T(ctx, !done ? '달이가 실사하는 중…' : S.hard ? '실사 보고서' : '실사 보고서 · 설비를 보고 고르세요', R.x + R.w / 2, R.y + 9, 12, '#fff');
     [['사업장', true, '있음', ''], ['생산 설비', !sh.fake, '있음', '없음'], ['납품 실적', false, '', '없음']].forEach(([name, ok, yes, no], i) => {
       const y = R.y + 28 + i * 16, shown = f > 0.2 + i * 0.25;
       T(ctx, name, R.x + 12, y, 12, '#4a3f2a', 'left');
@@ -189,9 +190,11 @@ G.connect = (() => {
       const col = ok ? '#2e9b3a' : i === 2 ? '#8a6a20' : '#d9342b';     // 실적 없음은 새싹도 그래서 빨강이 아님
       T(ctx, (ok ? '✔ ' + yes : '✘ ' + no), R.x + R.w - 12, y, 12, col, 'right');
     });
-    if (!done) { ctx.fillStyle = 'rgba(20,24,30,.85)'; ctx.fillRect(R.x, R.y + R.h - 6, R.w, 6); ctx.fillStyle = '#5ec8f2'; ctx.fillRect(R.x, R.y + R.h - 6, Math.round(R.w * f), 6); return; }
+    if (!done) { ctx.fillStyle = 'rgba(20,24,30,.85)'; ctx.fillRect(R.x, R.y + R.h - 6, R.w, 6); ctx.fillStyle = '#5ec8f2'; ctx.fillRect(R.x, R.y + R.h - 6, Math.round(R.w * f), 6); ctx.restore(); return; }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(30,47,82,.45)'; ctx.lineWidth = 1.25; K.rr(ctx, R.x + .5, R.y + .5, R.w - 1, R.h - 1, 11.5); ctx.stroke(); ctx.lineWidth = 1;
     for (const [B, label, col] of [[btnReg(R), '등록', '#2e9b3a'], [btnCatch(R), '적발', '#d9342b']]) {
-      ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(B.x + 1, B.y + 2, B.w, B.h); ctx.fillStyle = col; ctx.fillRect(B.x, B.y, B.w, B.h);
+      ctx.fillStyle = 'rgba(0,0,0,.2)'; K.rr(ctx, B.x + 1, B.y + 3, B.w, B.h, 10); ctx.fill(); ctx.fillStyle = col; K.rr(ctx, B.x, B.y, B.w, B.h, 10); ctx.fill();
       T(ctx, label, B.x + B.w / 2, B.y + B.h / 2 + 1, 16, '#fff');
     }
   }
@@ -217,8 +220,8 @@ G.connect = (() => {
 
   // ---------- 그리기 ----------
   function pill(ctx, cx, y, w, text, col) {
-    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(cx - w / 2 + 1, y + 2, w, 18);
-    ctx.fillStyle = col; ctx.fillRect(cx - w / 2, y, w, 18);
+    ctx.fillStyle = 'rgba(0,0,0,.2)'; G.soft.rr(ctx, cx - w / 2 + 1, y + 2, w, 18, 9); ctx.fill();   // 8.24단계: 둥근 알약
+    ctx.fillStyle = col; G.soft.rr(ctx, cx - w / 2, y, w, 18, 9); ctx.fill();
     T(ctx, text, cx, y + 9, 12, '#fff');
   }
   // 실사 발판: 달이가 걸어가 서는 자리 (문 앞). 청록 테두리가 깜빡이고 발자국 두 개
@@ -247,7 +250,7 @@ G.connect = (() => {
       for (const k of Object.keys(S.deals)) {
         const d = S.deals[k]; if (d.sh !== sh) continue;
         const px = b.x + 2 + cy * 55, py = y + 20; cy++;
-        ctx.fillStyle = 'rgba(30,42,58,.9)'; ctx.fillRect(px, py, 52, 16); G.icons.draw(ctx, k, px + 10, py + 8, 13); T(ctx, '자동 ' + d.left, px + 34, py + 8, 12, '#9be37a');
+        ctx.fillStyle = 'rgba(30,42,58,.9)'; G.soft.rr(ctx, px, py, 52, 16, 8); ctx.fill(); G.icons.draw(ctx, k, px + 10, py + 8, 13); T(ctx, '자동 ' + d.left, px + 34, py + 8, 12, '#9be37a');
       }
       if (!r) { if (n) pill(ctx, cx, y, 92, '납품 중 ' + n + '/' + m, '#2f6fb5'); continue; }
       const st = fit(S, sh, r);

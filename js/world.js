@@ -391,5 +391,5 @@ G.world = (() => {
   }
   // 마을 이름표만 다시 그리기 (피해 연출이 덮은 뒤)
   function villageLabel(ctx, v) { const art = villageArt(v), b = v.body; label(ctx, v.name, b.x + b.w / 2 + (art ? VLABEL_DX[v.id] || 0 : 0), art ? art.y + 13 : b.y + 10, v.col, VICON[v.id]); }
-  return { shopArt, shade, CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, villageArt, villageLabel, roofPerch };
+  return { label, shopArt, shade, CATS, VILLAGES, shops, villages, office, START, PLAY, blocked, draw, text, villageArt, villageLabel, roofPerch };
 })();

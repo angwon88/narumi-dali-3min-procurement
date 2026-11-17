@@ -91,11 +91,12 @@ G.director = (() => {
     const b = S.banner; if (!b || S.ultFx || S.ultCut) return;
     const k = b.t < 0.2 ? b.t / 0.2 : b.t > b.dur - 0.3 ? Math.max(0, (b.dur - b.t) / 0.3) : 1;
     ctx.font = '12px ' + G.FONT; const sw = ctx.measureText(b.sub || '').width; ctx.font = '16px ' + G.FONT;
-    const W = C.VIEW.w, w = Math.max(308, ctx.measureText(b.text).width + 32, sw + 32), h = b.sub ? 50 : 36, x = (W - w) / 2, y = 184 - (1 - k) * 20;
-    ctx.globalAlpha = k;
-    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x + 3, y + 4, w, h);
-    ctx.fillStyle = '#2f4f8a'; ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = b.col || '#ffd84a'; ctx.fillRect(x, y, w, b.col ? 6 : 3);
+    const W = C.VIEW.w, w = Math.max(308, ctx.measureText(b.text).width + 32, sw + 32), h = b.sub ? 50 : 36, x = (W - w) / 2, y = (S.report ? 318 : 184) - (1 - k) * 20;   // 8.24단계: 실사 보고서와 안 겹치게
+    const K = G.soft; ctx.globalAlpha = k;
+    ctx.fillStyle = 'rgba(10,20,40,.3)'; K.rr(ctx, x + 2, y + 4, w, h, 14); ctx.fill();
+    ctx.fillStyle = 'rgba(30,47,82,.96)'; K.rr(ctx, x, y, w, h, 14); ctx.fill();
+    ctx.save(); K.rr(ctx, x, y, w, h, 14); ctx.clip(); ctx.fillStyle = b.col || '#ffd84a'; ctx.fillRect(x, y, w, b.col ? 5 : 3); ctx.restore();
+    ctx.strokeStyle = 'rgba(94,200,242,.6)'; ctx.lineWidth = 1; K.rr(ctx, x + .5, y + .5, w - 1, h - 1, 13.5); ctx.stroke();
     G.world.text(ctx, b.text, W / 2, y + 17, 16, '#fff');
     if (b.sub) G.world.text(ctx, b.sub, W / 2, y + 37, 12, '#cfe3f5');
     ctx.globalAlpha = 1;
