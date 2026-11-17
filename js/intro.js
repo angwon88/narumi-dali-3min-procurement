@@ -33,13 +33,20 @@ G.intro = (() => {
   }
   // 공방 (지붕·벽·창·문 + 가격표: 아이콘·품질·가격)
   function shop(ctx, x, y, label, roof, q, price, smoke, t) {
+    const im = G.C.FUTURE && G.img.shop_furn;                         // 8.25단계: 게임과 같은 미래형 공방 그림
+    if (im && im.naturalWidth) {
+      const w = 162, h = im.naturalHeight * w / im.naturalWidth * 1.2; ctx.imageSmoothingEnabled = true; ctx.drawImage(im, x - 6, y + 92 - h, w, h); ctx.imageSmoothingEnabled = false;
+      G.world.label(ctx, label, x + 75, y + 11, '#b9824f');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 119, y - 12, 10, 10); ctx.fillStyle = '#9aa8b4'; ctx.fillRect(x + 118, y - 14, 12, 3);
+    } else {
     ctx.fillStyle = '#b9824f'; ctx.fillRect(x, y + 20, 150, 70); ctx.fillStyle = roof; ctx.fillRect(x - 3, y, 156, 22);
     T(ctx, label, x + 75, y + 11, 12, '#fff');
     ctx.fillStyle = '#7a3b2e'; ctx.fillRect(x + 118, y - 14, 10, 14);
+    }
     if (smoke) for (let i = 0; i < 3; i++) { const k = ((t * 0.7) + i / 3) % 1; ctx.globalAlpha = 0.8 * (1 - k); ctx.fillStyle = '#f4f6f8'; ctx.beginPath(); ctx.arc(x + 123, y - 18 - k * 16, 3 + k * 4, 0, 7); ctx.fill(); }
     ctx.globalAlpha = 1;
-    ctx.fillStyle = '#3b2a1e'; ctx.fillRect(x + 118, y + 50, 22, 40);
-    ctx.fillStyle = '#fffdf6'; ctx.fillRect(x + 8, y + 30, 100, 26);
+    if (!(G.C.FUTURE && G.img.shop_furn && G.img.shop_furn.naturalWidth)) { ctx.fillStyle = '#3b2a1e'; ctx.fillRect(x + 118, y + 50, 22, 40); }
+    ctx.fillStyle = '#fffdf6'; ctx.fillRect(x + 8, y + 30, 100, 26); ctx.strokeStyle = 'rgba(30,47,82,.4)'; ctx.strokeRect(x + 8.5, y + 30.5, 99, 25);
     G.icons.draw(ctx, 'desk', x + 20, y + 43, 18); G.icons.stars(ctx, x + 32, y + 36, q, 3, 1); T(ctx, price + '만', x + 104, y + 44, 12, '#2a2416', 'right');
   }
   function reg(ctx, x, y, ok) {                       // 지붕의 나라장터 등록 표시 (게임과 같게)
@@ -201,9 +208,9 @@ G.intro = (() => {
     const K = G.soft, J = K.J, PX = 110, PY = 100, PW = W - 220, PH = 300;
     K.bg(ctx); ctx.fillStyle = 'rgba(40,30,20,.52)'; ctx.fillRect(0, 0, W, H);
     const k = Math.min(1, t / PANEL);
-    K.softShadow(ctx, 22, 8, .45); K.rr(ctx, PX, PY, PW, PH, 20); ctx.fillStyle = '#6fae4a'; ctx.fill(); K.noShadow(ctx);
+    K.softShadow(ctx, 22, 8, .45); K.rr(ctx, PX, PY, PW, PH, 20); ctx.fillStyle = G.C.FUTURE ? '#dfe8ef' : '#6fae4a'; ctx.fill(); K.noShadow(ctx);
     ctx.save(); K.rr(ctx, PX, PY, PW, PH, 20); ctx.clip();
-    ctx.fillStyle = '#d9c38f'; ctx.fillRect(PX, 330, PW, 70);
+    ctx.fillStyle = G.C.FUTURE ? '#c9d6e0' : '#d9c38f'; ctx.fillRect(PX, 330, PW, 70); if (G.C.FUTURE) { ctx.fillStyle = 'rgba(94,200,242,.55)'; ctx.fillRect(PX, 330, PW, 2); }   // 8.25단계: 미래형 바닥 색
     scene(ctx, idx, k); ctx.restore();
     ctx.strokeStyle = '#fffbf0'; ctx.lineWidth = 5; K.rr(ctx, PX - 1, PY - 1, PW + 2, PH + 2, 21); ctx.stroke(); ctx.lineWidth = 1;
     const [cap, sub] = CAPS[Math.min(idx, 4)];
