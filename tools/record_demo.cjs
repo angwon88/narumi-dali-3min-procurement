@@ -1,9 +1,12 @@
 /* 시연 영상 자동 녹화 (2026-11-04): 제출판(dist/index.html)을 1920×1080·30fps로 한 장씩 그려 mp4로 만든다. 게임 소리(효과음·배경음악)도 같은 시간축으로 녹음.
    - 화면: 캔버스를 1920×1080으로 키우고 2배로 그림(글자·3D 마스코트가 선명), 게임 진행은 자동 플레이 봇(PlayBot.tick)
-   - 속도: 평소 3배속, 핵심 장면(5대 임무 첫 달성·AI 조사·결전)은 자막과 함께 1배속, 타이틀 3.5초 · 결과 화면 8초
+   - 속도: 평소 5배속, 핵심 장면(첫 계약·실사 판단·브로커·AI 조사·긴급)은 자막과 함께 1배속, 단계 안내·끝 카드는 1배속(영상용으로 짧게), 타이틀 3.5초 · 결과 화면 9초
+   - 2026-11-18 v8.26 업무 4단계에 맞춤: 단계 안내 1.8초·끝 카드 3.5초, 태풍은 4단계 고정 시점 그대로(옛 사건 순서 덮어쓰기 뺌)
+   - 인코더: ffmpeg-static(h264+aac). 없으면 FFMPEG 환경변수로 지정
    - 소리: AudioContext를 OfflineAudioContext로 바꿔 '영상 시간'으로 예약 → 끝에 한 번에 렌더해 wav로
    준비: npx playwright(크로미움), ffmpeg-static(npm) — 경로는 환경변수 PW, FFMPEG로 바꿀 수 있음
-   사용: python3 -m http.server 8767 (저장소 폴더에서) → node tools/record_demo.cjs [출력.mp4] [시드] */
+   사용: python3 -m http.server 8767 (저장소 폴더에서) → node tools/record_demo.cjs [출력.mp4] [시드]
+   미리보기(인코더 없이): PREVIEW=폴더 node tools/record_demo.cjs x.mp4 [시드] → 2초마다 장면 PNG + 길이·자막 확인 */
 'use strict';
 const fs = require('fs'), path = require('path'), { spawn } = require('child_process');
 // 경로: 저장소 폴더에서 `npm i --no-save playwright ffmpeg-static` 후 `npx playwright install chromium` 하면 따로 지정할 필요 없음
@@ -19,7 +22,7 @@ const INIT = `
   (() => {
     let s = ${SEED} >>> 0; Math.random = () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
     window.__vt = 0;
-    const off = new OfflineAudioContext(2, 48000 * 110, 48000); window.__off = off;
+    const off = new OfflineAudioContext(2, 48000 * 150, 48000); window.__off = off;
     const proxy = new Proxy(off, { get(t, p) {
       if (p === 'currentTime') return window.__vt;
       if (p === 'state') return 'running';
@@ -36,26 +39,21 @@ window.REC = (() => {
   cv.width = 1920; cv.height = 1080; C.RES_AUTO = false; C.RES = 2;   // 8.15단계: 녹화는 늘 2배
   const M = G.missions.LIST;
   const CAP = {
-    // 11-16 8.0단계: 임무가 4단계로 바뀌어 깨지지 않게만 맞춤. 단계 안내·카드 장면은 아직 반영 안 함 → 다시 녹화하기 전에 손봐야 함
-    value:  { tag: '1단계 ' + M[0].name, col: M[0].col, text: M[0].desc },
-    paper:  { tag: '2단계 ' + M[1].name, col: M[1].col, text: M[1].desc },
-    broker: { tag: '3단계 ' + M[2].name, col: M[2].col, text: M[2].desc },
-    sprout: { tag: '2단계 ' + M[1].name, col: '#d39e00', text: '새싹 공방의 첫 고객이 되어 혁신제품으로 키워요' },
-    crisis: { tag: '4단계 ' + M[3].name, col: M[3].col, text: M[3].desc },
-    ult:    { tag: 'AI 조사', col: '#0f6f94', text: '브로커 3명 적발 → 데이터로 한 번에 찾아내는 AI 조사' },
-    rush:   { tag: '결전', col: '#d9342b', text: '최후의 20초 · 브로커 총출동, 점수 1.5배!' },
+    value:  { tag: '1단계 ' + M[0].name, col: M[0].col, text: '카드 → 조건(★) 맞는 공방 중 가장 싼 곳과 계약 · 드론이 납품' },
+    paper:  { tag: '2단계 ' + M[1].name, col: M[1].col, text: '새 공방은 달이가 실사 · 생산 설비가 없으면 페이퍼컴퍼니 적발' },
+    broker: { tag: '3단계 ' + M[2].name, col: M[2].col, text: '계약을 노리는 브로커 · 먼저 계약하거나 눌러서 적발' },
+    ult:    { tag: 'AI 조사', col: '#0f6f94', text: '숨은 브로커 조직까지 데이터로 한 번에 찾아내요' },
+    crisis: { tag: '4단계 ' + M[3].name, col: M[3].col, text: '태풍! 빨간 긴급 계약부터 빨리 해결해요' },
   };
   const shown = {}; let cap = null, capT = 0, slowT = 0, phase = 'title', phaseT = 0, frame = 0, clock = 0, botSt = {};
-  const BOT = { inspect: true, speed: 0.8 };
+  const BOT = { inspect: true, speed: 0.6, bkDelay: 1.2 };   // 실사·브로커 장면이 보이게 조금 천천히
   function trigger(S) {
     const s = S.stats || {}, want = [];
-    if (S.elapsed > 3) want.push('value');
-    if (s.caught) want.push('paper');
-    if (s.brokerCaught) want.push('broker');
-    if (s.innov) want.push('sprout');
-    if (S.storm) want.push('crisis');                               // 태풍 때 (봇이 초반에 비축해도 순서가 앞당겨지지 않게)
-    if (S.ultFx && S.ultFx.t > 0.2) want.push('ult');
-    if (S.rush) want.push('rush');
+    if (S.ships && S.ships.length) want.push('value');                // 첫 드론 출발
+    if (S.report && S.report.t > 0.2) want.push('paper');             // 달이가 첫 실사 중
+    if (S.bk && (S.bk.state === 'grab' || S.bk.state === 'run')) want.push('broker');
+    if (S.ultFx && S.ultFx.t > 0.1) want.push('ult');
+    if (S.storm && S.storm.t > 0.3) want.push('crisis');
     for (const k of want) if (!shown[k]) { shown[k] = true; cap = CAP[k]; capT = 0; slowT = k === 'ult' ? 0 : 2.6; return; }
   }
   function gameStep(dt) {
@@ -89,7 +87,7 @@ window.REC = (() => {
       const S = G.S;
       if (G.screen === 'play') trigger(S);
       const slow = slowT > 0 || S.ultCut || S.ultFx || G.screen !== 'play';
-      const sub = slow ? 2 : 6;                                          // 1배속(2스텝) / 3배속(6스텝)
+      const sub = slow ? 2 : 10;                                         // 1배속(2스텝) / 5배속(10스텝)
       for (let i = 0; i < sub; i++) gameStep(1 / 60);
       if (slowT > 0) slowT -= dt;
       if (G.screen === 'result') { phase = 'result'; phaseT = 0; }
@@ -104,7 +102,7 @@ window.REC = (() => {
     drawCaption();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     frame++;
-    return { done: phase === 'result' && phaseT >= 9, phase, t: (frame / FPS_).toFixed(1), shown: Object.keys(shown) };
+    return { done: phase === 'result' && phaseT >= 8.5, phase, t: (frame / FPS_).toFixed(1), shown: Object.keys(shown) };
   }
   return { step, shown };
 })();`;
@@ -118,8 +116,14 @@ window.REC = (() => {
   await p.addScriptTag({ url: '/tools/playbot.js' });
   // 결과 화면에서 '실제로는?'이 가려지지 않게 감사 선물은 하나(학교 화분)만 남기고 미리 받은 상태로 → 카드 1장만 짧게
   await p.evaluate(() => { G.store.set('thanks', G.thanks.LIST.map(g => g.id).filter(id => id !== 'pot')); });
-  await p.evaluate(() => { G.C.EVENT_FIXED = true; G.C.EVENT_FIXED_AT = { dust: 40, storm: 44, surge: 80 }; });   // 태풍 → 폭등 순서 고정
+  await p.evaluate(() => { G.C.STAGE_INTRO_SEC = 1.5; G.C.STAGE_CARD_SEC = 3.2; G.thanks.drawWorld = () => {}; G.settings.hard = false; G.settings.easy = false; G.settings.ultAuto = true; });   // 영상용: 단계 화면 짧게, 보통 모드
   await p.addScriptTag({ content: REC.replace(/FPS_/g, String(FPS)) });
+  const PREVIEW = process.env.PREVIEW;
+  if (PREVIEW) {                                                      // 미리보기: 영상·소리 없이 2초마다 PNG
+    fs.mkdirSync(PREVIEW, { recursive: true }); let r, n = 0;
+    do { r = await p.evaluate(() => window.REC.step()); if (n % (FPS * 2) === 0) { const url = await p.evaluate(() => document.getElementById('game').toDataURL('image/png')); fs.writeFileSync(path.join(PREVIEW, String(n / FPS).padStart(3, '0') + 's_' + r.phase + '.png'), Buffer.from(url.slice(url.indexOf(',') + 1), 'base64')); } n++; } while (!r.done && n < FPS * 150);
+    console.log('미리보기 ' + (n / FPS).toFixed(1) + '초 · 자막: ' + r.shown.join(', ') + ' · 오류 ' + errs.length + (errs.length ? ' ' + errs.slice(0, 3).join(' / ') : '')); await b.close(); return;
+  }
   const vtmp = OUT.replace(/\.mp4$/, '') + '.video.mp4';
   const ff = spawn(FFMPEG, ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '16', '-pix_fmt', 'yuv420p', '-r', String(FPS), vtmp]);
   ff.stderr.on('data', d => process.stderr.write(d));
@@ -130,7 +134,7 @@ window.REC = (() => {
     const buf = Buffer.from(url.slice(url.indexOf(',') + 1), 'base64');
     if (!ff.stdin.write(buf)) await new Promise(res => ff.stdin.once('drain', res));
     if (++n % 150 === 0) console.log('  ' + r.t + '초 · ' + r.phase + ' · 자막 ' + r.shown.join(','));
-  } while (!r.done && n < FPS * 100);
+  } while (!r.done && n < FPS * 150);
   ff.stdin.end(); await new Promise(res => ff.on('close', res));
   const dur = n / FPS;
   console.log('화면 ' + n + '장 (' + dur.toFixed(1) + '초) · 자막: ' + r.shown.join(', '));
