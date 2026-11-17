@@ -17,7 +17,7 @@
 | 가공 | `tools/crop_image.cjs`: 돌바닥과 원형 무늬만 잘라 냄(원형 무늬 가운데 = 조달청 가운데). 가운데 분수는 조달청에 가려 밑동만 비쳐서 지움 — 분수 그림자 쪽 고리는 위쪽 고리를 180도 돌려 덮고(`--mirror`), 분수 자리는 깨끗한 바닥 조각으로 덮음(`--patch`). 게임 안에서 연한 색을 덧칠 |
 
 ## 시험했다가 쓰지 않은 것
-- `원본_건물/가구공방_LeonardoAI.jpg` (2026-11-16): 공방 칸(112×64)은 가격표·문·일꾼 창이 거의 다 덮어 그림을 바꿔도 지붕 색만 달라져서 쓰지 않음. 원본만 보관.
+- `보관_안쓰는파일/옛날그림_원본/가구공방_LeonardoAI.jpg` (2026-11-16): 공방 칸(112×64)은 가격표·문·일꾼 창이 거의 다 덮어 그림을 바꿔도 지붕 색만 달라져서 쓰지 않음. 원본만 보관.
 
 ## 저작권·이용 조건
 - 타이틀 배경과 같음(`타이틀배경_AI이미지_출처.md`): Leonardo.ai 무료 플랜 생성물은 상업적 이용 허락을 받지만 소유권은 Leonardo에 있고 공개 이미지로 취급됨. 유료 플랜은 생성물 소유권이 사용자에게 있음.
@@ -27,9 +27,9 @@
 - 학교: `원본_건물/미래학교_LeonardoAI.jpg` → `assets/village_school.png` (`make_sprite.cjs --box 258,333,500,141,1200,176,1166`)
 - 광장 바닥: `원본_건물/미래타일_LeonardoAI.jpg`에서 가운데 띠(x 370~980, y 300~480)만 → `assets/plaza.jpg` (`crop_image.cjs ... 370 300 610 180 1920 564`). 원형 광장은 코드로 그림
 - 옛날식 학교·광장 원본은 같은 폴더에 보관(지금은 안 씀)
-- 보건소: `원본_건물/미래보건소_LeonardoAI.jpg` → `assets/village_clinic.png` (`make_sprite.cjs --box 200,338,676,46,1310,48,1298`, 원본 가장자리 검은 띠 제외)
+- 보건소: `보관_안쓰는파일/옛날그림_원본/미래보건소_LeonardoAI.jpg` → `assets/village_clinic.png` (`make_sprite.cjs --box 200,338,676,46,1310,48,1298`, 원본 가장자리 검은 띠 제외)
 - 소방서·도서관(미래형): 참가자가 만든 `assets/village_fire.png`·`village_library.png` (원본 Leonardo.ai 그림은 `원본_건물/`에 추가 예정). 꺼진 창 덧그림은 `tools/make_dark.cjs`로 다시 만듦
 - 조달청(미래형): 참가자가 만든 `assets/village_procurement_hq.png` (흰 배경판·dark 판은 `원본_건물/`에 보관, 원본 Leonardo.ai 그림 추가 예정). 간판의 CI는 공모전 제공 공식 자료
 - 공방 4종(미래형): 참가자가 만든 `원본_건물/공방4종.png`(한 장에 2×2) → `tools/split_shops.cjs` → `assets/shop_furn·elec·health·safety.png`
 - 배송 드론: 참가자가 만든 `assets/drone_small.png`·`drone_fast.png` (흰 배경판은 `원본_건물/`)
-- 보건소(다시 만듦): 참가자가 만든 `원본_건물/미래보건소2.png` → `assets/village_clinic.png` (먼저 쓴 `미래보건소_LeonardoAI.jpg`는 학교와 너무 비슷해 바꿈)
+- 보건소(다시 만듦): 참가자가 만든 `원본_건물/미래보건소2.png` → `assets/village_clinic.png` (먼저 쓴 `보관_안쓰는파일/옛날그림_원본/미래보건소_LeonardoAI.jpg`는 학교와 너무 비슷해 바꿈)
