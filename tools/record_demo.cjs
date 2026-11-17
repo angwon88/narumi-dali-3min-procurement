@@ -5,6 +5,7 @@
    - 인코더: ffmpeg-static(h264+aac). 없으면 FFMPEG 환경변수로 지정
    - 소리: AudioContext를 OfflineAudioContext로 바꿔 '영상 시간'으로 예약 → 끝에 한 번에 렌더해 wav로
    준비: npx playwright(크로미움), ffmpeg-static(npm) — 경로는 환경변수 PW, FFMPEG로 바꿀 수 있음
+   주의(2026-11-18): `npm i --no-save ffmpeg-static`은 같은 방식으로 깔린 playwright를 지움 → 둘을 한 번에 `npm i --no-save playwright ffmpeg-static`
    사용: python3 -m http.server 8767 (저장소 폴더에서) → node tools/record_demo.cjs [출력.mp4] [시드]
    미리보기(인코더 없이): PREVIEW=폴더 node tools/record_demo.cjs x.mp4 [시드] → 2초마다 장면 PNG + 길이·자막 확인 */
 'use strict';
@@ -114,8 +115,7 @@ window.REC = (() => {
   await p.addInitScript(INIT);
   await p.goto('http://127.0.0.1:8767/dist/index.html'); await p.waitForTimeout(2500);
   await p.addScriptTag({ url: '/tools/playbot.js' });
-  // 결과 화면에서 '실제로는?'이 가려지지 않게 감사 선물은 하나(학교 화분)만 남기고 미리 받은 상태로 → 카드 1장만 짧게
-  await p.evaluate(() => { G.store.set('thanks', G.thanks.LIST.map(g => g.id).filter(id => id !== 'pot')); });
+    await p.evaluate(() => { G.store.set('thanks', G.thanks.LIST.map(g => g.id)); });   // 2026-11-18: 감사 선물 창이 결과 화면 '실제로는?'을 가리지 않게 모두 받은 상태로
   await p.evaluate(() => { G.C.STAGE_INTRO_SEC = 1.5; G.C.STAGE_CARD_SEC = 3.2; G.thanks.drawWorld = () => {}; G.settings.hard = false; G.settings.easy = false; G.settings.ultAuto = true; });   // 영상용: 단계 화면 짧게, 보통 모드
   await p.addScriptTag({ content: REC.replace(/FPS_/g, String(FPS)) });
   const PREVIEW = process.env.PREVIEW;

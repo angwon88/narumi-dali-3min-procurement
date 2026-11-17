@@ -37,7 +37,7 @@ G.result = (() => {
   const FACTS = [
     { key: 'broker', tag: '브로커 · 페이퍼컴퍼니', col: '#d9342b', when: (S, s) => brokerAny(s),
       weight: (S, s) => (n(s.brokerCaught) + n(s.brokerWon) * 1.5 + n(s.brokerBlocked)) / 4,
-      me: (S, s) => s.brokerCaught ? '브로커를 ' + s.brokerCaught + '번 차단했어요' + (s.brokerWon ? ' (뺏긴 계약 ' + s.brokerWon + '건)' : '') : s.brokerWon ? '브로커에게 계약 ' + s.brokerWon + '건을 뺏겼어요' : '브로커를 ' + n(s.brokerBlocked) + '번 막아 냈어요',
+      me: (S, s) => { const stop = n(s.brokerCaught) + n(s.brokerBlocked); return stop ? '브로커를 ' + stop + '번 차단했어요' + (s.brokerWon ? ' (뺏긴 계약 ' + s.brokerWon + '건)' : '') : '브로커에게 계약 ' + n(s.brokerWon) + '건을 뺏겼어요'; },   // 2026-11-18: 위 카드 '차단 n번'(적발+먼저 계약)과 같은 숫자
       facts: ['조달청은 데이터로 페이퍼컴퍼니 의심 업체를 골라 입찰보증금을 물려요. 낙찰만 노리는 입찰을 막기 위해서예요.',
               '직접 만든다고 해 놓고 몰래 맡겨 만든 물건을 납품한 업체는 계약 해지와 입찰참가자격 제한을 받아요.',
               '외국산을 국산으로 원산지를 속여 관공서에 납품한 업체도 적발돼 입찰참가자격 제한을 받았어요.'] },
