@@ -1,7 +1,7 @@
 /* 시연 영상 자동 녹화 (2026-11-04): 제출판(dist/index.html)을 1920×1080·30fps로 한 장씩 그려 mp4로 만든다. 게임 소리(효과음·배경음악)도 같은 시간축으로 녹음.
    - 화면: 캔버스를 1920×1080으로 키우고 2배로 그림(글자·3D 마스코트가 선명), 게임 진행은 자동 플레이 봇(PlayBot.tick)
    - 2026-11-18 설명형: 핵심 순간마다 멈추고 볼 곳을 비추며 이유를 두 줄로(SC 목록). 그 밖엔 5배속
-   - 속도: 설명 없는 구간 8배속, 핵심 장면(첫 계약·실사 판단·브로커·AI 조사·긴급)은 자막과 함께 1배속, 단계 안내·끝 카드는 1배속(영상용으로 짧게), 타이틀 3.5초 · 결과 화면 9초
+   - 1분 내외(모집요강 '게임 시연영상 1분 내외 / 1080p 이상'): 설명 7장면, 설명 없는 구간 12배속, 단계 안내 0.9초·끝 카드 2.4초, 타이틀 2.5초·결과 6.5초, 핵심 장면(첫 계약·실사 판단·브로커·AI 조사·긴급)은 자막과 함께 1배속, 단계 안내·끝 카드는 1배속(영상용으로 짧게), 타이틀 3.5초 · 결과 화면 9초
    - 2026-11-18 v8.26 업무 4단계에 맞춤: 단계 안내 1.8초·끝 카드 3.5초, 태풍은 4단계 고정 시점 그대로(옛 사건 순서 덮어쓰기 뺌)
    - 인코더: ffmpeg-static(h264+aac). 없으면 FFMPEG 환경변수로 지정
    - 소리: AudioContext를 OfflineAudioContext로 바꿔 '영상 시간'으로 예약 → 끝에 한 번에 렌더해 wav로
@@ -47,30 +47,22 @@ window.REC = (() => {
   const okShop = (S, r) => S.shops.filter(s => G.shops.isOpen(S, s) && G.connect.fit(S, s, r) === 'ok').sort((a, b) => G.shops.price(a, r.item) - G.shops.price(b, r.item))[0];
   const done = S => n => S.stats && (S.stats[n] || 0);
   const SC = [
-    { id: 'card', tag: '1단계 ' + M[0].name, col: M[0].col, when: S => G.requests.active(S).some(r => !r.ship), hold: 3.0, slow: 0,
+    { id: 'card', tag: '1단계 ' + M[0].name, col: M[0].col, when: S => G.requests.active(S).some(r => !r.ship), hold: 2.2, slow: 0,
       before(S, me) { me.r = G.requests.active(S).find(r => !r.ship); me.r.t = Math.max(me.r.t, 0.3); }, focus: (S, me) => bub(me.r),
-      text: S => '학교가 나라장터로 주문했어요', sub: S => '카드 맨 아래 별(★) = 꼭 지켜야 할 품질 조건이에요' },
-    { id: 'pick', tag: '1단계 ' + M[0].name, col: M[0].col, after: 'card', hold: 3.6, slow: 0,
+      text: S => '학교가 나라장터로 주문했어요', sub: S => '카드 맨 아래 별(★) = 꼭 지켜야 할 품질 조건' },
+    { id: 'pick', tag: '1단계 ' + M[0].name, col: M[0].col, after: 'card', hold: 3.0, slow: 0.6,
       before(S, me) { me.r = SCx.card.r; S.sel = me.r; S.connectHint = false; }, focus: (S, me) => { const sh = okShop(S, me.r); return sh ? { x: sh.w.body.x - 4, y: sh.w.body.y - 8, w: sh.w.body.w + 8, h: sh.w.body.h + 34 } : null; },
-      text: S => '조건(★)을 맞춘 공방 중 가장 싼 곳과 계약해요', sub: S => '★이 모자라면 조건 ✘ · 맞는데 더 비싸면 세금 낭비 → 가성비 최고!' },
-    { id: 'drone', tag: '1단계 ' + M[0].name, col: M[0].col, when: S => S.ships.length > 0, hold: 0, slow: 2.6,
-      text: S => '계약하면 드론이 마을까지 납품해요', sub: S => '같은 물건 다음 1건은 단가계약으로 자동 체결 · 도착하면 검수' },
-    { id: 'go', tag: '2단계 ' + M[1].name, col: M[1].col, when: S => S.report && S.report.t > 0.05, hold: 0, slow: 1.6,
-      text: S => '새 공방이 생기면 달이가 직접 가서 실사해요', sub: S => '사업장 · 생산 설비 · 납품 실적을 확인해요' },
-    { id: 'sprout', tag: '2단계 ' + M[1].name, col: '#2e9b3a', when: S => S.report && S.report.t >= C.INSPECT_TIME && !S.report.sh.fake, hold: 4.0, slow: 1.2, focus: S => S.report ? rowRect(S) : null,
+      text: S => '조건(★)을 맞춘 공방 중 가장 싼 곳과 계약해요', sub: S => '★이 모자라면 조건 ✘ · 더 비싸면 세금 낭비 · 계약하면 드론이 납품' },
+    { id: 'sprout', tag: '2단계 ' + M[1].name, col: '#2e9b3a', when: S => S.report && S.report.t >= C.INSPECT_TIME && !S.report.sh.fake, hold: 3.4, slow: 0.4, focus: S => S.report ? rowRect(S) : null,
       text: S => '생산 설비 ✔ 있음 → 등록!', sub: S => '납품 실적이 없는 건 막 시작한 새싹(스타트업)이라서예요 · 키우면 혁신제품' },
-    { id: 'fake', tag: '2단계 ' + M[1].name, col: '#d9342b', when: S => S.report && S.report.t >= C.INSPECT_TIME && S.report.sh.fake, hold: 4.0, slow: 1.4, focus: S => S.report ? rowRect(S) : null,
+    { id: 'fake', tag: '2단계 ' + M[1].name, col: '#d9342b', when: S => S.report && S.report.t >= C.INSPECT_TIME && S.report.sh.fake, hold: 3.4, slow: 0.4, focus: S => S.report ? rowRect(S) : null,
       text: S => '생산 설비 ✘ 없음 → 적발!', sub: S => '서류만 있고 만들 능력이 없는 페이퍼컴퍼니 · 등록하면 부정 낙찰이 돼요' },
-    { id: 'bk', tag: '3단계 ' + M[2].name, col: M[2].col, when: S => S.bk && S.bk.state === 'grab' && S.bk.req, hold: 3.0, slow: 0,
+    { id: 'bk', tag: '3단계 ' + M[2].name, col: M[2].col, when: S => S.bk && S.bk.state === 'grab' && S.bk.req, hold: 2.6, slow: 0.4,
       before(S, me) { me.r = S.bk.req; }, focus: (S, me) => me.r && me.r.state === 'open' ? bub(me.r) : null,
       text: S => '브로커가 이 계약을 가로채려 해요', sub: S => "보라색 '브로커!' 카드 · 먼저 계약하거나 브로커를 눌러 막아요" },
-    { id: 'bkBlock', tag: '3단계 ' + M[2].name, col: M[2].col, when: S => done(S)('brokerBlocked') >= 1 && !S.ultFx, hold: 0, slow: 2.6,
-      text: S => '노리던 카드를 먼저 계약해서 막았어요!', sub: S => '먼저 계약하거나 브로커를 눌러 적발 · 브로커를 3번 막으면 AI 조사 충전' },
-    { id: 'bkCaught', tag: '3단계 ' + M[2].name, col: M[2].col, when: S => S.__handCatch, hold: 0, slow: 2.6,   // 나르미로 직접 잡았을 때만 (AI 조사로 잡은 건 빼고)
-      text: S => '브로커를 눌러 나르미가 적발!', sub: S => '입찰참가자격 제한 · 브로커를 3번 막으면 AI 조사 충전' },
     { id: 'ult', tag: 'AI 조사', col: '#0f6f94', when: S => S.ultFx && S.ultFx.t > 0.05, hold: 0, slow: 0,
       text: S => 'AI 데이터 일제 조사', sub: S => '숨은 브로커 조직까지 데이터로 한 번에 찾아 적발해요' },
-    { id: 'storm', tag: '4단계 ' + M[3].name, col: M[3].col, when: S => S.storm && S.storm.t > 0.2 && G.requests.active(S).some(r => r.urgent && !r.ship), hold: 3.2, slow: 1.0,
+    { id: 'storm', tag: '4단계 ' + M[3].name, col: M[3].col, when: S => S.storm && S.storm.t > 0.2 && G.requests.active(S).some(r => r.urgent && !r.ship), hold: 2.6, slow: 0.4,
       before(S, me) { me.r = G.requests.active(S).find(r => r.urgent && !r.ship); }, focus: (S, me) => me.r && me.r.state === 'open' ? bub(me.r) : null,
       text: S => "태풍! 빨간 '긴급 ×2' 계약", sub: S => '긴급 계약은 자동 체결이 안 돼요 → 직접 먼저 계약 · 점수 ×2' },
   ];
@@ -94,7 +86,7 @@ window.REC = (() => {
     const S = G.S;
     if (G.screen !== 'play') { G.screens.update(dt); G.input.endFrame(); return; }
     check(S); if (holding()) return;
-    G.settings.ultAuto = !!(shown.bkCaught || shown.bkBlock) && !(cur && (cur.id === 'bkCaught' || cur.id === 'bkBlock'));   // AI 조사는 브로커 막기 설명을 보여 준 뒤에만
+    G.settings.ultAuto = !!shown.bk && !holding();                   // AI 조사는 브로커 설명을 보여 준 뒤에
     if (S.hitStop > 0) { S.hitStop -= dt; return; }
     if (!S.ultCut) { PlayBot.tick(S, BOT, botSt); G.dali.t += dt * (G.dali.moving ? 1 : 0); }
     G.dali.speed = C.DALI_SPEED * (S.speedMult || 1);
@@ -116,7 +108,7 @@ window.REC = (() => {
   }
   function drawCaption() {
     if (!cur) return;
-    const life = cur.hold + cur.slow + (cur.id === 'ult' ? 3.2 : 0.8), a = Math.min(1, curT / 0.2) * (curT > life - 0.3 ? Math.max(0, (life - curT) / 0.3) : 1);
+    const life = cur.hold + cur.slow + (cur.id === 'ult' ? 2.6 : 0.5), a = Math.min(1, curT / 0.2) * (curT > life - 0.3 ? Math.max(0, (life - curT) / 0.3) : 1);
     if (curT >= life) { cur = null; return; }
     const K = G.soft, S = G.S, text = cur.text(S), sub = cur.sub(S);
     ctx.save(); ctx.globalAlpha = a;
@@ -137,11 +129,11 @@ window.REC = (() => {
     if (frame === 0) { window.dispatchEvent(new Event('pointerdown')); G.screen = 'title'; }
     phaseT += dt;
     if (phase === 'title') {
-      if (phaseT >= 3.5) { phase = 'game'; phaseT = 0; G.screens.newGame(); botSt = {}; }
+      if (phaseT >= 2.5) { phase = 'game'; phaseT = 0; G.screens.newGame(); botSt = {}; }
     } else if (phase === 'game') {
       const S = G.S;
       const slow = !!cur || S.ultCut || S.ultFx || G.screen !== 'play';
-      const sub = slow ? 2 : 16;                                         // 1배속(2스텝) / 8배속(16스텝): 설명 없는 구간은 빨리
+      const sub = slow ? 2 : 24;                                         // 1배속(2스텝) / 12배속(24스텝): 1분 내외에 맞추려고 설명 없는 구간은 빨리
       for (let i = 0; i < sub; i++) gameStep(1 / 60);
       if (G.screen === 'result') { phase = 'result'; phaseT = 0; }
     } else if (phase === 'result') {
@@ -155,7 +147,7 @@ window.REC = (() => {
     drawFocus(); drawCaption();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     frame++;
-    return { done: phase === 'result' && phaseT >= 9, phase, t: (frame / FPS_).toFixed(1), shown: Object.keys(shown) };
+    return { done: phase === 'result' && phaseT >= 6.5, phase, t: (frame / FPS_).toFixed(1), shown: Object.keys(shown) };
   }
   return { step, shown };
 })();`;
@@ -168,7 +160,7 @@ window.REC = (() => {
   await p.goto('http://127.0.0.1:8767/dist/index.html'); await p.waitForTimeout(2500);
   await p.addScriptTag({ url: '/tools/playbot.js' });
     await p.evaluate(() => { G.store.set('thanks', G.thanks.LIST.map(g => g.id)); });   // 2026-11-18: 감사 선물 창이 결과 화면 '실제로는?'을 가리지 않게 모두 받은 상태로
-  await p.evaluate(() => { G.C.STAGE_INTRO_SEC = 1.5; G.C.STAGE_CARD_SEC = 3.2; G.thanks.drawWorld = () => {}; G.settings.hard = false; G.settings.easy = false; G.settings.ultAuto = true; });   // 영상용: 단계 화면 짧게, 보통 모드
+  await p.evaluate(() => { G.C.STAGE_INTRO_SEC = 0.9; G.C.STAGE_CARD_SEC = 2.4; G.thanks.drawWorld = () => {}; G.settings.hard = false; G.settings.easy = false; G.settings.ultAuto = true; });   // 영상용: 단계 화면 짧게, 보통 모드
   await p.addScriptTag({ content: REC.replace(/FPS_/g, String(FPS)) });
   const PREVIEW = process.env.PREVIEW;
   if (PREVIEW) { await p.evaluate(() => { window.__scLog = []; });                                                      // 미리보기: 영상·소리 없이 2초마다 PNG
