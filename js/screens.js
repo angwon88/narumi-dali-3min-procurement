@@ -7,7 +7,7 @@ G.screens = (() => {
   let endT = 0;
 
   function newGame() {
-    G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, floats: [], bagCap: C.BAG_START, scoreMult: 1, hard: !!G.settings.hard, easy: !G.settings.hard && !!G.settings.easy };   // 하드 모드는 판 시작 때 고정
+    G.S = { timeLeft: C.GAME_SECONDS, elapsed: 0, floats: [], bagCap: C.BAG_START, scoreMult: G.settings.hard ? C.HARD.scoreMult : 1, hard: !!G.settings.hard, easy: !G.settings.hard && !!G.settings.easy };   // 하드 모드는 판 시작 때 고정
     G.score.init(G.S); G.levelup.init(G.S); G.requests.init(G.S); G.shops.init(G.S); G.villages.init(G.S); G.director.init(G.S); G.gifts.init(G.S); G.events.init(G.S); G.connect.init(G.S); G.broker.init(G.S); G.missions.init(G.S); G.ult.init(G.S);
     G.dali.reset(); G.narmi.reset(); G.input.reset();
     G.screen = 'stage';                                                // 1단계 시작 안내부터 (missions.js)
@@ -30,15 +30,22 @@ G.screens = (() => {
   const musicLabel = () => G.music.isOff() ? '음악 켜기' : '음악 끄기';
   const BTN_ULT = { x: W - 178, y: 86, w: 166, h: 30 }, BTN_ULTQ = { x: W - 214, y: 86, w: 30, h: 30 };
   const ultLabel = () => G.settings.ultAuto ? 'AI 조사: 자동 사용' : 'AI 조사: 직접 사용(Q)';
-  const BTN_MODE = { x: W - 178, y: 122, w: 166, h: 30 };             // 2026-11-03 보통 / 하드 모드
+  const BTN_MODE = { x: W - 178, y: 122, w: 166, h: 30 }, BTN_MODEQ = { x: W - 214, y: 122, w: 30, h: 30 };   // 8.27단계: 모드 설명 [?]             // 2026-11-03 보통 / 하드 모드
   const modeLabel = () => G.settings.hard ? '하드 모드' : G.settings.easy ? '초보 모드' : '보통 모드';
-  const MODE_TIP = ['보통 / 초보 / 하드 모드 (눌러서 바꾸기)', '초보: 다음에 누를 곳을 화살표로 알려 줘요', '      계약 시간 +35% · 브로커가 느려요', '보통: 맞는 공방 초록 테두리 · 조건 안내', '하드: 힌트 없음 · 계약 시간 -32% · 브로커가 거세요', '최고 기록은 모드별로 따로 저장돼요'];
-  let ultTipOn = false, thanksTipOn = false;                                                // [?]를 누르면 설명을 켜고 끔 (휴대폰용)
+  const MODE_TIP = ['게임 모드 (버튼을 누를 때마다 보통 → 초보 → 하드)',
+    '초보: 다음에 누를 곳을 노란 화살표로 알려 줘요',
+    '      계약 시간 +35% · 단가계약 자동 2건 · 브로커 느리고 드물게 · 새 공방 4곳',
+    '보통: 맞는 공방 초록 테두리 · 조건 안내 · 단가계약 자동 1건 · 새 공방 5곳',
+    '하드: 안내 없음 · 단가계약 없이 모든 카드 직접 계약 · 계약 시간 -50%',
+    '      브로커 빠르고 자주 · 새 공방 6곳 · 대신 납품 점수 ×1.2',
+    '최고 기록·최고 등급은 모드별로 따로 저장돼요'];
+  let ultTipOn = false, thanksTipOn = false, modeTipOn = false;                                                // [?]를 누르면 설명을 켜고 끔 (휴대폰용)
   function titleUpdate() {
     if (ui.clicked(BTN_SOUND)) { G.audio.toggle(); return; }
     if (ui.clicked(BTN_MUSIC)) { G.music.toggle(); return; }
     if (ui.clicked(BTN_ULT)) { G.ult.toggleAuto(); return; }
-    if (ui.clicked(BTN_ULTQ)) { ultTipOn = !ultTipOn; return; }
+    if (ui.clicked(BTN_ULTQ)) { ultTipOn = !ultTipOn; modeTipOn = false; return; }
+    if (ui.clicked(BTN_MODEQ)) { modeTipOn = !modeTipOn; ultTipOn = false; return; }
     if (ui.clicked(G.thanks.BTN)) { thanksTipOn = !thanksTipOn; return; }
     if (ui.clicked(BTN_MODE)) {                                        // 보통 → 초보 → 하드 → 보통
       const m = G.settings.hard ? 'normal' : G.settings.easy ? 'hard' : 'easy';
@@ -145,10 +152,11 @@ G.screens = (() => {
     pill(ctx, BTN_MUSIC, musicLabel(), 'sub', t);
     pill(ctx, BTN_ULT, ultLabel(), 'ult', t);
     pill(ctx, BTN_ULTQ, '?', 'q', t);
+    pill(ctx, BTN_MODEQ, '?', 'q', t);
     pill(ctx, BTN_MODE, modeLabel(), G.settings.hard ? 'hard' : G.settings.easy ? 'easy' : 'sub', t);
     pill(ctx, G.thanks.BTN, '감사 선물 ' + G.thanks.got().length + '/' + G.thanks.LIST.length, 'sub', t);
     if (thanksTipOn || ui.hover(G.thanks.BTN)) ui.tip(ctx, 14, G.thanks.BTN.y + G.thanks.BTN.h + 6, G.thanks.tipLines());
-    if (ui.hover(BTN_MODE)) ui.tip(ctx, BTN_MODE.x - 150, BTN_MODE.y + BTN_MODE.h + 6, MODE_TIP);
+    if (modeTipOn || ui.hover(BTN_MODE) || ui.hover(BTN_MODEQ)) ui.tip(ctx, W - 470, BTN_MODE.y + BTN_MODE.h + 6, MODE_TIP);
     if (ultTipOn || ui.hover(BTN_ULT) || ui.hover(BTN_ULTQ)) ui.tip(ctx, BTN_ULTQ.x - 170, BTN_ULT.y + BTN_ULT.h + 6, ui.ULT_TIP);
     const hk = G.settings.hard ? '_hard' : G.settings.easy ? '_easy' : '', best = G.store.get('best' + hk, 0);
     if (best) J(ctx, (hk === '_hard' ? '하드 ' : hk ? '초보 ' : '') + '최고 점수 ' + best + ' · 최고 등급 ' + G.store.get('bestGrade' + hk, '-'), W - 18, H - 18, 15, '#fff3b0', { align: 'right', stroke: [['rgba(40,28,10,.55)', 4]] });

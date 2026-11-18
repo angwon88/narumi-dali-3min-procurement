@@ -38,8 +38,9 @@ G.C = {
   VILLAGE_LIMIT_MULT: 1.15, VILLAGE_T2_SCORE: 1.2, VILLAGE_T2_TRUST: 1,   // 1단계 새 계약 시간 +15%, 2단계 납품 점수 ×1.2·신뢰 +1
   TIER_SCORE: 100, TIER_TRUST: 2,
   // 새싹 공방 (개편 2단계): 실적 없는 스타트업. 품질은 좋지만 처음엔 조금 비쌈. 정상 납품 실적 SPROUT_GOAL건 → 혁신제품 지정
-  EASY: { limit: 1.35, brokerSpeed: 0.8 },   // 11-16 8.18단계 초보 모드: 계약 시간 ×1.35 · 브로커 속도 ×0.8 + 다음 할 일 화살표(connect.js drawCoach)
-  HARD: { limit: 0.68, brokerRest: 0.7, brokerSpeed: 1.15, fakeEvery: 1 },   // 11-04 하드 모드: 계약 시간 -32% · 브로커 더 자주(쉬는 시간 -30%)·더 빠르게(+15%). 페이퍼컴퍼니를 늘리면 적발 점수가 늘어 오히려 쉬워져서 그대로
+  // 11-18 8.27단계 모드 차이를 확실히: 보통은 그대로(기본값), 초보·하드만 바꿈. auto = 단가계약 자동 체결 건수, newShops = 한 판 새 공방(실사) 수, scoreMult = 납품 점수 배율
+  EASY: { limit: 1.35, brokerSpeed: 0.7, brokerRest: 1.4, auto: 2, newShops: 4 },
+  HARD: { limit: 0.5, brokerRest: 0.6, brokerSpeed: 1.3, fakeEvery: 1, auto: 0, newShops: 6, scoreMult: 1.2 },   // 하드: 모든 카드 직접 계약 · 계약 시간 -50% · 브로커 빠르고 자주 · 새 공방 6곳 · 점수 ×1.2
   SPROUT_AT: [15, 38, 62, 85],   // 11-03 4곳(혁신 보상 4호까지)   // 2분 기준
   SPROUT_PRICE_MULT: 1.25, SPROUT_GOAL: 2, SPROUT_TRUST: 2, SPROUT_SCORE: 80, SPROUT_GRAD_SCORE: 1000, SPROUT_GRAD_TRUST: 8,   // 2분 기준 실적 2건 (3분 때 3건)
   FAKE_BID: true,                   // 2026-11-03 다시 켬: 수상한 새 공방을 FAKE_BID_SEC초 안에 실사하지 않으면 그 업종 계약 하나를 부정 낙찰로 가로챔 (Space 연타 대신 '알아보고 실사'하게)
@@ -72,7 +73,7 @@ G.C = {
   CONNECT_BROKER_SPEED: [210, 260], CONNECT_BROKER_GRAB: 1.0,   // (수레 추격일 때) 브로커가 수레를 쫓는 속도(px/초)와 등장 뒤 출발까지
   CONNECT_BROKER_MODE: 'card',   // 11-16 8.5단계: 'card' = 아직 계약 안 한 카드를 노려 그 마을로 걸어감(먼저 계약하거나 브로커를 눌러 막음) / 'ship' = 7.1단계 수레 추격(나오자마자 빼앗아 대처하기 어렵다는 소감)
   CONNECT_CARD_BROKER_SPEED: [110, 150],   // 'card'일 때 걷는 속도(px/초). 화면 끝 → 마을까지 약 3~5초 + 두리번 BROKER_GRAB초
-  NEWSHOP_AT: [32, 39, 46, 53, 96],   // 새 공방(달이 실사): 2단계에 4곳(새싹 → 페이퍼컴퍼니 → 섞어서 2곳), 4단계에 1곳. 겉모습은 같고 달이가 실사해 고름 (8.0단계 33·45·96 3곳 → 8.13단계 5곳: '실사를 몇 번 안 한다'는 소감)
+  NEWSHOP_AT: [32, 39, 46, 53, 96, 104],   // 8.27단계: 6번째(1:44)는 하드만, 초보는 4번째(0:53)를 건너뜀(EASY/HARD.newShops)
   WRONG_FAKE_TRUST: -20, WRONG_FAKE_SCORE: -800, WRONG_SPROUT_TRUST: -5,   // 잘못 고른 실사
   STOCK: false,   // 원자재 비축 (시험판에서 끔). 폭등도 함께 끄려면 EVENTS.surge
   // 사건 켜고 끄기 (false면 그 사건이 아예 일어나지 않음 — 빼고 싶을 때 여기 한 곳만 바꾸면 됨)
@@ -97,4 +98,4 @@ G.C = {
   GRADE: { S: [20000, 80], A: [13000, 60], B: [6000, 0] },   // 2026-11-03 덜어내기 뒤 2분 기준 (봇 0.7 ≈ 16,000~25,000 · 0.45 ≈ 10,000~19,000)
 };
 G.FONT = 'Galmuri11';
-G.VERSION = 'v8.26 · 업무 4단계';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)
+G.VERSION = 'v8.27 · 업무 4단계';   // 타이틀 왼쪽 아래 표시 (어느 판이 떠 있는지 확인용)

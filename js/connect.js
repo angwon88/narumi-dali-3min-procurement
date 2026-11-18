@@ -14,8 +14,9 @@ G.connect = (() => {
   function init(S) {
     S.sel = null; S.ships = []; S.shipMult = 1; S.slotBonus = 0; S.connectHint = true; S.deals = {}; S.report = null; S.newPending = 0;
     // 8.13단계: 새싹 2 · 페이퍼컴퍼니 3. 처음 둘은 새싹 → 페이퍼컴퍼니(차이를 먼저 보여 줌), 나머지 셋은 섞음
-    S.newQ = ['sprout', 'fake', ...['sprout', 'fake', 'fake'].sort(() => Math.random() - 0.5)];
+    S.newQ = ['sprout', 'fake', ...['sprout', 'fake', 'fake'].sort(() => Math.random() - 0.5), 'fake'];   // 6번째(하드만)는 페이퍼컴퍼니
   }
+  const autoN = S => S.hard ? C.HARD.auto : S.easy ? C.EASY.auto : C.CONTRACT_AUTO;   // 단가계약 자동 체결 건수 (모드별)
   const slots = (S, sh) => C.CONNECT_SLOTS[sh.tier || 0] + (S.slotBonus || 0);
   const busy = (S, sh) => S.ships.filter(s => s.shop === sh).length;
   const hasSlot = (S, sh) => busy(S, sh) < slots(S, sh);
@@ -53,9 +54,9 @@ G.connect = (() => {
     if (why === 'check') { inspect(S, sh); return false; }
     const bought = G.shops.order(S, sh, r.item, r);
     launch(S, r, sh, bought);
-    S.deals[r.item] = { sh, item: r.item, left: C.CONTRACT_AUTO, price: bought.paid, best: bought.best };
+    if (autoN(S) > 0) S.deals[r.item] = { sh, item: r.item, left: autoN(S), price: bought.paid, best: bought.best };   // 하드는 단가계약 없음
     S.sel = null;
-    if (!S.firstShip) { S.firstShip = true; G.narmi.say('단가계약! 다음 ' + name + ' ' + C.CONTRACT_AUTO + '건은 다른 마을 것도 자동이에요', 3); }
+    if (!S.firstShip) { S.firstShip = true; G.narmi.say(autoN(S) > 0 ? '단가계약! 다음 ' + name + ' ' + autoN(S) + '건은 다른 마을 것도 자동이에요' : '하드 모드: 단가계약 없이 모든 카드를 직접 계약해요', 3); }
     return true;
   }
   function launch(S, r, sh, b) {
@@ -107,7 +108,7 @@ G.connect = (() => {
       if (d.left <= 0) {
         delete S.deals[r.item];
         const b = d.sh.w.body, name = G.ITEM[r.item].name;
-        if (C.CONTRACT_AUTO > 1) G.fx.add(S, b.x + b.w / 2, b.y + 110, name + ' 단가계약 끝 · 다시 계약해요', '#ffd6a0');   // 자동이 1건이면 매번 떠서 생략
+        if (autoN(S) > 1) G.fx.add(S, b.x + b.w / 2, b.y + 110, name + ' 단가계약 끝 · 다시 계약해요', '#ffd6a0');   // 자동이 1건이면 매번 떠서 생략
       }
     }
   }
@@ -121,7 +122,8 @@ G.connect = (() => {
     return ['자동 대기', '#2f6fb5'];
   }
   // ---------- 새 공방 ----------
-  G.director.on('newShop', S => { S.newPending++; });
+  // 8.27단계: 모드별 새 공방 수 (초보 4 · 보통 5 · 하드 6). 시각표 NEWSHOP_AT 6칸 중 초보는 4번째·6번째, 보통은 6번째를 건너뜀
+  G.director.on('newShop', S => { const k = (S.newIdx = (S.newIdx || 0) + 1) - 1; if (S.easy ? (k === 3 || k === 5) : !S.hard && k === 5) return; S.newPending++; });
   function spawnNew(S) {
     while (S.newPending > 0 && S.newQ.length) {
       const sh = S.newQ[0] === 'sprout' ? G.shops.spawnSprout(S) : G.shops.spawnFake(S, null, true);

@@ -91,7 +91,7 @@ G.broker = (() => {
       if ((bk.wait -= dt) <= 0 && !plan(S)) { bk.wait = C.CONNECT ? 0.2 : 1; if (C.CONNECT && !hasTarget(S)) bk.alarmed = false; }
       return;
     }
-    if (bk.state === 'caught') { if ((bk.timer += dt) >= 1.2) rest(S, C.BROKER_REST * 1.5 * (S.hard ? C.HARD.brokerRest : 1)); return; }
+    if (bk.state === 'caught') { if ((bk.timer += dt) >= 1.2) rest(S, C.BROKER_REST * 1.5 * (S.hard ? C.HARD.brokerRest : S.easy ? C.EASY.brokerRest : 1)); return; }
     // 그사이 페이퍼컴퍼니가 적발되면 계약이 무효 → 도망
     if ((bk.state === 'grab' || bk.state === 'run') && bk.shop && (bk.shop.status !== 'open' || !bk.shop.fake)) {
       S.stats.brokerBlocked++; flee(S, '들켰다! 브로커 도망', '#9be37a'); return;
@@ -137,7 +137,7 @@ G.broker = (() => {
       if (step(bk, dt, speed(S))) dumpGoods(S, r);
       return;
     }
-    if (bk.state === 'flee' && step(bk, dt, speed(S) * 1.3)) rest(S, (S.elapsed > C.LATE_AT ? C.BROKER_REST * 0.6 : C.BROKER_REST) * (S.hard ? C.HARD.brokerRest : 1));
+    if (bk.state === 'flee' && step(bk, dt, speed(S) * 1.3)) rest(S, (S.elapsed > C.LATE_AT ? C.BROKER_REST * 0.6 : C.BROKER_REST) * (S.hard ? C.HARD.brokerRest : S.easy ? C.EASY.brokerRest : 1));
   }
   // 계약 연결: 수레를 직접 쫓아감. 닿으면 물건을 빼앗음. 건물은 돌아서 감
   function chase(S, dt) {
